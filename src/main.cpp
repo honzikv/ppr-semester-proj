@@ -1,9 +1,6 @@
 #include <iostream>
+#include "../msvc/argParsing.h"
 
 int wmain(int argc, wchar_t** argv) {
-
-
-
-	std::wcout << L"vystup programu" << std::endl;
-
+	parseArgs(argc, argv);
 }
