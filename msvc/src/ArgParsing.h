@@ -3,7 +3,6 @@
 #include <iostream>
 #include <string>
 
-
 namespace fs = std::filesystem;
 using Args = wchar_t**;
 

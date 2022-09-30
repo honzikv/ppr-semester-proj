@@ -22,7 +22,8 @@ inline std::vector<cl::Device> FindAllAvailableDevices() {
 
 	auto usableDevices = std::vector<cl::Device>();
 	for (const auto& device : allDevices) {
-		if (const auto deviceType = device.getInfo<CL_DEVICE_TYPE>();
+        const auto deviceType = device.getInfo<CL_DEVICE_TYPE>();
+		if (
 			deviceType == CL_DEVICE_TYPE_GPU || deviceType == CL_DEVICE_TYPE_CPU) {
 			usableDevices.push_back(device);
 		}
