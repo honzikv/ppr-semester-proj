@@ -31,3 +31,18 @@ inline std::vector<cl::Device> FindAllAvailableDevices() {
 
 	return usableDevices;
 }
+
+
+inline std::vector<std::vector<cl::Device>> FindAllAvailableDevice() {
+	auto platforms = std::vector<cl::Platform>();
+	cl::Platform::get(&platforms);
+
+	auto devices = std::vector<std::vector<cl::Device>>();
+	for (const auto& platform : platforms) {
+		auto platformDevices = std::vector<cl::Device>();
+		platform.getDevices(CL_DEVICE_TYPE_ALL, &platformDevices);
+		for (const auto& device : platformDevices) {
+
+		}
+	}
+}
