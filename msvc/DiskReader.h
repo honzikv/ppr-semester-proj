@@ -1,5 +1,4 @@
 #pragma once
-#include <bitset>
 #include <vector>
 #include <filesystem>
 
@@ -25,7 +24,7 @@ private:
 	std::vector<char> buffer;
 	std::vector<bool> processedChunks;
 
-		Config config;
+	Config config;
 
 	explicit DiskReader(const Config& config) : buffer(config.NumWorkers * BYTES_PER_TASK), config(config) {
 	}

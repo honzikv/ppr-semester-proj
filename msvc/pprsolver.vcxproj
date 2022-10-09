@@ -25,7 +25,11 @@
     <ClInclude Include="Worker.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="OpenCLTest.h" />
     <ClCompile Include="src\main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="openClTest.cl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

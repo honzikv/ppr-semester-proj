@@ -32,5 +32,13 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OpenCLTest.h">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="openClTest.cl">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
