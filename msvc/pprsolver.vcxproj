@@ -23,6 +23,7 @@
     <ClInclude Include="src\argParsing.h" />
     <ClInclude Include="src\Devices.h" />
     <ClInclude Include="Worker.h" />
+    <ClInclude Include="WorkerPool.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OpenCLTest.h" />
