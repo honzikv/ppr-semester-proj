@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <random>
 #include <cmath>
@@ -118,92 +117,99 @@ RunningStats& RunningStats::operator+=(const RunningStats& rhs) {
     return *this;
 }
 
-
+#include "structs.h"
 int main(int argc, char* argv[]) {
 
-    auto gauss = std::normal_distribution<double>(0.0, 512.0);
-    auto rng = std::mt19937_64();
+    auto watchDog = WatchDog();
 
-    auto vector = std::vector<double>();
-    for (auto i = 0; i < 4096l * 1024l * 2; i += 1) {
-        vector.push_back(gauss(rng));
-    }
-
-    auto stats = RunningStats();
-    for (auto i = 0; i < vector.size(); i += 1) {
-        stats.Push(vector[i]);
-    }
-
-    std::cout << "Mean: " << stats.Mean() << std::endl;
-    std::cout << "Variance: " << stats.Variance() << std::endl;
-    std::cout << "Standard Deviation: " << stats.StandardDeviation() << std::endl;
-    std::cout << "Skewness: " << stats.Skewness() << std::endl;
-    std::cout << "Kurtosis: " << stats.Kurtosis() << std::endl;
-
-    auto exp = std::exponential_distribution<double>(3.0);
-    auto stats2 = RunningStats();
-
-    for (auto i = 0; i < vector.size(); i += 1) {
-        stats2.Push(exp(rng));
-    }
-
-    std::cout << "Mean: " << stats2.Mean() << std::endl;
-    std::cout << "Variance: " << stats2.Variance() << std::endl;
-    std::cout << "Standard Deviation: " << stats2.StandardDeviation() << std::endl;
-    std::cout << "Skewness: " << stats2.Skewness() << std::endl;
-    std::cout << "Kurtosis: " << stats2.Kurtosis() << std::endl;
-
-    auto file = std::ifstream("uwuntu.iso", std::ios::binary);
-
-
-
-    auto buffer = std::vector<char>(8 * 1024 * 1024);
-
-    auto mean = std::vector<double>{};
-    auto variance = std::vector<double>{};
-    auto skewness = std::vector<double>{};
-    auto kurtosis = std::vector<double>{};
-    while (file.read(buffer.data(), buffer.size())) {
-
-        auto stats = RunningStats();
-        for (auto i = 0; i < buffer.size(); i += 2) {
-            auto value = (buffer[i] << 8) | buffer[i + 1];
-            stats.Push(value);
+    std::thread t1([&watchDog]() {
+        for (int i = 0; i < 1000000; i++) {
+            watchDog.IncrementCounter();
+            // sleep for 1 second
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
-        mean.push_back(stats.Mean());
-        variance.push_back(stats.Variance());
-        skewness.push_back(stats.Skewness());
-        kurtosis.push_back(stats.Kurtosis());
-    }
+    });
 
-    // Calculate averages
-    auto mean_avg = std::accumulate(mean.begin(), mean.end(), 0.0) / mean.size();
-    auto variance_avg = std::accumulate(variance.begin(), variance.end(), 0.0) / variance.size();
-    auto skewness_avg = std::accumulate(skewness.begin(), skewness.end(), 0.0) / skewness.size();
-    auto kurtosis_avg = std::accumulate(kurtosis.begin(), kurtosis.end(), 0.0) / kurtosis.size();
-    std::cout << "Mean: " << mean_avg << std::endl;
-    std::cout << "Variance: " << variance_avg << std::endl;
-    std::cout << "Skewness: " << skewness_avg << std::endl;
-    std::cout << "Kurtosis: " << kurtosis_avg << std::endl;
-
-    // Basically we have 2d space - kurtosis and skewness where each distribution is a point
-    auto gauss_point = std::pair<double, double>(0, 0);
-    auto exp_point = std::pair<double, double>(3, 0);
-    auto uniform_point = std::pair<double, double>(0, -6/5);
-
-    // Calculate distance from each point to the average
-    auto gauss_dist = std::sqrt(std::pow(gauss_point.first - mean_avg, 2) + std::pow(gauss_point.second - skewness_avg, 2));
-    auto exp_dist = std::sqrt(std::pow(exp_point.first - mean_avg, 2) + std::pow(exp_point.second - skewness_avg, 2));
-    auto uniform_dist = std::sqrt(std::pow(uniform_point.first - mean_avg, 2) + std::pow(uniform_point.second - skewness_avg, 2));
-
-    // The distribution with the smallest distance is the most likely
-    if (gauss_dist < exp_dist && gauss_dist < uniform_dist) {
-        std::cout << "Gaussian" << std::endl;
-    } else if (exp_dist < gauss_dist && exp_dist < uniform_dist) {
-        std::cout << "Exponential" << std::endl;
-    } else {
-        std::cout << "Uniform" << std::endl;
-    }
-
-    file.close();
+//    auto gauss = std::normal_distribution<double>(0.0, 20000.0);
+//    auto rng = std::mt19937_64();
+//
+//    auto vector = std::vector<double>();
+//    for (auto i = 0; i < 4096l * 1024l * 2; i += 1) {
+//        vector.push_back(gauss(rng));
+//    }
+//
+//    auto stats = RunningStats();
+//    for (auto i = 0; i < vector.size(); i += 1) {
+//        stats.Push(vector[i]);
+//    }
+//
+//    std::cout << "Mean: " << stats.Mean() << std::endl;
+//    std::cout << "Variance: " << stats.Variance() << std::endl;
+//    std::cout << "Standard Deviation: " << stats.StandardDeviation() << std::endl;
+//    std::cout << "Skewness: " << stats.Skewness() << std::endl;
+//    std::cout << "Kurtosis: " << stats.Kurtosis() << std::endl;
+//
+//    auto exp = std::exponential_distribution<double>(3.0);
+//    auto stats2 = RunningStats();
+//
+//    for (auto i = 0; i < vector.size(); i += 1) {
+//        stats2.Push(exp(rng));
+//    }
+//
+//    std::cout << "Mean: " << stats2.Mean() << std::endl;
+//    std::cout << "Variance: " << stats2.Variance() << std::endl;
+//    std::cout << "Standard Deviation: " << stats2.StandardDeviation() << std::endl;
+//    std::cout << "Skewness: " << stats2.Skewness() << std::endl;
+//    std::cout << "Kurtosis: " << stats2.Kurtosis() << std::endl;
+//
+//    auto file = std::ifstream("uwuntu.iso", std::ios::binary);
+//    auto buffer = std::vector<char>(8 * 1024 * 1024);
+//
+//    auto mean = std::vector<double>{};
+//    auto variance = std::vector<double>{};
+//    auto skewness = std::vector<double>{};
+//    auto kurtosis = std::vector<double>{};
+//    while (file.read(buffer.data(), buffer.size())) {
+//
+//        auto stats = RunningStats();
+//        for (auto i = 0; i < buffer.size(); i += 2) {
+//            auto value = (buffer[i] << 8) | buffer[i + 1];
+//            stats.Push(value);
+//        }
+//        mean.push_back(stats.Mean());
+//        variance.push_back(stats.Variance());
+//        skewness.push_back(stats.Skewness());
+//        kurtosis.push_back(stats.Kurtosis());
+//    }
+//
+//    // Calculate averages
+//    auto mean_avg = std::accumulate(mean.begin(), mean.end(), 0.0) / mean.size();
+//    auto variance_avg = std::accumulate(variance.begin(), variance.end(), 0.0) / variance.size();
+//    auto skewness_avg = std::accumulate(skewness.begin(), skewness.end(), 0.0) / skewness.size();
+//    auto kurtosis_avg = std::accumulate(kurtosis.begin(), kurtosis.end(), 0.0) / kurtosis.size();
+//    std::cout << "Mean: " << mean_avg << std::endl;
+//    std::cout << "Variance: " << variance_avg << std::endl;
+//    std::cout << "Skewness: " << skewness_avg << std::endl;
+//    std::cout << "Kurtosis: " << kurtosis_avg << std::endl;
+//
+//    // Basically we have 2d space - kurtosis and skewness where each distribution is a point
+//    auto gauss_point = std::pair<double, double>(0, 0);
+//    auto exp_point = std::pair<double, double>(3, 0);
+//    auto uniform_point = std::pair<double, double>(0, -6/5);
+//
+//    // Calculate distance from each point to the average
+//    auto gauss_dist = std::sqrt(std::pow(gauss_point.first - mean_avg, 2) + std::pow(gauss_point.second - skewness_avg, 2));
+//    auto exp_dist = std::sqrt(std::pow(exp_point.first - mean_avg, 2) + std::pow(exp_point.second - skewness_avg, 2));
+//    auto uniform_dist = std::sqrt(std::pow(uniform_point.first - mean_avg, 2) + std::pow(uniform_point.second - skewness_avg, 2));
+//
+//    // The distribution with the smallest distance is the most likely
+//    if (gauss_dist < exp_dist && gauss_dist < uniform_dist) {
+//        std::cout << "Gaussian" << std::endl;
+//    } else if (exp_dist < gauss_dist && exp_dist < uniform_dist) {
+//        std::cout << "Exponential" << std::endl;
+//    } else {
+//        std::cout << "Uniform" << std::endl;
+//    }
+//
+//    file.close();
 }
