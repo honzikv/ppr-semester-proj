@@ -13,11 +13,12 @@
 
 class Watchdog {
 public:
-    Watchdog();
+    Watchdog(std::chrono::duration<uint32_t> sleepMs);
     void IncrementCounter();
 
 private:
     std::thread watchdogThread;
+    std::chrono::duration<uint32_t> sleepMs;
 
     // Workers increment this variable to signal that they are still alive
     // Alternatively, use vector of atomic variables, one per worker
@@ -40,7 +41,7 @@ void Watchdog::IncrementCounter() {
 
 }
 
-Watchdog::Watchdog() {
+Watchdog::Watchdog(std::chrono::duration<uint32_t> sleepMs) {
 
 }
 
@@ -51,7 +52,6 @@ struct ChunkStats {
     double Mean;
     double Var;
 };
-
 
 
 struct ChunkDistribution {
