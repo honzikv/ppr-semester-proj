@@ -58,9 +58,37 @@ struct ChunkDistribution {
     std::vector<uint32_t> Histogram;
 };
 
-class DeviceExecCoordinator {
-
+struct Job {
+    std::vector<uint32_t> ChunkIds;
 };
+
+class DeviceExecCoordinator {
+    struct DeviceInfo {
+        std::string Name;
+        std::string Vendor;
+        uint32_t OptimalBufferSize;
+        bool IsClDevice;
+    };
+
+    std::thread thread;
+    std::condition_variable startCondition;
+    DeviceInfo deviceInfo;
+
+public:
+    std::atomic<bool> Available = true;
+    std::atomic<bool> Shutdown = false;
+
+    DeviceExecCoordinator(std::string name, std::string vendor, bool isClDevice);
+    void AssignJob(Job job);
+};
+
+DeviceExecCoordinator::DeviceExecCoordinator(std::string name, std::string vendor, bool isClDevice) {
+
+}
+
+void DeviceExecCoordinator::AssignJob(Job job) {
+
+}
 
 class HANDLE {};
 
@@ -87,6 +115,7 @@ std::vector<uint32_t> IOHandler::GetNUnprocessedChunks(uint32_t n) {
 void IOHandler::MarkBatchProcessed(const std::vector<int>& chunkIds) {
 
 }
+
 
 
 class JobScheduler {
