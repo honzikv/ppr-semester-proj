@@ -120,7 +120,7 @@ RunningStats& RunningStats::operator+=(const RunningStats& rhs) {
 #include "structs.h"
 int main(int argc, char* argv[]) {
 
-    auto watchDog = WatchDog();
+    auto watchDog = Watchdog();
 
     std::thread t1([&watchDog]() {
         for (int i = 0; i < 1000000; i++) {

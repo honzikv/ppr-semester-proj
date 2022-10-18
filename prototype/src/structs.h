@@ -61,7 +61,7 @@ struct ChunkDistribution {
     double StdDev;
 };
 
-class Device {
+class DeviceExecCoordinator {
 
 };
 
@@ -99,11 +99,11 @@ public:
 
 private:
     Watchdog& watchdog;
-    std::vector<Device> devices;
+    std::vector<DeviceExecCoordinator> deviceExecCoordinators;
     IOHandler& ioHandler;
 
     void createJob(const std::vector<uint32_t>& chunkIds);
-    void assignJob(Device& device);
+    void assignJob(DeviceExecCoordinator& device);
 };
 
 void JobScheduler::Run() {
