@@ -95,12 +95,12 @@ void IOHandler::MarkBatchProcessed(const std::vector<int>& chunkIds) {
 class JobScheduler {
 public:
     void Run();
-    JobScheduler();
+    JobScheduler(Watchdog& watchdog, IOHandler& ioHandler);
 
 private:
     Watchdog& watchdog;
     std::vector<Device> devices;
-    IOHandler ioHandler;
+    IOHandler& ioHandler;
 
     void createJob(const std::vector<uint32_t>& chunkIds);
     void assignJob(Device& device);
@@ -127,6 +127,10 @@ void JobScheduler::assignJob(Device& device) {
 }
 
 void JobScheduler::createJob(const std::vector<uint32_t>& chunkIds) {
+
+}
+
+JobScheduler::JobScheduler(Watchdog& watchdog, IOHandler& ioHandler) {
 
 }
 
