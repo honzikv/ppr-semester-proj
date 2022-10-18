@@ -79,7 +79,7 @@ public:
     std::atomic<bool> Shutdown = false;
 
     DeviceExecCoordinator(std::string name, std::string vendor, bool isClDevice);
-    void AssignJob(Job job);
+    void StartJob(Job job);
 };
 
 DeviceExecCoordinator::DeviceExecCoordinator(std::string name, std::string vendor, bool isClDevice) {
