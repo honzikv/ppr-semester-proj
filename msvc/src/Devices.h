@@ -15,19 +15,20 @@ inline std::vector<cl::Device> FindAllAvailableDevices() {
 
 	// Load available devices
 	auto allDevices = std::vector<cl::Device>();
-	allPlatforms[0].getDevices(CL_DEVICE_TYPE_ALL, &allDevices);
-	if (allDevices.empty()) {
-		throw std::invalid_argument("Error, no devices are available for this platform.");
+	for (const auto& platform : allPlatforms) {
+		auto platformDevices = std::vector<cl::Device>();
+		platform.getDevices(CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_CPU, &platformDevices);
+		allDevices.insert(allDevices.end(), platformDevices.begin(), platformDevices.end());
 	}
 
-	auto usableDevices = std::vector<cl::Device>();
-	for (const auto& device : allDevices) {
-        const auto deviceType = device.getInfo<CL_DEVICE_TYPE>();
-		if (
-			deviceType == CL_DEVICE_TYPE_GPU || deviceType == CL_DEVICE_TYPE_CPU) {
-			usableDevices.push_back(device);
-		}
-	}
+	// auto usableDevices = std::vector<cl::Device>();
+	// for (const auto& device : allDevices) {
+ //        const auto deviceType = device.getInfo<CL_DEVICE_TYPE>();
+	// 	if (
+	// 		deviceType == CL_DEVICE_TYPE_GPU || deviceType == CL_DEVICE_TYPE_CPU) {
+	// 		usableDevices.push_back(device);
+	// 	}
+	// }
 
-	return usableDevices;
+	return allDevices;
 }

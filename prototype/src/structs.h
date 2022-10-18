@@ -103,7 +103,7 @@ private:
     IOHandler& ioHandler;
 
     void createJob(const std::vector<uint32_t>& chunkIds);
-    void assignJob(DeviceExecCoordinator& device);
+    void assignJob(DeviceExecCoordinator& deviceExecCoordinator);
 };
 
 void JobScheduler::Run() {
