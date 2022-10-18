@@ -73,14 +73,29 @@ class DeviceExecCoordinator {
     std::thread thread;
     std::condition_variable startCondition;
     DeviceInfo deviceInfo;
+    Watchdog& watchdog;
 
 public:
     std::atomic<bool> Available = true;
     std::atomic<bool> Shutdown = false;
 
-    DeviceExecCoordinator(std::string name, std::string vendor, bool isClDevice);
+    DeviceExecCoordinator(Watchdog& watchdog, std::string name, std::string vendor, bool isClDevice);
     void StartJob(Job job);
+    void NotifyWatchdog();
 };
+
+void DeviceExecCoordinator::NotifyWatchdog() {
+
+}
+
+void DeviceExecCoordinator::StartJob(Job job) {
+
+}
+
+DeviceExecCoordinator::DeviceExecCoordinator(Watchdog& watchdog, std::string name, std::string vendor,
+                                             bool isClDevice) {
+
+}
 
 DeviceExecCoordinator::DeviceExecCoordinator(std::string name, std::string vendor, bool isClDevice) {
 
