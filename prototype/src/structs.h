@@ -48,17 +48,14 @@ struct ChunkStats {
     uint32_t ValidItems;
     double Min;
     double Max;
-    double RunningAvg;
-    double RunningVar;
+    double Mean;
+    double Var;
 };
-
 
 
 
 struct ChunkDistribution {
     std::vector<uint32_t> Histogram;
-    double Mean;
-    double StdDev;
 };
 
 class DeviceExecCoordinator {
