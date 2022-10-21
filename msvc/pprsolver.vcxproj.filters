@@ -21,13 +21,10 @@
     <ClInclude Include="src\Devices.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Worker.h">
+    <ClInclude Include="JobScheduler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DiskReader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WorkerPool.h">
+    <ClInclude Include="DeviceCoordinator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -35,13 +32,11 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="OpenCLTest.h">
+    <ClCompile Include="JobScheduler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="openClTest.cl">
+    <ClCompile Include="DeviceCoordinator.cpp">
       <Filter>Source Files</Filter>
-    </None>
+    </ClCompile>
   </ItemGroup>
 </Project>
