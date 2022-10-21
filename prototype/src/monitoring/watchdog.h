@@ -14,7 +14,7 @@ public:
      * Creates a new watchdog instance
      * \param sleepMs time in milliseconds to sleep between checks
      */
-    Watchdog(std::chrono::duration<size_t> sleepMs) {
+    explicit Watchdog(std::chrono::duration<size_t> sleepMs) {
         this->sleepMs = sleepMs;
 
         // Create the thread and
@@ -36,6 +36,10 @@ public:
         terminateThread = true;
     }
 
+    inline void Kick() {
+        counter += 1;
+    }
+
 private:
     /**
      * watchdog thread object
@@ -45,7 +49,7 @@ private:
     /**
      * Sleep time between watchdog checks
      */
-    std::chrono::duration<size_t> sleepMs;
+    std::chrono::duration<size_t> sleepMs{};
 
     /**
      * Workers increment this counter to signal that they are still alive and how much work they have done

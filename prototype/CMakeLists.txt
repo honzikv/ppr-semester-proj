@@ -3,6 +3,8 @@ project(prototype)
 
 set(CMAKE_CXX_STANDARD 17)
 
+find_package(OpenCL REQUIRED)
+
 add_executable(prototype
         src/Main.cpp src/monitoring/watchdog.h
         src/job/job_scheduler.cpp
@@ -10,3 +12,5 @@ add_executable(prototype
         src/device/device_coordinator.cpp
         src/device/device_coordinator.h
         src/job/job.cpp src/job/job.h src/io/io_handler.cpp src/io/io_handler.h)
+
+target_link_libraries(prototype OpenCL::OpenCL)

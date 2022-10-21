@@ -2,7 +2,7 @@
 
 #include <vector>
 #include "../device/device_coordinator.h"
-
+#include <OpenCL/opencl.h>
 
 /**
  * Class for scheduling jobs in the application,
