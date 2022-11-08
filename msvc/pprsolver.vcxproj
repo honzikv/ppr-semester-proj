@@ -19,10 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="IoHandler.cpp" />
     <ClCompile Include="src\Arghandling.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="IoHandler.h" />
     <ClInclude Include="src\Arghandling.h" />
     <ClInclude Include="src\Utils.h" />
   </ItemGroup>
