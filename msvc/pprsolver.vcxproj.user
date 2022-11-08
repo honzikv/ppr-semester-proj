@@ -4,5 +4,6 @@
     <LocalDebuggerEnvironment>PATH=%PATH%;$(TBB_ROOT)\bin
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>../referencni_rozdeleni/exp all</LocalDebuggerCommandArguments>
   </PropertyGroup>
 </Project>
