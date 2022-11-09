@@ -21,8 +21,11 @@
     <ClCompile Include="src\Arghandling.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="IoHandler.cpp">
+    <ClCompile Include="src\FileChunkHandler.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\JobScheduler.cpp">
+      <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -32,7 +35,10 @@
     <ClInclude Include="src\Utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IoHandler.h">
+    <ClInclude Include="src\FileChunkHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\JobScheduler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
