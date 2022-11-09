@@ -1,19 +1,17 @@
 #pragma once
 #include <condition_variable>
-#include <cstdint>
 #include <functional>
-#include <vector>
-#include <semaphore>
 
 #include "Job.h"
 #include "Utils.h"
 
 enum CoordinatorType {
-	SMP,
+	TBB,
 	OPEN_CL,
 	SINGLE_CORE,
 };
 
+namespace fs = std::filesystem;
 
 /**
  * \brief This class is responsible for coordinating work on specified device - i.e. a GPU or SMP
@@ -36,10 +34,21 @@ protected:
 
 	std::atomic<bool> keepRunning = true; // Whether the coordinator thread should terminate
 
+	size_t chunkSize;
+	size_t memoryLimit;
+
+	fs::path& distFilePath;
+
 public:
-	inline DeviceCoordinator(CoordinatorType coordinatorType, std::function<void(Job)> jobFinishedCallback):
+	virtual ~DeviceCoordinator() = default;
+
+	inline DeviceCoordinator(const CoordinatorType coordinatorType, std::function<void(Job)> jobFinishedCallback,
+	                         const size_t memoryLimit, const size_t chunkSize, fs::path& distFilePath):
 		coordinatorType(coordinatorType),
-		jobFinishedCallback(std::move(jobFinishedCallback)) {
+		jobFinishedCallback(std::move(jobFinishedCallback)),
+		chunkSize(chunkSize),
+		memoryLimit(memoryLimit),
+		distFilePath(distFilePath) {
 	}
 
 	/**
@@ -76,13 +85,13 @@ public:
 	}
 
 protected:
-
+	/**
+	 * \brief Processes given job - calls onProcessJob implementation and then calls jobFinishedCallback
+	 */
 	inline void processJob() {
-		// Call specific implementation
 		onProcessJob();
-		isAvailable = true;
-		// Callback with processed job
 		jobFinishedCallback(std::move(*currentJob));
+		isAvailable = true; // TODO possible race condition?
 	}
 
 	/**

@@ -19,6 +19,9 @@
     <Filter Include="Source Files\Job">
       <UniqueIdentifier>{cfbfa0b6-c704-4674-8dc4-3ea9696e3fee}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Util">
+      <UniqueIdentifier>{e650d633-162e-40e9-b9be-9049b9dde4f4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -35,15 +38,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Arghandling.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\FileChunkHandler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\Job.h">
       <Filter>Header Files\Job</Filter>
     </ClInclude>
@@ -52,6 +46,21 @@
     </ClInclude>
     <ClInclude Include="src\DeviceCoordinator.h">
       <Filter>Header Files\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SingleThreadDeviceCoordinator.h">
+      <Filter>Header Files\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RunningStats.h">
+      <Filter>Header Files\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Arghandling.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FileChunkHandler.h">
+      <Filter>Header Files\Util</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

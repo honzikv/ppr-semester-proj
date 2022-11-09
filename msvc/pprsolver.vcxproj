@@ -25,12 +25,14 @@
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\SingleThreadDeviceCoordinator.h" />
     <ClInclude Include="src\DeviceCoordinator.h" />
     <ClInclude Include="src\Arghandling.h" />
     <ClInclude Include="src\FileChunkHandler.h" />
     <ClInclude Include="src\Job.h" />
     <ClInclude Include="src\JobScheduler.h" />
     <ClInclude Include="src\Utils.h" />
+    <ClInclude Include="src\RunningStats.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

@@ -4,6 +4,9 @@
 #include "Arghandling.h"
 #include "DeviceCoordinator.h"
 #include "FileChunkHandler.h"
+#include "SingleThreadDeviceCoordinator.h"
+
+constexpr auto MEMORY_LIMIT = 500 * 1024 * 1024;
 
 class JobScheduler {
 
@@ -20,8 +23,18 @@ public:
 		// Create coordinator for each device
 
 		if (processingInfo.processingMode == ProcessingMode::SINGLE_THREAD) {
-			deviceCoordinators.push_back(DeviceCoordinator());
+			auto singleThreadCoordinator = SingleThreadDeviceCoordinator(
+				CoordinatorType::SINGLE_CORE,
+				jobFinishedCallback,
+				MEMORY_LIMIT,
+				DEFAULT_CHUNK_SIZE,
+				processingInfo.distFilePath
+				);
 		}
 
+	}
+
+	void jobFinishedCallback(Job job) {
+		
 	}
 };
