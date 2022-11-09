@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Job">
+      <UniqueIdentifier>{8e287a41-ae3c-402c-8153-e6c9f8eebbd9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Job">
+      <UniqueIdentifier>{cfbfa0b6-c704-4674-8dc4-3ea9696e3fee}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -25,7 +31,7 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\JobScheduler.cpp">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files\Job</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -38,8 +44,14 @@
     <ClInclude Include="src\FileChunkHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Job.h">
+      <Filter>Header Files\Job</Filter>
+    </ClInclude>
     <ClInclude Include="src\JobScheduler.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DeviceCoordinator.h">
+      <Filter>Header Files\Job</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

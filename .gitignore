@@ -2,3 +2,4 @@
 data
 msvc/x64
 msvc/.vs
+msvc/out
