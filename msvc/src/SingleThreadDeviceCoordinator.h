@@ -10,7 +10,7 @@ namespace fs = std::filesystem;
 class SingleThreadDeviceCoordinator final : DeviceCoordinator {
 public:
 	SingleThreadDeviceCoordinator(CoordinatorType coordinatorType, const std::function<void(Job)>& jobFinishedCallback,
-		size_t memoryLimit, size_t chunkSize, __resharper_unknown_type& distFilePath)
+		size_t memoryLimit, size_t chunkSize, fs::path& distFilePath)
 		: DeviceCoordinator(coordinatorType, jobFinishedCallback, memoryLimit, chunkSize, distFilePath) {
 	}
 
