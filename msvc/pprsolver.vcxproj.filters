@@ -62,5 +62,14 @@
     <ClInclude Include="src\FileChunkHandler.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
+    <ClInclude Include="src\Watchdog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ClDeviceCoordinator.h">
+      <Filter>Header Files\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SmpDeviceCoordinator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

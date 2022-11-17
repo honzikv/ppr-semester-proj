@@ -25,6 +25,8 @@
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\SmpDeviceCoordinator.h" />
+    <ClInclude Include="src\ClDeviceCoordinator.h" />
     <ClInclude Include="src\SingleThreadDeviceCoordinator.h" />
     <ClInclude Include="src\DeviceCoordinator.h" />
     <ClInclude Include="src\Arghandling.h" />
@@ -33,6 +35,7 @@
     <ClInclude Include="src\JobScheduler.h" />
     <ClInclude Include="src\Utils.h" />
     <ClInclude Include="src\RunningStats.h" />
+    <ClInclude Include="src\Watchdog.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

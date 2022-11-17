@@ -17,10 +17,10 @@ const auto processingModes = std::unordered_map<std::string, ProcessingMode>{
 };
 
 auto printValidModes() {
-	std::cout << "Processing modes: " << std::endl;
-	std::cout << "  singleThread - single thread mode" << std::endl;
-	std::cout << "  all - SMP + OpenCL" << std::endl;
-	std::cout << "  SMP - SMP" << std::endl;
+	std::cout << "Processing modes: " << '\n';
+	std::cout << "  singleThread - single thread mode" << '\n';
+	std::cout << "  all - SMP + OpenCL" << '\n';
+	std::cout << "  SMP - SMP" << '\n';
 	std::cout << "  <list of OpenCL deviceNames>" << std::endl;
 }
 
