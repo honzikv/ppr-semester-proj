@@ -20,20 +20,20 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Arghandling.cpp" />
-    <ClCompile Include="src\FileChunkHandler.cpp" />
     <ClCompile Include="src\JobScheduler.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\SmpDeviceCoordinator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\FileChunkHandler.h" />
     <ClInclude Include="src\SmpDeviceCoordinator.h" />
     <ClInclude Include="src\ClDeviceCoordinator.h" />
     <ClInclude Include="src\SingleThreadDeviceCoordinator.h" />
     <ClInclude Include="src\DeviceCoordinator.h" />
     <ClInclude Include="src\Arghandling.h" />
-    <ClInclude Include="src\FileChunkHandler.h" />
     <ClInclude Include="src\Job.h" />
     <ClInclude Include="src\JobScheduler.h" />
-    <ClInclude Include="src\Utils.h" />
+    <ClInclude Include="src\ConcurrencyUtils.h" />
     <ClInclude Include="src\RunningStats.h" />
     <ClInclude Include="src\Watchdog.h" />
   </ItemGroup>

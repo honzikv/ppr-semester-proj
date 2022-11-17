@@ -11,7 +11,7 @@ class RunningStats {
 	double m1 = .0, m2 = .0, m3 = .0, m4 = .0;
 
 public:
-	inline void push(const double x) {
+	inline auto push(const double x) {
 		const auto n1 = n;
 		n += 1;
 
@@ -25,27 +25,27 @@ public:
 		m2 += term1;
 	}
 
-	[[nodiscard]] inline size_t getN() const {
+	[[nodiscard]] inline auto getN() const {
 		return n;
 	}
 
-	[[nodiscard]] inline double getMean() const {
+	[[nodiscard]] inline auto getMean() const {
 		return m1;
 	}
 
-	[[nodiscard]] inline double getVariance() const {
+	[[nodiscard]] inline auto getVariance() const {
 		return m2 / (n - 1.0);
 	}
 
-	[[nodiscard]] inline double getStandardDeviation() const {
+	[[nodiscard]] inline auto getStandardDeviation() const {
 		return std::sqrt(getVariance());
 	}
 
-	[[nodiscard]] inline double getSkewness() const {
+	[[nodiscard]] inline auto getSkewness() const {
 		return std::sqrt(static_cast<double>(n)) * m3 / std::pow(m2, 1.5);
 	}
 
-	[[nodiscard]] inline double getKurtosis() const {
+	[[nodiscard]] inline auto getKurtosis() const {
 		return static_cast<double>(n) * m4 / (m2 * m2) - 3.0;
 	}
 

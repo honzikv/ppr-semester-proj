@@ -5,12 +5,12 @@
 
 #include "RunningStats.h"
 
-namespace fs = std::filesystem;
+namespace Fs = std::filesystem;
 
 class SingleThreadDeviceCoordinator final : DeviceCoordinator {
 public:
 	SingleThreadDeviceCoordinator(CoordinatorType coordinatorType, const std::function<void(Job)>& jobFinishedCallback,
-		size_t memoryLimit, size_t chunkSize, fs::path& distFilePath)
+		size_t memoryLimit, size_t chunkSize, Fs::path& distFilePath)
 		: DeviceCoordinator(coordinatorType, jobFinishedCallback, memoryLimit, chunkSize, distFilePath) {
 	}
 

@@ -30,11 +30,11 @@
     <ClCompile Include="src\Arghandling.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\FileChunkHandler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\JobScheduler.cpp">
       <Filter>Source Files\Job</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SmpDeviceCoordinator.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -56,10 +56,7 @@
     <ClInclude Include="src\Arghandling.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
-    <ClInclude Include="src\Utils.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
-    <ClInclude Include="src\FileChunkHandler.h">
+    <ClInclude Include="src\ConcurrencyUtils.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
     <ClInclude Include="src\Watchdog.h">
@@ -70,6 +67,9 @@
     </ClInclude>
     <ClInclude Include="src\SmpDeviceCoordinator.h">
       <Filter>Header Files\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FileChunkHandler.h">
+      <Filter>Header Files\Util</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

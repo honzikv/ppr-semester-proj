@@ -1,56 +1,44 @@
 #pragma once
-#include <vector>
 #include <filesystem>
-#include <random>
+#include <cmath>
+#include <algorithm>
+#include <numeric>
 
-namespace fs = std::filesystem;
+namespace Fs = std::filesystem;
 
-constexpr size_t DEFAULT_CHUNK_SIZE = 4096;
-
-/**
- * \brief Used to store state of the file - which chunks are left to be processed
- */
 class FileChunkHandler {
 
-	/**
-	 * \brief Chunks are stored in a permutation where id represents id * chunkSize offset from the beginning of the file
-	 *		  The vector actually serves as a stack which is iteratively popped in getNextNChunks method
-	 *		  id is a 32 bit unsigned integer - which should be enough for reasonable chunk size, i.e. 4k
-	 */
-	std::vector<uint32_t> chunkPermutation;
-	size_t chunkSize;
-	size_t fileSize; // Size of the file
-	fs::path filePath; // Path to the file
-
 public:
-	/**
-	 * \brief Default ctor
-	 * \param filePath path to the file - this must be validated before it is passed to the object
-	 * \param percentRequired percent of the file to process - must be between (0, 1>
-	 * \param chunkSize size of each chunk - default is 4k (DEFAULT_CHUNK_SIZE)
-	 */
-	explicit FileChunkHandler(const fs::path& filePath, double percentRequired = 1.0,
-	                          const size_t chunkSize = DEFAULT_CHUNK_SIZE);
+	// File is split into evenly sized chunks which are read by given device
+	const size_t ChunkSize;
 
-	inline auto getNextNChunks(const size_t n) {
-		auto result = std::vector<uint32_t>();
-		result.reserve(n); // reserve up to n items
+	FileChunkHandler(Fs::path distFilePath, const size_t chunkSize) :
+		ChunkSize(chunkSize),
+		distFilePath(std::move(distFilePath)),
+		fileSize(Fs::file_size(this->distFilePath)),
+		// We throw away the last chunk if it is smaller than chunkSize
+		// The thrown away data are small enough so it won't affect the derived distribution
+		chunkCount(static_cast<uint32_t>(floor(static_cast<double>(fileSize) / static_cast<double>(chunkSize)))) {
+	}
 
-		for (size_t i = 0; i < n; i += 1) {
-			if (chunkPermutation.empty()) {
-				// If there are no chunks left to process just return the result
-				return result;
-			}
+	inline [[nodiscard]] bool finished() {
+		return currentChunkIdx == chunkCount - 1;
+	}
 
-			// Add popped item from the vector
-			result.push_back(chunkPermutation.back());
-			chunkPermutation.pop_back();
-		}
+	inline std::vector<uint32_t> getNextNChunks(const uint32_t n) {
+		const auto actualChunksAdded = currentChunkIdx + n > chunkCount ? chunkCount - currentChunkIdx : n;
+		auto result = std::vector<uint32_t>(actualChunksAdded);
 
+		// Add the next n chunks to the result, update current chunk index and return
+		std::iota(result.begin(), result.end(), currentChunkIdx);
+		currentChunkIdx += actualChunksAdded;
 		return result;
 	}
 
-	inline auto getFilePath() {
-		return filePath;
-	}
+private:
+	Fs::path distFilePath;
+	size_t fileSize;
+	uint32_t chunkCount; // Total number of chunks
+	uint32_t currentChunkIdx = 0; // Number of current chunks
+
 };

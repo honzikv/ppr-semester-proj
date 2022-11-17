@@ -5,7 +5,7 @@
 #include <utility>
 #include <unordered_set>
 
-#include "Utils.h"
+#include "ConcurrencyUtils.h"
 
 
 // LUT for processing modes so we don't have to do 20 if statements
@@ -125,16 +125,16 @@ auto findRelevantClDevices(const std::unordered_set<std::string>& requestedDevic
 
 auto validateArguments(ProcessingArgs args) -> ProcessingInfo {
 	// First check that the file exists
-	const auto distFilePath = fs::path(args.distFilePath);
+	const auto distFilePath = Fs::path(args.DistFilePath);
 	if (!exists(distFilePath)) {
 		std::cout << "File path: \"" << distFilePath.string() << "\" does not exist." << std::endl;
 		exit(1);
 	}
 
 	// Validate processing mode
-	const auto processingModeStr = Utils::lowercase(args.processingMode);
+	const auto processingModeStr = Utils::lowercase(args.ProcessingMode);
 	if (processingModes.find(processingModeStr) == processingModes.end()) {
-		std::cout << "Invalid processing mode: \"" << args.processingMode << "\"." << std::endl;
+		std::cout << "Invalid processing mode: \"" << args.ProcessingMode << "\"." << std::endl;
 		printValidModes();
 		exit(1); // NOLINT(concurrency-mt-unsafe)
 	}
@@ -159,7 +159,7 @@ auto validateArguments(ProcessingArgs args) -> ProcessingInfo {
 	}
 
 	// Otherwise filter only specific devices
-	const auto requestedDevices = std::unordered_set<std::string>(args.deviceNames.begin(), args.deviceNames.end());
+	const auto requestedDevices = std::unordered_set<std::string>(args.DeviceNames.begin(), args.DeviceNames.end());
 	auto foundDevices = std::vector<PlatformWithDevices>();
 	size_t foundDevicesCount = 0;
 	for (const auto& [platform, devices] : allClDevices) {

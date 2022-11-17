@@ -5,7 +5,7 @@
 #include <filesystem>
 
 
-namespace fs = std::filesystem;
+namespace Fs = std::filesystem;
 
 /**
  * \brief Wraps OpenCL logic for device coordination
@@ -13,7 +13,7 @@ namespace fs = std::filesystem;
 class ClDeviceCoordinator : DeviceCoordinator {
 public:
 	ClDeviceCoordinator(CoordinatorType coordinatorType, const std::function<void(Job)>& jobFinishedCallback,
-	                    size_t memoryLimit, size_t chunkSize, fs::path& distFilePath, const cl::Platform& platform,
+	                    size_t memoryLimit, size_t chunkSize, Fs::path& distFilePath, const cl::Platform& platform,
 	                    const cl::Device& device)
 		: DeviceCoordinator(coordinatorType, jobFinishedCallback, memoryLimit, chunkSize, distFilePath),
 		  platform(platform),

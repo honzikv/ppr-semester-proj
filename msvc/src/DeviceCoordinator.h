@@ -3,7 +3,7 @@
 #include <functional>
 
 #include "Job.h"
-#include "Utils.h"
+#include "ConcurrencyUtils.h"
 
 enum CoordinatorType {
 	TBB,
@@ -11,7 +11,7 @@ enum CoordinatorType {
 	SINGLE_CORE,
 };
 
-namespace fs = std::filesystem;
+namespace Fs = std::filesystem;
 
 /**
  * \brief This class is responsible for coordinating work on specified device - i.e. a GPU or SMP
@@ -36,14 +36,16 @@ protected:
 
 	size_t chunkSize;
 	size_t memoryLimit;
+	uint32_t maxNumberOfChunks;  // This needs to be initialized in derived classes
 
-	fs::path& distFilePath;
+	Fs::path& distFilePath;
+	
 
 public:
 	virtual ~DeviceCoordinator() = default;
 
 	inline DeviceCoordinator(const CoordinatorType coordinatorType, std::function<void(Job)> jobFinishedCallback,
-	                         const size_t memoryLimit, const size_t chunkSize, fs::path& distFilePath):
+	                         const size_t memoryLimit, const size_t chunkSize, Fs::path& distFilePath):
 		coordinatorType(coordinatorType),
 		jobFinishedCallback(std::move(jobFinishedCallback)),
 		chunkSize(chunkSize),
@@ -84,6 +86,15 @@ public:
 		semaphore.release();
 	}
 
+	/**
+	 * \brief Returns maximum number of chunks that can be processed by this coordinator in a single job.
+	 * This differs per device - i.e. GPU might be able to process more chunks than SMP
+	 * \return maximum number of chunks
+	 */
+	uint32_t getMaxNumberOfChunks() {
+		return maxNumberOfChunks;
+	}
+
 protected:
 	/**
 	 * \brief Processes given job - calls onProcessJob implementation and then calls jobFinishedCallback
@@ -99,5 +110,5 @@ protected:
 	 *		  Implementation must ensure that Watchdog is periodically notified - e.g. after each operation
 	 */
 	virtual void onProcessJob() = 0;
-
+	
 };

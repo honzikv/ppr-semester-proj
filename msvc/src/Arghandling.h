@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <CL/cl.hpp>
 
-namespace fs = std::filesystem;
+namespace Fs = std::filesystem;
 
 // Type alias
 using PlatformWithDevices = std::pair<cl::Platform, std::vector<cl::Device>>;
@@ -15,9 +15,9 @@ using PlatformWithDevices = std::pair<cl::Platform, std::vector<cl::Device>>;
  * \brief Structure containing the parsed arguments
  */
 struct ProcessingArgs {
-	std::string processingMode;
-	std::string distFilePath; // Path to the file with the distribution
-	std::vector<std::string> deviceNames;
+	std::string ProcessingMode;
+	std::string DistFilePath; // Path to the file with the distribution
+	std::vector<std::string> DeviceNames;
 };
 
 const auto QUOTES_REGEX = std::regex("\"([^\"]*)\"");
@@ -41,9 +41,9 @@ enum ProcessingMode {
 };
 
 struct ProcessingInfo {
-	ProcessingMode processingMode;
-	fs::path distFilePath;
-	std::vector<PlatformWithDevices> devices;
+	ProcessingMode ProcessingMode;
+	Fs::path DistFilePath;
+	std::vector<PlatformWithDevices> Devices;
 };
 
 /**
