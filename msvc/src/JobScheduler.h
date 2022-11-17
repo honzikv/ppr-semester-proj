@@ -15,7 +15,7 @@ class JobScheduler {
 	/**
 	 * \brief List of all device coordinators
 	 */
-	std::vector<ClDeviceCoordinator> clDeviceCoordinators;
+	std::vector<std::shared_ptr<ClDeviceCoordinator>> clDeviceCoordinators;
 	std::unique_ptr<SingleThreadDeviceCoordinator> singleThreadDeviceCoordinator = nullptr;
 	std::unique_ptr<SmpDeviceCoordinator> smpDeviceCoordinator = nullptr;
 
@@ -41,14 +41,13 @@ public:
 		if (processingInfo.processingMode == ProcessingMode::OPEN_CL_DEVICES) {
 			for (const auto& [platform, devices] : processingInfo.devices) {
 				for (const auto& device : devices) {
-					clDeviceCoordinators.emplace_back(
-						CoordinatorType::OPEN_CL,
-						[this](auto&& ph1) { jobFinishedCallback(std::forward<decltype(ph1)>(ph1)); },
-						0, // TODO calculate memory limit
-						0, // TODO calculate optimal chunk size
-						processingInfo.distFilePath,
-						platform,
-						device
+					clDeviceCoordinators.push_back(std::make_shared<ClDeviceCoordinator>(CoordinatorType::OPEN_CL,
+							[this](auto&& ph1) { jobFinishedCallback(std::forward<decltype(ph1)>(ph1)); },
+							0, // TODO calculate memory limit
+							0, // TODO calculate optimal chunk size
+							processingInfo.distFilePath,
+							platform,
+							device)
 					);
 				}
 			}
