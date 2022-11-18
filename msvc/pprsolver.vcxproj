@@ -22,13 +22,14 @@
     <ClCompile Include="src\Arghandling.cpp" />
     <ClCompile Include="src\JobScheduler.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\SmpDeviceCoordinator.cpp" />
+    <ClCompile Include="src\CpuDeviceCoordinator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\MemoryUtils.h" />
+    <ClInclude Include="src\JobAggregator.h" />
     <ClInclude Include="src\FileChunkHandler.h" />
-    <ClInclude Include="src\SmpDeviceCoordinator.h" />
+    <ClInclude Include="src\CpuDeviceCoordinator.h" />
     <ClInclude Include="src\ClDeviceCoordinator.h" />
-    <ClInclude Include="src\SingleThreadDeviceCoordinator.h" />
     <ClInclude Include="src\DeviceCoordinator.h" />
     <ClInclude Include="src\Arghandling.h" />
     <ClInclude Include="src\Job.h" />

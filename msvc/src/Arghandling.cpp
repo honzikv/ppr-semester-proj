@@ -12,7 +12,7 @@
 const auto processingModes = std::unordered_map<std::string, ProcessingMode>{
 	{"singlethread", ProcessingMode::SINGLE_THREAD},
 	{"smp", ProcessingMode::SMP},
-	{"opencldevices", ProcessingMode::OPEN_CL_DEVICES},
+	{"opencldevices", ProcessingMode::OPENCL_DEVICES},
 	{"all", ProcessingMode::ALL},
 };
 
@@ -66,7 +66,7 @@ auto parseArguments(const int argc, char** argv) -> ProcessingArgs {
 	}
 
 	// Return the result
-	return {OPENCL_DEVICES, distFilePath, deviceNames};
+	return {OPENCL_DEVICES_STR, distFilePath, deviceNames};
 }
 
 auto loadAllClDevices() {
@@ -125,7 +125,7 @@ auto findRelevantClDevices(const std::unordered_set<std::string>& requestedDevic
 
 auto validateArguments(ProcessingArgs args) -> ProcessingInfo {
 	// First check that the file exists
-	const auto distFilePath = Fs::path(args.DistFilePath);
+	const auto distFilePath = fs::path(args.DistFilePath);
 	if (!exists(distFilePath)) {
 		std::cout << "File path: \"" << distFilePath.string() << "\" does not exist." << std::endl;
 		exit(1);

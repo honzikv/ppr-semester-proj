@@ -1,41 +1,16 @@
 #pragma once
-#include <algorithm>
-#include <vector>
-#include <cmath>
+#include "RunningStats.h"
 
-
-struct JobResult {
-	bool success;
-	double mean, variance, skewness, kurtosis;
-
-	inline JobResult():
-		mean(std::nan("0")),
-		variance(std::nan("0")), skewness(std::nan("0")), kurtosis(std::nan("0")) {
-	}
-
-	inline explicit JobResult(const bool success):
-		success(success), mean(std::nan("0")),
-		variance(std::nan("0")), skewness(std::nan("0")), kurtosis(std::nan("0")) {
-	}
-
-	inline JobResult(const bool success, const double mean, const double variance, const double skewness,
-	                 const double kurtosis) :
-		success(success), mean(mean), variance(variance), skewness(skewness), kurtosis(kurtosis) {
-	}
-
-};
 
 /**
- * \brief Contains information about the processed job - i.e. which chunks to process, results of the processing and so on
+ * \brief Contains information about the processed job - i.e. which chunks to process, results of the processing, etc.
  */
 struct Job {
-	/**
-	 * \brief List of chunks to process
-	 */
-	std::vector<uint32_t> chunksToProcess;
-	JobResult result;
-	bool success = false;
+	std::pair<size_t, size_t> ChunkIdxRange; // start index (inclusive) and end index (exclusive)
+	RunningStats Result; // result of the processing - must be initialized by given DeviceCoordinator
 
-	inline explicit Job(std::vector<uint32_t> chunksToProcess) : chunksToProcess(std::move(chunksToProcess)) {
+	explicit Job(const std::pair<size_t, size_t> chunkIdxRange):
+		ChunkIdxRange(chunkIdxRange) {
 	}
+
 };

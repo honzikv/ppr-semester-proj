@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <CL/cl.hpp>
 
-namespace Fs = std::filesystem;
+namespace fs = std::filesystem;
 
 // Type alias
 using PlatformWithDevices = std::pair<cl::Platform, std::vector<cl::Device>>;
@@ -21,7 +21,7 @@ struct ProcessingArgs {
 };
 
 const auto QUOTES_REGEX = std::regex("\"([^\"]*)\"");
-const auto OPENCL_DEVICES = "opencldevices";
+const auto OPENCL_DEVICES_STR = "opencldevices";
 
 /**
  * \brief Parses the command line arguments
@@ -35,14 +35,14 @@ enum ProcessingMode {
 	// == basic implementation with one thread
 	SMP,
 	// multiple threads via OneTBB
-	OPEN_CL_DEVICES,
+	OPENCL_DEVICES,
 	// One or multiple OpenCL deviceNames specified in vector / list
 	ALL // All available deviceNames
 };
 
 struct ProcessingInfo {
 	ProcessingMode ProcessingMode;
-	Fs::path DistFilePath;
+	fs::path DistFilePath;
 	std::vector<PlatformWithDevices> Devices;
 };
 

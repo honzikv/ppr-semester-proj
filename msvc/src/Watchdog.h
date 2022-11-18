@@ -8,7 +8,7 @@
 
 class Watchdog {
 	std::thread watchdogThread;
-	std::atomic<uint32_t> counter;
+	std::atomic<size_t> counter;
 
 	std::condition_variable startCondition;
 	std::mutex mutex;

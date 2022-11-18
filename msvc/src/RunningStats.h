@@ -49,7 +49,7 @@ public:
 		return static_cast<double>(n) * m4 / (m2 * m2) - 3.0;
 	}
 
-	inline RunningStats operator+(const RunningStats& other) const {
+	inline auto operator+(const RunningStats& other) const {
 		RunningStats result;
 		result.n = n + other.n;
 
@@ -69,7 +69,7 @@ public:
 		return result;
 	}
 
-	inline RunningStats& operator+=(const RunningStats& rhs) {
+	inline auto& operator+=(const RunningStats& rhs) {
 		const auto combined = *this + rhs;
 		*this = combined;
 		return *this;

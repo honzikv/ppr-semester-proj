@@ -22,6 +22,12 @@
     <Filter Include="Header Files\Util">
       <UniqueIdentifier>{e650d633-162e-40e9-b9be-9049b9dde4f4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Concurrency">
+      <UniqueIdentifier>{fedbca42-9904-40d9-a2a5-8cc602663155}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Concurrency">
+      <UniqueIdentifier>{5e9eb789-ecf5-46fa-ba20-4d97597f3f3f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -33,8 +39,8 @@
     <ClCompile Include="src\JobScheduler.cpp">
       <Filter>Source Files\Job</Filter>
     </ClCompile>
-    <ClCompile Include="src\SmpDeviceCoordinator.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\CpuDeviceCoordinator.cpp">
+      <Filter>Source Files\Concurrency</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -42,12 +48,6 @@
       <Filter>Header Files\Job</Filter>
     </ClInclude>
     <ClInclude Include="src\JobScheduler.h">
-      <Filter>Header Files\Job</Filter>
-    </ClInclude>
-    <ClInclude Include="src\DeviceCoordinator.h">
-      <Filter>Header Files\Job</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SingleThreadDeviceCoordinator.h">
       <Filter>Header Files\Job</Filter>
     </ClInclude>
     <ClInclude Include="src\RunningStats.h">
@@ -62,13 +62,22 @@
     <ClInclude Include="src\Watchdog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ClDeviceCoordinator.h">
-      <Filter>Header Files\Job</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SmpDeviceCoordinator.h">
-      <Filter>Header Files\Job</Filter>
-    </ClInclude>
     <ClInclude Include="src\FileChunkHandler.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\JobAggregator.h">
+      <Filter>Header Files\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CpuDeviceCoordinator.h">
+      <Filter>Header Files\Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ClDeviceCoordinator.h">
+      <Filter>Header Files\Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DeviceCoordinator.h">
+      <Filter>Header Files\Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MemoryUtils.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
   </ItemGroup>
