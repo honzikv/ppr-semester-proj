@@ -131,11 +131,13 @@ private:
 			if (!currentJob) {
 				// If there is no current job just sleep
 				semaphore->acquire();
+				continue;
 			}
 
 			std::cout << "Semaphore acquired, trying to get the job!" << std::endl; // TODO remove
 			processJob();
 		}
+		
 	}
 
 	/**

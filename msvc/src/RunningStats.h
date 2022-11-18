@@ -18,10 +18,10 @@ public:
 		if (std::fpclassify(x) != FP_NORMAL) {
 			return;
 		}
-
+		double intpart;
+		modf(2.0, &intpart) == 0.0;
 		// Check if x is an integer
-		// This could be interchanged with std::modf but trunc should have slightly better performance
-		isIntegerDistribution = isIntegerDistribution && trunc(x) == x;
+		isIntegerDistribution = isIntegerDistribution && !(x - std::nearbyint(x));
 
 		const auto n1 = n;
 		n += 1;
@@ -88,7 +88,7 @@ public:
 		return *this;
 	}
 
-	auto integerDistribution() const {
+	[[nodiscard]] bool integerDistribution() const {
 		return isIntegerDistribution;
 	}
 };

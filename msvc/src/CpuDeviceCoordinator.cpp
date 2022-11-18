@@ -13,10 +13,6 @@ void CpuDeviceCoordinator::onProcessJob() {
 
 	// Open the file
 	auto file = std::ifstream(distFilePath, std::ios::binary);
-	if (!file.is_open()) {
-		std::cout << "File is fucked!" << std::endl;
-		return;
-	}
 
 	// Get indices from the job
 	auto [start, end] = currentJob->ChunkIdxRange;
@@ -35,11 +31,6 @@ void CpuDeviceCoordinator::onProcessJob() {
 	oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, buffer.size()),
 	                          [&](const tbb::blocked_range<size_t> r) {
 		                          for (auto i = r.begin(); i < r.end(); i += 1) {
-			                          // Classify the double if it is not "normal" continue
-			                          if (std::fpclassify(buffer[i]) != FP_NORMAL) {
-				                          continue;
-			                          }
-
 			                          // Get current thread number (0 - N_CPU_CORES) and push
 			                          // the value to the corresponding running stats object
 			                          runningStats[

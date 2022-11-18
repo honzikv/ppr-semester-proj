@@ -33,7 +33,7 @@ inline void printStats(const RunningStats& runningStats) {
 	std::cout << "Variance: " << runningStats.getVariance() << "\n";
 	std::cout << "Standard Deviation: " << runningStats.getStandardDeviation() << "\n";
 	std::cout << "Skewness: " << runningStats.getSkewness() << "\n";
-	std::cout << "Kurtosis: " << runningStats.getKurtosis() << "\n";
+	std::cout << "Kurtosis: " << runningStats.getKurtosis() << std::endl;
 }
 
 inline void classifyDistribution(const RunningStats& runningStats) {
