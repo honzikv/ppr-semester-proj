@@ -18,10 +18,9 @@ public:
 		if (std::fpclassify(x) != FP_NORMAL) {
 			return;
 		}
-		double intpart;
-		modf(2.0, &intpart) == 0.0;
+		
 		// Check if x is an integer
-		isIntegerDistribution = isIntegerDistribution && !(x - std::nearbyint(x));
+		isIntegerDistribution = isIntegerDistribution && isInt(x);
 
 		const auto n1 = n;
 		n += 1;
@@ -90,5 +89,10 @@ public:
 
 	[[nodiscard]] bool integerDistribution() const {
 		return isIntegerDistribution;
+	}
+
+	inline bool isInt(const double x) const {
+		double intPart;
+		return std::modf(x, &intPart) == 0.0;
 	}
 };
