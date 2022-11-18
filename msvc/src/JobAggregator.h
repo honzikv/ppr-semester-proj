@@ -14,11 +14,11 @@ public:
 		coordinatorJobResults.resize(nCoordinators);
 	}
 
-	auto addJob(std::unique_ptr<Job> job, const size_t coordinatorIdx) {
+	auto writeProcessedJob(std::unique_ptr<Job> job, const size_t coordinatorIdx) {
 		coordinatorJobResults[coordinatorIdx] = std::move(job);
 	}
 
-	auto aggregate() {
+	auto update() {
 		for (const auto& job : coordinatorJobResults) {
 			if (job != nullptr) {
 				runningStats += job->Result;

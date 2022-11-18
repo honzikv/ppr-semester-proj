@@ -7,11 +7,16 @@
 const auto CPU_CORES = std::thread::hardware_concurrency();
 
 void CpuDeviceCoordinator::onProcessJob() {
+	std::cout << "OnProcessJob CPU" << std::endl;
 	// Create memory buffer
 	auto buffer = std::vector<double>(maxNumberOfChunks * chunkSize);
 
 	// Open the file
 	auto file = std::ifstream(distFilePath, std::ios::binary);
+	if (!file.is_open()) {
+		std::cout << "File is fucked!" << std::endl;
+		return;
+	}
 
 	// Get indices from the job
 	auto [start, end] = currentJob->ChunkIdxRange;
@@ -27,8 +32,8 @@ void CpuDeviceCoordinator::onProcessJob() {
 	auto runningStats = std::vector<RunningStats>(CPU_CORES);
 
 	// Run parallel loop
-	oneapi::tbb::parallel_for(tbb::blocked_range<int>(0, buffer.size()),
-	                          [&](const tbb::blocked_range<int> r) {
+	oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, buffer.size()),
+	                          [&](const tbb::blocked_range<size_t> r) {
 		                          for (auto i = r.begin(); i < r.end(); i += 1) {
 			                          // Classify the double if it is not "normal" continue
 			                          if (std::fpclassify(buffer[i]) != FP_NORMAL) {
@@ -38,9 +43,8 @@ void CpuDeviceCoordinator::onProcessJob() {
 			                          // Get current thread number (0 - N_CPU_CORES) and push
 			                          // the value to the corresponding running stats object
 			                          runningStats[
-				                          oneapi::tbb::this_task_arena::current_thread_index()
-			                          ].push(buffer[i]);
-
+										  oneapi::tbb::this_task_arena::current_thread_index()
+									  ].push(buffer[i]);
 		                          }
 	                          });
 

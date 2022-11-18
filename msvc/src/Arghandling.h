@@ -6,6 +6,13 @@
 #include <filesystem>
 #include <CL/cl.hpp>
 
+template <typename T>
+auto lowercase(const std::basic_string<T>& s) {
+	std::basic_string<T> s2 = s;
+	std::transform(s2.begin(), s2.end(), s2.begin(), tolower);
+	return s2;
+}
+
 namespace fs = std::filesystem;
 
 // Type alias

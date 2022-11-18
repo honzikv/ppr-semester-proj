@@ -132,7 +132,7 @@ auto validateArguments(ProcessingArgs args) -> ProcessingInfo {
 	}
 
 	// Validate processing mode
-	const auto processingModeStr = Utils::lowercase(args.ProcessingMode);
+	const auto processingModeStr = lowercase(args.ProcessingMode);
 	if (processingModes.find(processingModeStr) == processingModes.end()) {
 		std::cout << "Invalid processing mode: \"" << args.ProcessingMode << "\"." << std::endl;
 		printValidModes();

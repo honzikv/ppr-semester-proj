@@ -1,6 +1,7 @@
 #pragma once
 #include <condition_variable>
 #include <functional>
+#include <iostream>
 
 #include "Arghandling.h"
 #include "Job.h"
@@ -22,7 +23,8 @@ namespace fs = std::filesystem;
 class DeviceCoordinator {
 
 protected:
-	std::function<void(std::unique_ptr<Job>)> jobFinishedCallback; // Function called after job is processed - wakes up JobScheduler
+	std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback;
+	// Function called after job is processed - wakes up JobScheduler
 
 	bool isActive = true; // Whether this coordinator is actually used (e.g. CPU is not used in OPENCL only mode)
 	std::atomic<bool> isAvailable = true; // Whether the worker is available
@@ -31,8 +33,7 @@ protected:
 	/**
 	 * \brief Semaphore used to synchronize access with JobScheduler
 	 */
-	Utils::Semaphore semaphore = Utils::Semaphore();
-
+	std::shared_ptr<ConcurrencyUtils::Semaphore> semaphore = std::make_shared<ConcurrencyUtils::Semaphore>(0);
 	std::atomic<bool> keepRunning = true; // Whether the coordinator thread should terminate
 	std::thread coordinatorThread; // Thread that is responsible for processing jobs
 
@@ -40,7 +41,7 @@ protected:
 	size_t memoryLimit; // max amount of memory this coordinator can allocate to buffer
 	size_t maxNumberOfChunks{}; // This needs to be initialized in derived classes
 
-	fs::path& distFilePath;  // reference to the path to the distribution file
+	fs::path& distFilePath; // reference to the path to the distribution file
 
 	size_t id; // id of this coordinator
 
@@ -49,9 +50,9 @@ public:
 
 	inline DeviceCoordinator(const CoordinatorType coordinatorType,
 	                         const ProcessingMode processingMode,
-	                         std::function<void(std::unique_ptr<Job>)> jobFinishedCallback,
+	                         std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
 	                         const size_t memoryLimit, const size_t chunkSize, fs::path& distFilePath,
-		size_t id):
+	                         const size_t id):
 		jobFinishedCallback(std::move(jobFinishedCallback)),
 		chunkSize(chunkSize),
 		memoryLimit(memoryLimit),
@@ -70,6 +71,7 @@ public:
 
 		// Else run the thread
 		this->coordinatorThread = std::thread(&DeviceCoordinator::threadMain, this);
+		coordinatorThread.detach();
 	}
 
 	/**
@@ -96,7 +98,7 @@ public:
 	inline auto assignJob(Job job) {
 		isAvailable = false;
 		currentJob = std::make_unique<Job>(std::move(job));
-		semaphore.release();
+		semaphore->release();
 	}
 
 	/**
@@ -104,7 +106,7 @@ public:
 	 */
 	inline void terminate() {
 		keepRunning = false;
-		semaphore.release();
+		semaphore->release();
 	}
 
 	/**
@@ -121,16 +123,17 @@ private:
 	 * \brief Main function of the coordinator thread
 	 */
 	inline void threadMain() {
+		std::cout << "Starting coordinator thread" << std::endl; // TODO remove
+		semaphore->acquire();
 		while (keepRunning) {
 			// Try acquiring semaphore - this will be locked by default
 			// and the thread has to wait until it is notified by the scheduler
-			semaphore.acquire();
 			if (!currentJob) {
 				// If there is no current job just sleep
-				// TODO this might be pointless
-				continue;
+				semaphore->acquire();
 			}
 
+			std::cout << "Semaphore acquired, trying to get the job!" << std::endl; // TODO remove
 			processJob();
 		}
 	}
@@ -140,7 +143,7 @@ private:
 	 */
 	inline void processJob() {
 		onProcessJob();
-		jobFinishedCallback(std::move(currentJob));
+		jobFinishedCallback(std::move(currentJob), id);
 		isAvailable = true; // TODO possible race condition?
 	}
 

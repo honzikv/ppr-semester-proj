@@ -14,7 +14,7 @@ class ClDeviceCoordinator final : public DeviceCoordinator {
 public:
 	ClDeviceCoordinator(const CoordinatorType coordinatorType,
 	                    const ProcessingMode processingMode,
-	                    const std::function<void(std::unique_ptr<Job>)>& jobFinishedCallback,
+	                    const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
 	                    size_t memoryLimit,
 	                    size_t chunkSize,
 	                    fs::path& distFilePath,

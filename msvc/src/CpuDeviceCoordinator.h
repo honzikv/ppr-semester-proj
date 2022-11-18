@@ -10,7 +10,7 @@ class CpuDeviceCoordinator final : public DeviceCoordinator {
 public:
 	CpuDeviceCoordinator(const CoordinatorType coordinatorType,
 	                     const ProcessingMode processingMode,
-	                     const std::function<void(std::unique_ptr<Job>)>& jobFinishedCallback,
+	                     const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
 	                     const size_t memoryLimit,
 	                     const size_t chunkSize,
 	                     fs::path& distFilePath,

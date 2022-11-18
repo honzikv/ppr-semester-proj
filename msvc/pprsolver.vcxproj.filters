@@ -56,9 +56,6 @@
     <ClInclude Include="src\Arghandling.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
-    <ClInclude Include="src\ConcurrencyUtils.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
     <ClInclude Include="src\Watchdog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -78,6 +75,9 @@
       <Filter>Header Files\Concurrency</Filter>
     </ClInclude>
     <ClInclude Include="src\MemoryUtils.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ConcurrencyUtils.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
   </ItemGroup>
