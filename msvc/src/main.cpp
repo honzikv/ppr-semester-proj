@@ -1,8 +1,6 @@
-#include <iostream>
-#include <oneapi/tbb.h>
 #include "Arghandling.h"
+#include "DistributionClassification.h"
 #include "JobScheduler.h"
-#include <oneapi/tbb.h>
 
 int main(int argc, char** argv) {
 	auto args = parseArguments(argc, argv);
@@ -10,6 +8,7 @@ int main(int argc, char** argv) {
 	auto jobScheduler = JobScheduler(processingInfo);
 
 	auto result = jobScheduler.run();
+	classifyDistribution(result);
 
 	return 0;
 	

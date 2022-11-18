@@ -10,8 +10,19 @@ class RunningStats {
 	 */
 	double m1 = .0, m2 = .0, m3 = .0, m4 = .0;
 
+	bool isIntegerDistribution = true;
+
 public:
 	inline auto push(const double x) {
+		// Check whether x is FP_NORMAL
+		if (std::fpclassify(x) != FP_NORMAL) {
+			return;
+		}
+
+		// Check if x is an integer
+		// This could be interchanged with std::modf but trunc should have slightly better performance
+		isIntegerDistribution = isIntegerDistribution && trunc(x) == x;
+
 		const auto n1 = n;
 		n += 1;
 
@@ -49,7 +60,7 @@ public:
 		return static_cast<double>(n) * m4 / (m2 * m2) - 3.0;
 	}
 
-	inline auto operator+(const RunningStats& other) const {
+	auto operator+(const RunningStats& other) const {
 		RunningStats result;
 		result.n = n + other.n;
 
@@ -66,12 +77,18 @@ public:
 			(result.n * result.n * result.n) +
 			6.0 * delta2 * (n * n * other.m2 + other.n * other.n * m2) / (result.n * result.n) +
 			4.0 * delta * (n * other.m3 - other.n * m3) / result.n;
+		
+		result.isIntegerDistribution = isIntegerDistribution && other.isIntegerDistribution;
 		return result;
 	}
 
-	inline auto& operator+=(const RunningStats& rhs) {
+	auto& operator+=(const RunningStats& rhs) {
 		const auto combined = *this + rhs;
 		*this = combined;
 		return *this;
+	}
+
+	auto integerDistribution() const {
+		return isIntegerDistribution;
 	}
 };

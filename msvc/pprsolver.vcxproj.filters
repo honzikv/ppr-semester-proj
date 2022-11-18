@@ -80,5 +80,8 @@
     <ClInclude Include="src\ConcurrencyUtils.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
+    <ClInclude Include="src\DistributionClassification.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

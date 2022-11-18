@@ -25,6 +25,7 @@
     <ClCompile Include="src\CpuDeviceCoordinator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\DistributionClassification.h" />
     <ClInclude Include="src\MemoryUtils.h" />
     <ClInclude Include="src\JobAggregator.h" />
     <ClInclude Include="src\FileChunkHandler.h" />
