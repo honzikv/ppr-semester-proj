@@ -17,13 +17,13 @@ class Watchdog {
 	std::chrono::milliseconds sleepMs;
 
 public:
-	inline Watchdog(std::chrono::milliseconds sleepMs): sleepMs(sleepMs) {
+	explicit inline Watchdog(const std::chrono::milliseconds sleepMs): sleepMs(sleepMs) {
 		// Start the thread
 		watchdogThread = std::thread(&Watchdog::watchdogMain, this);
 		watchdogThread.detach();
 	}
 
-	void updateCounter(int x) {
+	void updateCounter(const int x) {
 		counter += x;
 	}
 

@@ -42,6 +42,9 @@
     <ClCompile Include="src\CpuDeviceCoordinator.cpp">
       <Filter>Source Files\Concurrency</Filter>
     </ClCompile>
+    <ClCompile Include="src\ClDeviceCoordinator.cpp">
+      <Filter>Source Files\Concurrency</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Job.h">
@@ -81,6 +84,12 @@
       <Filter>Header Files\Util</Filter>
     </ClInclude>
     <ClInclude Include="src\DistributionClassification.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ClKernels.h">
+      <Filter>Header Files\Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ClCompiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

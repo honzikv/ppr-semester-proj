@@ -4,39 +4,6 @@
 #include <mutex>
 
 namespace ConcurrencyUtils {
-	// class Semaphore {
-	// 	const size_t nPermissions;
-	// 	size_t nAvailable;
-	// 	std::mutex mutex;
-	// 	std::condition_variable conditionVariable;
-	//
-	// public:
-	// 	/** Default constructor. Default semaphore is a binary semaphore **/
-	// 	explicit Semaphore(const size_t& numPermissions = 1) : nPermissions(numPermissions),
-	// 	                                                       nAvailable(numPermissions) {
-	// 	}
-	//
-	// 	/** Copy constructor. Does not copy state of mutex or condition variable,
-	// 		only the number of permissions and number of available permissions **/
-		// Semaphore(const Semaphore& s) : nPermissions(s.nPermissions), nAvailable(s.nAvailable) {
-		// }
-	//
-	// 	void acquire() {
-	// 		std::unique_lock<std::mutex> lock(mutex);
-	// 		conditionVariable.wait(lock, [this] { return nAvailable > 0; });
-	// 		nAvailable -= 1;
-	// 		lock.unlock();
-	// 	}
-	//
-	// 	void release() {
-	// 		mutex.lock();
-	// 		nAvailable += 1;
-	// 		mutex.unlock();
-	// 		conditionVariable.notify_one();
-	// 	}
-	//
-	// };
-
 	class Semaphore {
 		std::mutex mutex;
 		std::condition_variable conditionVariable;

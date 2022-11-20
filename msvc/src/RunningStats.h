@@ -15,7 +15,8 @@ class RunningStats {
 public:
 	inline auto push(const double x) {
 		// Check whether x is FP_NORMAL
-		if (std::fpclassify(x) != FP_NORMAL) {
+		const auto fpType = std::fpclassify(x);
+		if (fpType != FP_ZERO || fpType != FP_NORMAL) {
 			return;
 		}
 		
@@ -35,27 +36,27 @@ public:
 		m2 += term1;
 	}
 
-	[[nodiscard]] inline auto getN() const {
+	[[nodiscard]] size_t getN() const {
 		return n;
 	}
 
-	[[nodiscard]] inline auto getMean() const {
+	[[nodiscard]] double getMean() const {
 		return m1;
 	}
 
-	[[nodiscard]] inline auto getVariance() const {
+	[[nodiscard]] double getVariance() const {
 		return m2 / (n - 1.0);
 	}
 
-	[[nodiscard]] inline auto getStandardDeviation() const {
+	[[nodiscard]] double getStandardDeviation() const {
 		return std::sqrt(getVariance());
 	}
 
-	[[nodiscard]] inline auto getSkewness() const {
+	[[nodiscard]] double getSkewness() const {
 		return std::sqrt(static_cast<double>(n)) * m3 / std::pow(m2, 1.5);
 	}
 
-	[[nodiscard]] inline auto getKurtosis() const {
+	[[nodiscard]] double getKurtosis() const {
 		return static_cast<double>(n) * m4 / (m2 * m2) - 3.0;
 	}
 
@@ -91,7 +92,7 @@ public:
 		return isIntegerDistribution;
 	}
 
-	inline bool isInt(const double x) const {
+	[[nodiscard]] inline bool isInt(const double x) const {
 		double intPart;
 		return std::modf(x, &intPart) == 0.0;
 	}

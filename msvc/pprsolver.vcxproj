@@ -20,11 +20,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Arghandling.cpp" />
+    <ClCompile Include="src\ClDeviceCoordinator.cpp" />
     <ClCompile Include="src\JobScheduler.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\CpuDeviceCoordinator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ClKernels.h" />
     <ClInclude Include="src\DistributionClassification.h" />
     <ClInclude Include="src\MemoryUtils.h" />
     <ClInclude Include="src\JobAggregator.h" />
@@ -36,6 +38,7 @@
     <ClInclude Include="src\Job.h" />
     <ClInclude Include="src\JobScheduler.h" />
     <ClInclude Include="src\ConcurrencyUtils.h" />
+    <ClInclude Include="src\ClCompiler.h" />
     <ClInclude Include="src\RunningStats.h" />
     <ClInclude Include="src\Watchdog.h" />
   </ItemGroup>

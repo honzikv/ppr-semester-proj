@@ -68,8 +68,9 @@ public:
 			isActive = false;
 			return;
 		}
+	}
 
-		// Else run the thread
+	inline void startCoordinatorThread() {
 		this->coordinatorThread = std::thread(&DeviceCoordinator::threadMain, this);
 		coordinatorThread.detach();
 	}

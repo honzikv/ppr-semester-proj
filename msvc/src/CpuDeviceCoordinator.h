@@ -18,6 +18,8 @@ public:
 	) : DeviceCoordinator(coordinatorType, processingMode, jobFinishedCallback, memoryLimit, chunkSize,
 	                     distFilePath, id) {
 		this->maxNumberOfChunks = static_cast<size_t>(floor(memoryLimit / chunkSize));
+
+		startCoordinatorThread();
 	}
 
 protected:
