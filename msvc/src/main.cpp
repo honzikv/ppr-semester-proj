@@ -88,8 +88,8 @@ int main(int argc, char** argv) {
 	// auto data = std::vector<double>(100000);
 	// runningStats.processArray(data);
 
-	testValuesInvalidFn();
-	TestValuesIntegerFn();
+	VectorizationUtils::testValuesInvalidFn();
+	VectorizationUtils::TestValuesIntegerFn();
 
 	return 0;
 

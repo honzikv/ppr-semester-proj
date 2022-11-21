@@ -95,5 +95,8 @@
     <ClInclude Include="src\VectorizationUtils.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
+    <ClInclude Include="src\RunningStatsAvx2.h">
+      <Filter>Header Files\Job</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

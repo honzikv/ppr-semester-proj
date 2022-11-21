@@ -40,6 +40,7 @@
     <ClInclude Include="src\ConcurrencyUtils.h" />
     <ClInclude Include="src\ClCompiler.h" />
     <ClInclude Include="src\RunningStats.h" />
+    <ClInclude Include="src\RunningStatsAvx2.h" />
     <ClInclude Include="src\VectorizationUtils.h" />
     <ClInclude Include="src\Watchdog.h" />
   </ItemGroup>
