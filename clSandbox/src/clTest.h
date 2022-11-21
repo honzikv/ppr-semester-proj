@@ -51,7 +51,7 @@ auto computeExpected(const std::vector<double>& randomDoubles) {
     return expected;
 }
 
-void testFilter() {
+void testClKernel() {
     auto [platform, gpu] = getNvidiaGpu();
 
     // Print max work group size
