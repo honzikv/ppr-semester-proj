@@ -1,5 +1,6 @@
 #pragma once
 #include <immintrin.h>
+#include <limits>
 
 const auto EXPONENT_MASK = _mm256_set1_epi64x(0x7fffffffffffffffULL);
 const auto MANTISSA_MASK = _mm256_set1_epi64x(0x000fffffffffffffULL);
@@ -9,8 +10,10 @@ namespace VectorizationUtils {
 	/**
 	 * \brief A customized implementation of std::fpclassify
 	 *		  This function is used to check if a double is normal or zero
-	 * \param x
-	 * \return vector where uint64_t is either 0s or 1s
+	 *
+	 * \param x vector to check
+	 *
+	 * \return "Boolean"-like vector - either containing 111..111 or 000..000 where 111..111 is true and 000..000 is false
 	 */
 	inline auto valuesValid(const __m256d& x) {
 		const auto bits = _mm256_castpd_si256(x); // convert x to integer vector
@@ -34,8 +37,8 @@ namespace VectorizationUtils {
 		// This will return for each element in the vector if they are invalid
 		const auto invalid = _mm256_or_si256(invalid1, invalid2);
 
-		// Negate - i.e. XOR with 0xFFFFFFFFFFFFFFFF
-		return _mm256_xor_si256(invalid, _mm256_set1_epi64x(0xFFFFFFFFFFFFFFFF));
+		// Negate - i.e. XOR with 0xFFFFFFFFFFFFFFFF == int64_t(-1) == UINT64_MAX
+		return _mm256_xor_si256(invalid, _mm256_set1_epi64x(UINT64_MAX));
 	}
 
 	inline auto valuesInteger(const __m256d& x) {
@@ -54,10 +57,10 @@ namespace VectorizationUtils {
 	 * \brief A simple printout to console that tests some values
 	 */
 	inline void testValuesInvalidFn() {
-		// Test with 0, 1, INF and NAN
+		// Test with 0, 1, INF, and NAN
 		const auto test1 = _mm256_set_pd(0.0, 1.0, NAN, INFINITY);
 
-		// Test with denormal 1.0e-308, DBL_MIN/2, -4.5 and 0.0
+		// Test with denormal 1.0e-308, denormal DBL_MIN/2, -4.5, and 0.0
 		const auto test2 = _mm256_set_pd(-0.0, DBL_MIN / 2, 1.182617175, 1.0e-308);
 
 		// Convert to boolean array
@@ -78,10 +81,8 @@ namespace VectorizationUtils {
 		};
 
 		// Print results
-		// Gotta love intel endianness xd
 		std::cout << "Test 1: " << std::endl;
-		// For readability we negate it so we get "valid" values
-		std::cout << "Is 0 valid: " << booleanInvalid2[3] << std::endl;
+		std::cout << "Is 0 valid: " << booleanInvalid2[3] << std::endl; // we index from 3 due to little endianness
 		std::cout << "Is 1 valid: " << booleanInvalid2[2] << std::endl;
 		std::cout << "Is NAN valid: " << booleanInvalid2[1] << std::endl;
 		std::cout << "Is INF valid: " << booleanInvalid2[0] << std::endl;
@@ -99,7 +100,6 @@ namespace VectorizationUtils {
 
 		// Results
 		const auto results = valuesInteger(test);
-
 		const auto booleanResults = std::array<bool, 4>{
 			static_cast<bool>(results.m256i_i64[0]),
 			static_cast<bool>(results.m256i_i64[1]),
