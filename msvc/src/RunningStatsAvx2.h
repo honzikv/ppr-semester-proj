@@ -69,4 +69,114 @@ public:
 			m4 = _mm256_add_pd(m4, _mm256_mul_pd(term1, validMask));
 		}
 	}
+
+	auto operator+(const RunningStatsAvx2& other) {
+		auto result = RunningStatsAvx2();
+
+		const auto delta = _mm256_sub_pd(other.m1, m1); // delta = other.m1 - m1
+		const auto delta2 = _mm256_mul_pd(delta, delta); // delta2 = delta * delta
+		const auto delta3 = _mm256_mul_pd(delta2, delta); // delta3 = delta2 * delta
+		const auto delta4 = _mm256_mul_pd(delta2, delta2); // delta4 = delta2 * delta2
+		// mean = m1 + delta / (n + other.n)
+		const auto mean = _mm256_add_pd(m1, _mm256_div_pd(delta, _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n))));
+
+		result.m1 = mean;
+		// result.m2 = m2 + other.m2 + delta2 * n * other.n / result.n;
+		result.m2 = _mm256_add_pd(m2, _mm256_add_pd(other.m2, _mm256_div_pd(
+			                                            _mm256_mul_pd(delta2, _mm256_mul_pd(_mm256_cvtepi64_pd(n),
+				                                                          _mm256_cvtepi64_pd(other.n))),
+			                                            _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n)))));
+		// result.m3 = m3 + other.m3 + delta3 * n * other.n * (n - other.n) / (result.n * result.n) +
+		// 3.0 * delta * (n * other.m2 - other.n * m2) / result.n;
+		result.m3 = _mm256_add_pd(m3, _mm256_add_pd(other.m3, _mm256_div_pd(
+			                                            _mm256_add_pd(
+				                                            _mm256_mul_pd(
+					                                            delta3, _mm256_mul_pd(
+						                                            _mm256_mul_pd(_mm256_cvtepi64_pd(n),
+							                                            _mm256_cvtepi64_pd(other.n)),
+						                                            _mm256_sub_pd(
+							                                            _mm256_cvtepi64_pd(n),
+							                                            _mm256_cvtepi64_pd(other.n)))),
+				                                            _mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(
+					                                                          delta, _mm256_div_pd(
+						                                                          _mm256_sub_pd(
+							                                                          _mm256_mul_pd(
+								                                                          _mm256_cvtepi64_pd(n),
+								                                                          other.m2),
+							                                                          _mm256_mul_pd(
+								                                                          _mm256_cvtepi64_pd(other.n),
+								                                                          m2)),
+						                                                          _mm256_cvtepi64_pd(
+							                                                          _mm256_add_epi64(n, other.n)))))),
+			                                            _mm256_mul_pd(
+				                                            _mm256_mul_pd(_mm256_mul_pd(delta2, _mm256_cvtepi64_pd(n)),
+				                                                          _mm256_cvtepi64_pd(other.n)),
+				                                            _mm256_div_pd(
+					                                            _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n)),
+					                                            _mm256_mul_pd(
+						                                            _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n)),
+						                                            _mm256_cvtepi64_pd(
+							                                            _mm256_add_epi64(n, other.n))))))));
+
+		// result.m4 = m4 + other.m4 + delta4 * n * other.n * (n * n - n * other.n + other.n * other.n) /
+		// (result.n * result.n * result.n) +
+		//	6.0 * delta2 * (n * n * other.m2 + other.n * other.n * m2) / (result.n * result.n) +
+		//	4.0 * delta * (n * other.m3 - other.n * m3) / result.n;
+
+		// m4 is too long so we split it into
+		// m4a = m4 + other.m4 + delta4 * n * other.n * (n * n - n * other.n + other.n * other.n) / (result.n * result.n * result.n)
+		// m4b = 6.0 * delta2 * (n * n * other.m2 + other.n * other.n * m2) / (result.n * result.n) + 4.0 * delta * (n * other.m3 - other.n * m3) / result.n
+		// m4 = m4a + m4b
+
+		const auto m4a = _mm256_add_pd(m4, _mm256_add_pd(other.m4, _mm256_div_pd(
+			                                                 _mm256_mul_pd(
+				                                                 delta4, _mm256_mul_pd(
+					                                                 _mm256_mul_pd(_mm256_cvtepi64_pd(n),
+						                                                 _mm256_cvtepi64_pd(other.n)),
+					                                                 _mm256_add_pd(
+						                                                 _mm256_sub_pd(
+							                                                 _mm256_mul_pd(
+								                                                 _mm256_cvtepi64_pd(n),
+								                                                 _mm256_cvtepi64_pd(n)),
+							                                                 _mm256_mul_pd(
+								                                                 _mm256_cvtepi64_pd(n),
+								                                                 _mm256_cvtepi64_pd(other.n))),
+						                                                 _mm256_mul_pd(
+							                                                 _mm256_cvtepi64_pd(other.n),
+							                                                 _mm256_cvtepi64_pd(other.n))))),
+			                                                 _mm256_mul_pd(
+				                                                 _mm256_mul_pd(
+					                                                 _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n)),
+					                                                 _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n))),
+				                                                 _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n))))));
+		const auto m4b = _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(6.0), _mm256_div_pd(
+			                                             _mm256_add_pd(
+				                                             _mm256_mul_pd(
+					                                             _mm256_mul_pd(
+						                                             _mm256_cvtepi64_pd(n), _mm256_cvtepi64_pd(n)),
+					                                             other.m2),
+				                                             _mm256_mul_pd(
+					                                             _mm256_mul_pd(
+						                                             _mm256_cvtepi64_pd(other.n),
+						                                             _mm256_cvtepi64_pd(other.n)),
+					                                             m2)),
+			                                             _mm256_mul_pd(
+				                                             _mm256_mul_pd(
+					                                             _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n)),
+					                                             _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n))),
+				                                             _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n))))),
+		                               _mm256_div_pd(
+			                               _mm256_mul_pd(_mm256_set1_pd(4.0), _mm256_sub_pd(
+				                                             _mm256_mul_pd(_mm256_cvtepi64_pd(n), other.m3),
+				                                             _mm256_mul_pd(_mm256_cvtepi64_pd(other.n), m3))),
+			                               _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n))));
+
+		result.m4 = _mm256_add_pd(m4a, m4b);
+
+		// Vector AND isIntegerDistribution
+		result.isIntegerDistribution = _mm256_and_si256(isIntegerDistribution, other.isIntegerDistribution);
+
+		// return the result
+		return result;
+	}
 };

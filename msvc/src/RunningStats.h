@@ -61,7 +61,7 @@ public:
 	}
 
 	auto operator+(const RunningStats& other) const {
-		RunningStats result;
+		auto result = RunningStats();
 		result.n = n + other.n;
 
 		const auto delta = other.m1 - m1;
