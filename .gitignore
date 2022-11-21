@@ -3,3 +3,5 @@ data
 msvc/x64
 msvc/.vs
 msvc/out
+clSandbox/.idea
+clSandbox/cmake-build-debug

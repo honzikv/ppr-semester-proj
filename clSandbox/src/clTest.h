@@ -57,12 +57,39 @@ void testClKernel() {
     // Print max work group size
     size_t maxWorkGroupSize;
     gpu.getInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE, &maxWorkGroupSize);
-    std::cout << "Max work group size: " << maxWorkGroupSize << std::endl;
+    std::cout << "Used workgroup size: " << maxWorkGroupSize << std::endl;
 
     auto randomDoubles = generateRandomDoubles();
     auto expected = computeExpected(randomDoubles);  // get expected
 
     auto context = cl::Context(gpu);
-    auto program = compile(kernel, "program", context);
 
+    // Wow it actually compiles on Nvidia
+//    auto program = ompilec(colonel, "program", context);
+
+    auto program = compile(testKernel, "program", context);
+    auto queue = cl::CommandQueue(context, gpu);
+
+    auto nWorkers = 5;
+    auto elementsPerWorker = 100;
+    auto nWorkItems = nWorkers * elementsPerWorker;
+    auto clBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, nWorkItems * sizeof(double));
+
+    auto hostData = std::vector<double>(nWorkItems, -44.0);
+
+    queue.enqueueWriteBuffer(clBuffer, CL_TRUE, 0, nWorkItems * sizeof(double), hostData.data());
+
+    auto colonel = cl::Kernel(program, "processArray");
+    colonel.setArg(0, clBuffer);
+    colonel.setArg(1, nWorkItems);
+
+    queue.enqueueNDRangeKernel(colonel, cl::NullRange, cl::NDRange(nWorkers), cl::NDRange(nWorkers));
+
+    // Read back
+    queue.enqueueReadBuffer(clBuffer, CL_TRUE, 0, nWorkItems * sizeof(double), hostData.data());
+
+    // Print results
+    for (auto i = 0; i < nWorkers; i += 1) {
+        std::cout << hostData[i * elementsPerWorker] << std::endl;
+    }
 }

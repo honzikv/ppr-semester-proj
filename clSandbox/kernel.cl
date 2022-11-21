@@ -1,25 +1,3 @@
-#pragma once
-
-#include <string>
-#include <CL/cl.hpp>
-#include <stdexcept>
-
-constexpr auto DEFAULT_BUILD_FLAG = "-cl-std=CL2.0";
-
-constexpr auto testKernel = R"CLC(
-
-__kernel void processArray(__global double* array, __global double* bufferSize) {
-    size_t threadIdx = get_global_id(0);
-    size_t nItemsToProcess = *bufferSize / threadIdx;
-
-    for (size_t i = 0; i < nItemsToProcess; i += 1) {
-        array[i + 1] = (double)threadIdx;
-    }
-}
-
-)CLC";
-
-constexpr auto kernel = R"CLC(
 #define true 1  // From hell
 #define false 0
 #define EXPONENT_MASK 0x7fffffffffffffffULL
@@ -110,7 +88,7 @@ __kernel void computeStats(__global double* buffer) {
     size_t n = 0;
     bool integerOnly = true;
     double m[4]; // m1, m2, m3, m4
-
+    
     size_t localSize = get_local_size(0);
 
     // Process localSize elements
@@ -125,25 +103,4 @@ __kernel void computeStats(__global double* buffer) {
     buffer[id*6 + 3] = m[2];
     buffer[id*6 + 4] = m[3];
     buffer[id*6 + 5] = integerOnly;
-}
-
-)CLC";
-
-/**
- * \brief Compiles given source into program
- * \param source string containing source code to be compiled
- * \param programName name of the program
- * \param deviceContext device context
- * \param device device to compile for
- * \return cl::Program instance or throws ClCompileErr if the program cannot be compiled
- */
-auto compile(const std::string& source, const std::string& programName, const cl::Context& deviceContext) {
-    const auto program = cl::Program(deviceContext, source);
-    const auto result = program.build(DEFAULT_BUILD_FLAG);
-    if (result != CL_BUILD_SUCCESS) {
-        throw std::runtime_error(
-                "Error during OpenCL Program compilation ( " + programName + " )\n. Error: " + std::to_string(result));
-    }
-
-    return program;
 }
