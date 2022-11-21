@@ -4,7 +4,7 @@
 #include "Arghandling.h"
 
 namespace MemoryUtils {
-	static constexpr auto DEFAULT_MEMORY_SIZE = 1024 * 1024 * 1024; // 1 GB for everything
+	constexpr auto DEFAULT_MEMORY_SIZE = 1024 * 1024 * 1024; // 1 GB for everything
 
 	/**
 	 * \brief 10% of the memory is kept for structures (i.e. discarding coordinator buffers) such as

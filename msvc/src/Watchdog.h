@@ -2,7 +2,6 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
-#include <cstdint>
 #include <iostream>
 #include <thread>
 

@@ -4,8 +4,7 @@
 #include <CL/cl.hpp>
 #include <stdexcept>
 
-constexpr auto DEFAULT_BUILD_FLAG = "-cl-std=CL2.0";
-constexpr auto program = R"CLC(
+constexpr auto CL_PROGRAM = R"CLC(
 #define true 1  // From hell
 #define false 0
 #define EXPONENT_MASK 0x7fffffffffffffffULL
@@ -114,23 +113,3 @@ __kernel void computeStats(__global double* buffer) {
 }
 
 )CLC";
-
-/**
- * \brief Compiles given source into program
- * \param source string containing source code to be compiled
- * \param programName name of the program
- * \param deviceContext device context
- * \param device device to compile for
- * \return cl::Program instance or throws ClCompileErr if the program cannot be compiled
- */
-auto compile(const std::string& source, const std::string &programName, const cl::Context &deviceContext) {
-    const auto program = cl::Program(deviceContext, source);
-    const auto result = program.build(DEFAULT_BUILD_FLAG);
-    if (result != CL_BUILD_SUCCESS)
-    {
-        throw std::runtime_error(
-            "Error during OpenCL Program compilation ( " + programName + " )\n. Error: " + std::to_string(result));
-    }
-
-    return program;
-}

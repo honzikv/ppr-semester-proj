@@ -11,12 +11,12 @@
 using Point2D = std::pair<double, double>;
 
 // Definition of points in (skewness, kurtosis) 2D space
-constexpr Point2D GAUSSIAN_DISTRIBUTION = std::make_pair(.0, .0);
-constexpr Point2D EXPONENTIAL_DISTRIBUTION = std::make_pair(2.0, 6.0);
-constexpr Point2D UNIFORM_DISTRIBUTION = std::make_pair(.0, -5.0 / 6.0);
+static constexpr Point2D GAUSSIAN_DISTRIBUTION = std::make_pair(.0, .0);
+static constexpr Point2D EXPONENTIAL_DISTRIBUTION = std::make_pair(2.0, 6.0);
+static constexpr Point2D UNIFORM_DISTRIBUTION = std::make_pair(.0, -5.0 / 6.0);
 
-const auto DISTRIBUTIONS = std::vector{GAUSSIAN_DISTRIBUTION, EXPONENTIAL_DISTRIBUTION, UNIFORM_DISTRIBUTION};
-const auto DISTRIBUTION_TO_STR_MAPPING = std::unordered_map<size_t, std::string>{
+static const auto DISTRIBUTIONS = std::vector{GAUSSIAN_DISTRIBUTION, EXPONENTIAL_DISTRIBUTION, UNIFORM_DISTRIBUTION};
+static const auto DISTRIBUTION_TO_STR_MAPPING = std::unordered_map<size_t, std::string>{
 	{0, "Gaussian"},
 	{1, "Exponential"},
 	{2, "Uniform"},

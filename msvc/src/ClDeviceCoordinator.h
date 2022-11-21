@@ -2,10 +2,14 @@
 
 #include <CL/cl.hpp>
 #include <filesystem>
+
 #include "DeviceCoordinator.h"
 #include "ClSources.h"
+#include "ClCompiler.h"
 
 namespace fs = std::filesystem;
+
+constexpr auto VIDEO_MEMORY_SCALE = .9; // 90% of video memory is used for computation (or rather 90% of what OpenCL returns)
 
 /**
  * \brief Wraps OpenCL logic for device coordination
@@ -42,16 +46,18 @@ private:
 	cl::Context context; // Cl context
 	cl::CommandQueue commandQueue; // Command queue
 	cl::Program program; // Compiled program
+	size_t workgroupSize; // Max number of work items in a work group
 
 	void setup() {
-		const auto bufferSize = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
-		const auto workGroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+		this->workgroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+		const auto bufferSize = static_cast<double>(device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>()) * VIDEO_MEMORY_SCALE;
+		const auto workGroupSize = static_cast<double>(this->workgroupSize);
 
-		maxNumberOfChunks = (floor(bufferSize / workGroupSize) * workGroupSize) / chunkSize;
+		maxNumberOfChunks = static_cast<size_t>(floor(bufferSize / workGroupSize) * workGroupSize) / chunkSize;
 		context = cl::Context(device);
 		commandQueue = cl::CommandQueue(context, device);
 
 		// Compile the program
-		program = compile(program, "program", context);
+		program = compile(CL_PROGRAM, "program", context);
 	}
 };

@@ -27,8 +27,8 @@ struct ProcessingArgs {
 	std::vector<std::string> DeviceNames;
 };
 
-static const auto QUOTES_REGEX = std::regex("\"([^\"]*)\"");
-static const auto OPENCL_DEVICES_STR = "opencldevices";
+const auto QUOTES_REGEX = std::regex("\"([^\"]*)\"");
+const auto OPENCL_DEVICES_STR = "opencldevices";
 
 /**
  * \brief Parses the command line arguments

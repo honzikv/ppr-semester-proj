@@ -115,7 +115,7 @@ public:
 	 * This differs per device - i.e. GPU might be able to process more chunks than SMP
 	 * \return maximum number of chunks
 	 */
-	size_t getMaxNumberOfChunks() {
+	virtual size_t getMaxNumberOfChunks() {
 		return maxNumberOfChunks;
 	}
 

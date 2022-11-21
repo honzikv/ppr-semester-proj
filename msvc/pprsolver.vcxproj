@@ -26,7 +26,7 @@
     <ClCompile Include="src\CpuDeviceCoordinator.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\ClKernels.h" />
+    <ClInclude Include="src\ClSources.h" />
     <ClInclude Include="src\DistributionClassification.h" />
     <ClInclude Include="src\MemoryUtils.h" />
     <ClInclude Include="src\JobAggregator.h" />
@@ -40,6 +40,7 @@
     <ClInclude Include="src\ConcurrencyUtils.h" />
     <ClInclude Include="src\ClCompiler.h" />
     <ClInclude Include="src\RunningStats.h" />
+    <ClInclude Include="src\VectorizationUtils.h" />
     <ClInclude Include="src\Watchdog.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -100,6 +101,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>..\compiled\</OutDir>
+    <LibraryPath>$(TBB_ROOT)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LibraryPath>$TBB_LIB_X86_DIR);$(LibraryPath)</LibraryPath>
@@ -119,11 +121,12 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(CUDA_PATH)\include;$(TBB_ROOT)\include;</AdditionalIncludeDirectories>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalOptions>/Qvec-report:2 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <ModuleDefinitionFile>
@@ -158,21 +161,26 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalOptions>/Qvec-report:2 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(CUDA_PATH)\include;$(TBB_ROOT)\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>
       </ModuleDefinitionFile>
+      <AdditionalDependencies>tbb12.lib;OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(TBB_ROOT)\lib;$(CUDA_PATH)\lib\x64</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(TBB_DLL_X64_DIR)tbb.dll" "$(TargetDir)tbb.dll"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

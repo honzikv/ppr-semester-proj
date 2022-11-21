@@ -86,11 +86,14 @@
     <ClInclude Include="src\DistributionClassification.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ClKernels.h">
-      <Filter>Header Files\Concurrency</Filter>
-    </ClInclude>
     <ClInclude Include="src\ClCompiler.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ClSources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VectorizationUtils.h">
+      <Filter>Header Files\Util</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

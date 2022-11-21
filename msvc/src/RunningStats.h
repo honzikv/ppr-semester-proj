@@ -13,7 +13,7 @@ class RunningStats {
 	bool isIntegerDistribution = true;
 
 public:
-	inline auto push(const double x) {
+	void push(const double x) {
 		// Check whether x is FP_NORMAL
 		const auto fpType = std::fpclassify(x);
 		if (fpType != FP_ZERO || fpType != FP_NORMAL) {

@@ -1,35 +1,39 @@
 #include "ClDeviceCoordinator.h"
+#include <fstream>
 
-void ClDeviceCoordinator::onProcessJob()
-{
-    auto readBuffer = std::vector<double>(floor(memoryLimit / chunkSize) * chunkSize);
+void ClDeviceCoordinator::onProcessJob() {
+	const auto maxHostChunks = static_cast<size_t>(floor(memoryLimit / chunkSize)) * chunkSize;
+	auto readBuffer = std::vector<double>(maxHostChunks); // allocate with maxHostChunks
 
-    // Open the file
-    auto file = std::ifstream(distFilePath, std::ios::binary);
+	// Open the file
+	auto file = std::ifstream(distFilePath, std::ios::binary);
 
-    // Get actual number of chunks
-    auto [start, end] = currentJob->ChunkIdxRange;
+	// Get actual number of chunks
+	auto [start, end] = currentJob->ChunkIdxRange;
 
-    // Move to correct address in the file
-    file.seekg(start * chunkSize * sizeof(double), std::ios::beg);
+	// Move to correct address in the file
+	file.seekg(start * chunkSize * sizeof(double), std::ios::beg);  // NOLINT(bugprone-narrowing-conversions, cppcoreguidelines-narrowing-conversions)
 
-    // Create device buffer
-    auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, maxNumberOfChunks * chunkSize);
+	// Create device buffer
+	const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, maxNumberOfChunks * chunkSize);
 
-    // Read all bytes to the buffer on the device
-    auto chunksRemaining = end - start;
-    auto currentChunk = 0;
-    while (true) {
-        const auto chunksToRead = std::min(chunksRemaining, maxNumberOfChunks);
-        file.read(reinterpret_cast<char *>(), chunksToRead * chunkSize);
+	// Now simply run while loop until we have chunks to load to the CL device
+	size_t chunksRemaining = end - start;
+	size_t currentChunk = 0;
+	while (chunksRemaining > 0) {
+		const auto chunksToRead = chunksRemaining < maxHostChunks ? chunksRemaining : maxHostChunks;
 
-        // Write to the device buffer
-        commandQueue.enqueueWriteBuffer(deviceBuffer, CL_TRUE, currentChunk, readBuffer.capacity(),
-                                        readBuffer.data());
-        
-        currentChunk += chunksToRead;
-        chunksRemaining -= chunksToRead;
-    }
+		// Write to the device buffer
+		commandQueue.enqueueWriteBuffer(deviceBuffer, CL_TRUE, currentChunk, readBuffer.capacity(),
+		                                readBuffer.data());
+
+		// Update
+		currentChunk += chunksToRead;
+		chunksRemaining -= chunksToRead;
+	}
+
+	// No point keeping the data
+	readBuffer.clear();
 
 
 }

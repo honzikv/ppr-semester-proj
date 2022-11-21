@@ -3,7 +3,7 @@
 #include <CL/cl.hpp>
 #include <string>
 
-constexpr auto DEFAULT_BUILD_FLAG = "-cl-std=CL2.0";
+static constexpr auto DEFAULT_BUILD_FLAG = "-cl-std=CL2.0";
 
 /**
  * \brief Custom error for control flow
