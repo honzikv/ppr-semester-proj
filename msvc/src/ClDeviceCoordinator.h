@@ -1,9 +1,9 @@
 #pragma once
 
-#include "DeviceCoordinator.h"
 #include <CL/cl.hpp>
 #include <filesystem>
-
+#include "DeviceCoordinator.h"
+#include "ClSources.h"
 
 namespace fs = std::filesystem;
 
@@ -25,13 +25,8 @@ public:
 	                      id),
 	    platform(platform),
 	    device(device) {
-
-		// First we need to analyze the device
-		// Find out how much memory we can allocate for our computation
-		analyzeDevice();
-
-		// Next setup openCL 
-		setupOpenCl();
+		// Setup openCL device
+		setup();
 
 		// After we have set everything up start the thread
 		startCoordinatorThread();
@@ -46,13 +41,17 @@ private:
 	cl::Device device; // The actual device
 	cl::Context context; // Cl context
 	cl::CommandQueue commandQueue; // Command queue
-	std::vector<cl::Program> kernels; // Contains all programs
+	cl::Program program; // Compiled program
 
-	void analyzeDevice() {
-		
-	}
+	void setup() {
+		const auto bufferSize = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
+		const auto workGroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
 
-	void setupOpenCl() {
-		
+		maxNumberOfChunks = (floor(bufferSize / workGroupSize) * workGroupSize) / chunkSize;
+		context = cl::Context(device);
+		commandQueue = cl::CommandQueue(context, device);
+
+		// Compile the program
+		program = compile(program, "program", context);
 	}
 };
