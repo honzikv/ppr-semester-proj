@@ -6,24 +6,24 @@
 using double4 = __m256d;
 using int4 = __m256i;
 
-const auto double4Set = _mm256_set1_pd;
-const auto int4Set = _mm256_set1_epi64x;
-const auto double4ToInt4 = _mm256_castpd_si256;
-const auto double4Add = _mm256_add_pd;
-const auto double4Mul = _mm256_mul_pd;
-const auto double4Sub = _mm256_sub_pd;
-const auto double4Div = _mm256_div_pd;
+#define double4Set  _mm256_set1_pd
+#define int4Set  _mm256_set1_epi64x
+#define double4ToInt4 _mm256_castpd_si256
+#define double4Add _mm256_add_pd
+#define double4Mul _mm256_mul_pd
+#define double4Sub _mm256_sub_pd
+#define double4Div _mm256_div_pd
 
 // Integer arithmetics
-const auto int4ToDouble4 = _mm256_cvtepi64_pd;
-const auto int4Add = _mm256_add_epi64;
+#define int4ToDouble4 _mm256_cvtepi64_pd
+#define int4Add _mm256_add_epi64
 
 // "Boolean operations"
-const auto int4And = _mm256_and_si256;
-const auto int4CompareGreaterThan = _mm256_cmpgt_epi64;
-const auto int4CompareEquals = _mm256_cmpeq_epi64;
-const auto int4Or = _mm256_or_si256;
-const auto int4Xor = _mm256_xor_si256;
+#define int4And _mm256_and_si256
+#define int4CompareGreaterThan _mm256_cmpgt_epi64
+#define int4CompareEquals _mm256_cmpeq_epi64
+#define int4Or _mm256_or_si256
+#define int4Xor _mm256_xor_si256
 
 const auto EXPONENT_MASK = int4Set(0x7fffffffffffffffULL);
 const auto MANTISSA_MASK = int4Set(0x000fffffffffffffULL);

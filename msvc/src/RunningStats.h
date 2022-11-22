@@ -1,7 +1,10 @@
 #pragma once
 #include <cmath>
 
+class RunningStatsAvx2;
+
 class RunningStats {
+	friend class RunningStatsAvx2;
 
 	size_t n = 0; // Number of items processed
 

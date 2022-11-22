@@ -2,11 +2,10 @@
 #include <immintrin.h>
 #include <vector>
 
+#include "RunningStats.h"
 #include "VectorizationUtils.h"
 
 // Type aliasing for intrinsics to make the code actually readable
-using double4 = __m256d;
-using int4 = __m256i;
 
 /**
  * \brief Implementation of RunningStats with AVX2 manual vectorization
@@ -187,5 +186,21 @@ public:
 
 		// return the result
 		return result;
+	}
+
+	[[nodiscard]] auto asScalar() const {
+		auto results = std::vector<RunningStats>(4);
+
+		for (auto i = 0; i < 4; i += 1) {
+			// Simply map each vector element to one RunningStats object
+			results[i].n = static_cast<size_t>(n.m256i_i64[i]);
+			results[i].m1 = m1.m256d_f64[i];
+			results[i].m2 = m2.m256d_f64[i];
+			results[i].m3 = m3.m256d_f64[i];
+			results[i].m4 = m4.m256d_f64[i];
+			results[i].isIntegerDistribution = static_cast<bool>(isIntegerDistribution.m256i_i64[i]);
+		}
+
+		return results[0] + results[1] + results[2] + results[3];
 	}
 };
