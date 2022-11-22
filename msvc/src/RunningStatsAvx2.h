@@ -28,14 +28,14 @@ public:
 			const auto x = _mm256_loadu_pd(&data[i]);
 
 			// Check whether values are valid
-			auto valid = VectorizationUtils::valuesValid(x);
+			const auto valid = VectorizationUtils::valuesValid(x);
 
 			// If the values are valid check if they are integers
 			// To update isIntegerDistribution we have two boolean variables: valid and isInteger
 			// We must satisfy that if valid is false we always return true and if valid is true we return isInteger
 			// Therefore the formula is: !valid || isInteger
 			const auto isInteger = VectorizationUtils::valuesInteger(x);
-			const auto validNegation = int4Xor(valid, bytesAsInt4(UINT64_MAX));
+			const auto validNegation = int4Xor(valid, int4Set(UINT64_MAX));
 			const auto isIntegerDistributionUpdate = int4Or(validNegation, isInteger);
 
 			// Finally isIntegerDistribution = isIntegerDistribution && !valid || isInteger
@@ -43,33 +43,49 @@ public:
 
 			// Now valid contains 1s where the values are valid and 0s where they are not
 			// We can map this to 0x1 for 1s and keep 0x00 for 0s
-			const auto validMask = int4AsDouble4(int4And(valid, bytesAsInt4(0x1)));
+			const auto validMask = int4ToDouble4(int4And(valid, int4Set(0x1)));
 
-			// Compute update values as normal
-			const auto n1 = int4AsDouble4(n);
+			const auto n1 = int4ToDouble4(n); // n1 = n, we convert to double to avoid casting later
+			n = int4Add(n, int4Set(0x1)); // n += 1
+
+			const auto nDouble = int4ToDouble4(n); // nDouble = n, we convert to double to avoid casting later
 			const auto delta = double4Sub(x, m1); // delta = x - m1
-			n = int4Add(n, valid); // n = n + 1
-			const auto deltaN = _mm256_div_pd(delta, int4AsDouble4(n)); // deltaN = delta / n
-			const auto deltaSquared = _mm256_mul_pd(delta, delta); // deltaSquared = delta * delta
-			const auto term1 = _mm256_mul_pd(n1, _mm256_mul_pd(delta, deltaN)); // term1 = delta * deltaN
+			const auto deltaN = double4Div(delta, nDouble); // deltaN = delta / n
+			const auto deltaNSquared = double4Mul(deltaN, deltaN); // deltaNSquared = deltaN * deltaN
+			const auto term1 = double4Mul(delta, double4Mul(deltaN, n1)); // term1 = delta * deltaN * n1
+			
+			// m1 = m1 + validMask * deltaN
+			m1 = double4Add(m1, double4Mul(deltaN, validMask));
 
-			// Use valid to mask the update values
-			m1 = _mm256_add_pd(m1, _mm256_mul_pd(deltaN, validMask)); // m1 = m1 + deltaN
-			// m2 = m2 + deltaSquared * (n - 1) - term1
-			m2 = _mm256_add_pd(m2, _mm256_mul_pd(
-				                   _mm256_sub_pd(_mm256_mul_pd(deltaSquared, _mm256_sub_pd(n1, validMask)), term1),
-				                   validMask));
-			// m3 = m3 + term1 * deltaN * (n - 2) - 3* deltaN * m2
-			m3 = _mm256_add_pd(m3, _mm256_mul_pd(
-				                   _mm256_sub_pd(
-					                   _mm256_mul_pd(_mm256_mul_pd(term1, deltaN),
-					                                 _mm256_sub_pd(n1, _mm256_set1_pd(2))),
-					                   _mm256_mul_pd(_mm256_set1_pd(3), _mm256_mul_pd(deltaN, m2))), validMask));
-			// m4 = term1
-			m4 = _mm256_add_pd(m4, _mm256_mul_pd(term1, validMask));
+			// m4 += (term1 * deltaNSquared) * (n * n - 3 * n + 3) + 6 * deltaNSquared * m2 - 4 * deltaN * m3
+			// m4a1 = term1 * deltaNSquared
+			// m4a2 = (((n * n) - (3 * n)) + 3)
+			// m4a = m4a1 * m4a2
+			const auto m4a1 = double4Mul(term1, deltaNSquared);
+			const auto m4a2 = double4Add(
+				double4Sub(double4Mul(nDouble, nDouble), double4Mul(double4Set(3), nDouble)), double4Set(3)
+			);
+			const auto m4a = double4Mul(m4a1, m4a2);
 
+			// m4b1 = 6 * (deltaNSquared * m2)
+			// m4b2 = 4 * (deltaN * m3)
+			// m4b = m4b1 - m4b2
+			const auto m4b1 = double4Mul(double4Set(6), double4Mul(deltaNSquared, m2));
+			const auto m4b2 = double4Mul(double4Set(4), double4Mul(deltaN, m3));
+			const auto m4b = double4Sub(m4b1, m4b2);
 
+			// m4 = m4 + validMask * (m4a + m4b)
+			m4 = double4Add(m4, double4Mul(validMask, double4Add(m4a, m4b)));
 
+			// m3a = term1 * (deltaN * (n - 2))
+			// m3b = 3 * (deltaN * m4)
+			// m3 = m3 + (validMask * (m3a - m3b))
+			const auto m3a = double4Mul(term1, double4Mul(deltaN, double4Sub(nDouble, double4Set(2))));
+			const auto m3b = double4Mul(double4Set(3), double4Mul(deltaN, m4));
+			m3 = double4Add(m3, double4Mul(validMask, double4Sub(m3a, m3b)));
+
+			// m2 = m2 + (validMask * term1)
+			m2 = double4Add(m2, double4Mul(validMask, term1));
 		}
 	}
 

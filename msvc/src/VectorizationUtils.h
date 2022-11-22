@@ -6,6 +6,7 @@
 using double4 = __m256d;
 using int4 = __m256i;
 
+const auto double4Set = _mm256_set1_pd;
 const auto bytesAsInt4 = _mm256_set1_epi64x;
 const auto double4ToInt4 = _mm256_castpd_si256;
 const auto double4Add = _mm256_add_pd;
@@ -14,7 +15,7 @@ const auto double4Sub = _mm256_sub_pd;
 const auto double4Div = _mm256_div_pd;
 
 // Integer arithmetics
-const auto int4AsDouble4 = _mm256_cvtepi64_pd;
+const auto int4ToDouble4 = _mm256_cvtepi64_pd;
 const auto int4Add = _mm256_add_epi64;
 
 // "Boolean operations"
