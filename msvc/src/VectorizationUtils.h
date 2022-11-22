@@ -7,7 +7,7 @@ using double4 = __m256d;
 using int4 = __m256i;
 
 const auto double4Set = _mm256_set1_pd;
-const auto bytesAsInt4 = _mm256_set1_epi64x;
+const auto int4Set = _mm256_set1_epi64x;
 const auto double4ToInt4 = _mm256_castpd_si256;
 const auto double4Add = _mm256_add_pd;
 const auto double4Mul = _mm256_mul_pd;
@@ -25,8 +25,8 @@ const auto int4CompareEquals = _mm256_cmpeq_epi64;
 const auto int4Or = _mm256_or_si256;
 const auto int4Xor = _mm256_xor_si256;
 
-const auto EXPONENT_MASK = bytesAsInt4(0x7fffffffffffffffULL);
-const auto MANTISSA_MASK = bytesAsInt4(0x000fffffffffffffULL);
+const auto EXPONENT_MASK = int4Set(0x7fffffffffffffffULL);
+const auto MANTISSA_MASK = int4Set(0x000fffffffffffffULL);
 
 namespace VectorizationUtils {
 
@@ -54,14 +54,14 @@ namespace VectorizationUtils {
 		const auto invalid1 = int4And(expEqualsZero, bitsAndMantissa);
 
 		// Similarly if exponent == 0x7ff it is invalid as well
-		const auto invalid2 = int4CompareEquals(exponent, bytesAsInt4(0x7ff));
+		const auto invalid2 = int4CompareEquals(exponent, int4Set(0x7ff));
 
 		// Combine both with OR operation
 		// This will return for each element in the vector if they are invalid
 		const auto invalid = int4Or(invalid1, invalid2);
 
 		// Negate - i.e. XOR with 0xFFFFFFFFFFFFFFFF == int64_t(-1) == UINT64_MAX
-		return int4Xor(invalid, bytesAsInt4(UINT64_MAX));
+		return int4Xor(invalid, int4Set(UINT64_MAX));
 	}
 
 	inline auto valuesInteger(const __m256d& x) {

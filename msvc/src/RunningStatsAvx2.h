@@ -12,9 +12,9 @@ using int4 = __m256i;
  * \brief Implementation of RunningStats with AVX2 manual vectorization
  */
 class RunningStatsAvx2 {
-	double4 m1 = {0}, m2 = {0}, m3 = {0}, m4 = {0};
+	double4 m1 = double4Set(0), m2 = double4Set(0), m3 = double4Set(0), m4 = double4Set(0);
 
-	int4 n = {0};
+	int4 n = int4Set(0);
 	int4 isIntegerDistribution = _mm256_set1_epi64x(UINT64_MAX);
 
 public:
@@ -92,53 +92,98 @@ public:
 	auto operator+(const RunningStatsAvx2& other) {
 		auto result = RunningStatsAvx2();
 
-		const auto delta = _mm256_sub_pd(other.m1, m1); // delta = other.m1 - m1
-		const auto delta2 = _mm256_mul_pd(delta, delta); // delta2 = delta * delta
-		const auto delta3 = _mm256_mul_pd(delta2, delta); // delta3 = delta2 * delta
-		const auto delta4 = _mm256_mul_pd(delta2, delta2); // delta4 = delta2 * delta2
-		// mean = m1 + delta / (n + other.n)
-		const auto mean = _mm256_add_pd(m1, _mm256_div_pd(delta, _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n))));
+		// result.n = n + other.n
+		result.n = int4Add(n, other.n);
 
+		const auto delta = double4Sub(other.m1, m1); // delta = other.m1 - m1
+		const auto delta2 = double4Mul(delta, delta); // delta2 = delta * delta
+		const auto delta3 = double4Mul(delta2, delta); // delta3 = delta2 * delta
+		const auto delta4 = double4Mul(delta2, delta2); // delta4 = delta2 * delta2
+
+		const auto nDouble = int4ToDouble4(n); // nDouble = n, we convert to double to avoid casting later
+		const auto otherNDouble = int4ToDouble4(other.n); // otherNDouble = other.n, we convert to double to avoid casting later
+
+		// mean = (n * m1 + other.n * other.m1) / (n + other.n)
+		// meanA = ((n * m1) + (other.n * other.m1))
+		// meanB = (n + other.n)
+		// mean = meanA / meanB
+		const auto meanA = double4Add(double4Mul(nDouble, m1), double4Mul(otherNDouble, other.m1));
+		const auto meanB = double4Add(nDouble, otherNDouble);
+		const auto mean = double4Div(meanA, meanB);
 		result.m1 = mean;
-		// result.m2 = m2 + other.m2 + delta2 * n * other.n / result.n;
-		result.m2 = _mm256_add_pd(m2, _mm256_add_pd(other.m2, _mm256_div_pd(
-			                                            _mm256_mul_pd(delta2, _mm256_mul_pd(_mm256_cvtepi64_pd(n),
-				                                                          _mm256_cvtepi64_pd(other.n))),
-			                                            _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n)))));
-		// result.m3 = m3 + other.m3 + delta3 * n * other.n * (n - other.n) / (result.n * result.n) +
-		// 3.0 * delta * (n * other.m2 - other.n * m2) / result.n;
 
-		// m3a = m3 + other.m3
-		// m3b = delta3 * n * other.n * (n - other.n) / (result.n * result.n)
-		// m3c = 3.0 * delta * (n * other.m2 - other.n * m2) / result.n
-		const auto m3a = _mm256_add_pd(m3, other.m3);
-		const auto m3b = _mm256_div_pd(_mm256_mul_pd(delta3, _mm256_mul_pd(_mm256_cvtepi64_pd(n),
-		                                                                   _mm256_cvtepi64_pd(other.n))),
-		                               _mm256_mul_pd(_mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n)),
-		                                             _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n))));
-		const auto m3c = _mm256_div_pd(_mm256_mul_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(delta, _mm256_sub_pd(
-			                                             _mm256_mul_pd(_mm256_cvtepi64_pd(n), other.m2),
-			                                             _mm256_mul_pd(_mm256_cvtepi64_pd(other.n), m2)))),
-		                               _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n)));
-		// result.m3 = m3a + m3b + m3c
-		result.m3 = _mm256_add_pd(m3a, _mm256_add_pd(m3b, m3c));
+		// result.m2 = m2 + other.m2 + delta2 * n * other.n / result.n
 
-		// m4a = m4 + other.m4
-		// m4b = delta4 * n * other.n * (n * n - n * other.n + other.n * other.n)
-		// m4c = (result.n * result.n * result.n)
-		// m4d = 6.0 * delta2 * (n * n * other.m2 + other.n * other.n * m2)
-		// m4e = (result.n * result.n)
-		// m4f = 4.0 * delta * (n * other.m3 - other.n * m3) / result.n
-		// m4 = m4a + m4b / m4c + m4d / m4e + m4f
-		const auto m4a = _mm256_add_pd(m4, other.m4);
-		const auto m4b = _mm256_mul_pd(delta4, _mm256_mul_pd(_mm256_cvtepi64_pd(n),
-		                                                     _mm256_cvtepi64_pd(other.n)));
-		const auto m4c = _mm256_mul_pd(_mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n)),
-		                               _mm256_cvtepi64_pd(_mm256_add_epi64(n, other.n)));
+		// m2`a = m2 + other.m2
+		const auto m2a = double4Add(m2, other.m2);
 
+		// m2`b = (delta2 * n) * (other.n / result.n)
+		const auto m2b = double4Mul(double4Mul(delta2, nDouble), double4Div(otherNDouble, nDouble));
+		
+		// result.m2 = m2 + m2a + m2b
+		result.m2 = double4Add(m2, double4Add(m2a, m2b));
 
-		// Vector AND isIntegerDistribution
-		result.isIntegerDistribution = _mm256_and_si256(isIntegerDistribution, other.isIntegerDistribution);
+		// result.m3 = m3 + other.m3 + delta3 * n * other.n * (n - other.n) / (result.n * result.n)
+		// + 3.0 * delta * (n * other.m2 - other.n * m2) / result.n
+
+		const auto resultNDouble = int4ToDouble4(result.n);
+
+		// m3`a = m3 + other.m3
+		const auto m3a = double4Add(m3, other.m3);
+
+		// m3`b = delta3 * (n * other.n)
+		const auto m3b = double4Mul(delta3, double4Mul(nDouble, otherNDouble));
+
+		// m3`c = (n - other.n) / (result.n * result.n)
+		const auto m3c = double4Div(double4Sub(nDouble, otherNDouble), double4Mul(resultNDouble, resultNDouble));
+
+		// m3`d = 3.0 * delta
+		const auto m3d = double4Mul(double4Set(3.0), delta);
+
+		// m3`e = ((n * other.m2) - (other.n * m2)) / result.n
+		const auto m3e = double4Div(double4Sub(double4Mul(nDouble, other.m2), double4Mul(otherNDouble, m2)), resultNDouble);
+
+		// m3` = m3`a + ((m3`b * m3`c) + (m3`d * m3`e))
+		result.m3 = double4Add(m3, double4Add(m3a, double4Add(double4Mul(m3b, m3c), double4Mul(m3d, m3e))));
+
+		// result.m4 = m4 + other.m4 +
+		// delta4 * n * other.n *
+		// (n * n - n * other.n + other.n * other.n) / (result.n * result.n * result.n) +
+		// 6.0 * delta2 *
+		// (n * n * other.m2 + other.n * other.n * m2) / (result.n * result.n) +
+		// 4.0 * delta * (n * other.m3 - other.n * m3) / result.n
+
+		// m4`a = m4 + other.m4
+		const auto m4a = double4Add(m4, other.m4);
+
+		// m4`b1 = delta4 * (n * other.n)
+		// m4`b2 = (((n * n) - (n * other.n)) + (other.n * other.n))
+		const auto m4b1 = double4Mul(delta4, double4Mul(nDouble, otherNDouble));
+		const auto m4b2 = double4Add(double4Sub(double4Mul(nDouble, nDouble), double4Mul(nDouble, otherNDouble)), double4Mul(otherNDouble, otherNDouble));
+
+		// m4`c = (result.n * (result.n * result.n))
+		const auto m4c = double4Mul(resultNDouble, double4Mul(resultNDouble, resultNDouble));
+
+		// m4`d1 = 6.0 * delta2
+		// m4`d2 = (((n * n) * other.m2) + ((other.n * other.n) * m2)))
+		const auto m4d1 = double4Mul(double4Set(6.0), delta2);
+		const auto m4d2 = double4Add(double4Mul(double4Mul(nDouble, nDouble), other.m2), double4Mul(double4Mul(otherNDouble, otherNDouble), m2));
+
+		// m4`e = (result.n * result.n)
+		const auto m4e = double4Mul(resultNDouble, resultNDouble);
+
+		// m4`f1 = 4.0 * delta
+		// m4`f2 = ((n * other.m3) - (other.n * m3)) / result.n
+		// m4`f = m4`f1 * m4`f2
+		const auto m4f1 = double4Mul(double4Set(4.0), delta);
+		const auto m4f2 = double4Div(double4Sub(double4Mul(nDouble, other.m3), double4Mul(otherNDouble, m3)), resultNDouble);
+		const auto m4f = double4Mul(m4f1, m4f2);
+
+		// m4` = (m4`a + ((m4`b1 * (m4`b2 / m4`c))) + ((m4`d1 * (m4`d2 / m4`e)) + m4`f))
+		result.m4 = double4Add(m4, double4Add(m4a, double4Add(double4Mul(m4b1, double4Div(m4b2, m4c)),
+			double4Add(double4Mul(m4d1, double4Div(m4d2, m4e)), m4f))));
+
+		result.isIntegerDistribution = int4And(isIntegerDistribution, other.isIntegerDistribution);
 
 		// return the result
 		return result;
