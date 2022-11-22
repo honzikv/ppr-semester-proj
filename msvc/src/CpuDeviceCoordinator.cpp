@@ -8,8 +8,6 @@ const auto CPU_CORES = std::thread::hardware_concurrency();
 
 void CpuDeviceCoordinator::onProcessJob() {
 	std::cout << "OnProcessJob CPU" << std::endl;
-	// Create memory buffer
-	auto buffer = std::vector<double>(maxNumberOfChunks * chunkSize);
 
 	// Open the file
 	auto file = std::ifstream(distFilePath, std::ios::binary);
@@ -18,11 +16,14 @@ void CpuDeviceCoordinator::onProcessJob() {
 	auto [start, end] = currentJob->ChunkIdxRange;
 
 	// Move to correct address in the file
-	file.seekg(start * chunkSize * sizeof(double), std::ios::beg);
+	file.seekg(start * chunkSizeBytes * sizeof(double), std::ios::beg);
+
+	// Create memory buffer
+	auto buffer = std::vector<double>((end - start) * chunkSizeBytes / sizeof(double));
 
 	// Read all bytes to the buffer
 	// NOLINT(bugprone-narrowing-conversions)
-	file.read(reinterpret_cast<char*>(buffer.data()), (end - start) * chunkSize);
+	file.read(reinterpret_cast<char*>(buffer.data()), (end - start) * chunkSizeBytes);
 
 	// OneTBB will use all available cores so create a running stats object for each CPU core
 	auto runningStats = std::vector<RunningStats>(CPU_CORES);
@@ -38,7 +39,7 @@ void CpuDeviceCoordinator::onProcessJob() {
 									  ].push(buffer[i]);
 		                          }
 	                          });
-
+	
 	// Merge all running stats
 	auto& mergedRunningStats = runningStats[0];
 

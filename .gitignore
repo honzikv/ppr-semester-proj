@@ -5,3 +5,4 @@ msvc/.vs
 msvc/out
 clSandbox/.idea
 clSandbox/cmake-build-debug
+exp20m.bin

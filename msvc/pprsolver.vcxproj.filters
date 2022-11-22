@@ -45,6 +45,9 @@
     <ClCompile Include="src\ClDeviceCoordinator.cpp">
       <Filter>Source Files\Concurrency</Filter>
     </ClCompile>
+    <ClCompile Include="src\Avx2CpuDeviceCoordinator.cpp">
+      <Filter>Source Files\Concurrency</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Job.h">
@@ -95,8 +98,11 @@
     <ClInclude Include="src\VectorizationUtils.h">
       <Filter>Header Files\Util</Filter>
     </ClInclude>
-    <ClInclude Include="src\RunningStatsAvx2.h">
+    <ClInclude Include="src\Avx2RunningStats.h">
       <Filter>Header Files\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Avx2CpuDeviceCoordinator.h">
+      <Filter>Header Files\Concurrency</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

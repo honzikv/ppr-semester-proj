@@ -1,12 +1,13 @@
 #pragma once
 #include "CpuDeviceCoordinator.h"
 #include "Arghandling.h"
+#include "Avx2CpuDeviceCoordinator.h"
 #include "ClDeviceCoordinator.h"
 #include "FileChunkHandler.h"
 #include "JobAggregator.h"
 #include "MemoryUtils.h"
 
-constexpr auto DEFAULT_CHUNK_SIZE = 4096;
+constexpr auto DEFAULT_CHUNK_SIZE = 1024;
 
 class JobScheduler {
 
@@ -67,17 +68,28 @@ public:
 		}
 
 		// Add CPU device coordinator - this will be set to inactive state if OPENCL_DEVICES mode is used
-		cpuDeviceCoordinator = std::make_shared<CpuDeviceCoordinator>(
+		// If CPU supports AVX2 then use AVX2 capable coordinator
+		cpuDeviceCoordinator = __ISA_AVAILABLE_AVX2 ? std::make_shared<Avx2CpuDeviceCoordinator>(
 			CoordinatorType::TBB,
 			processingInfo.ProcessingMode,
 			[this](auto&& ph1, auto&& ph2) {
 				jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
 			},
 			memoryLimits.CpuMemory,
-			DEFAULT_CHUNK_SIZE,
-			processingInfo.DistFilePath,
-			coordinatorId
-		);
+				DEFAULT_CHUNK_SIZE,
+				processingInfo.DistFilePath,
+				coordinatorId
+				) : std::make_shared<CpuDeviceCoordinator>(
+					CoordinatorType::TBB,
+					processingInfo.ProcessingMode,
+					[this](auto&& ph1, auto&& ph2) {
+						jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
+					},
+					memoryLimits.CpuMemory,
+						DEFAULT_CHUNK_SIZE,
+						processingInfo.DistFilePath,
+						coordinatorId
+						);
 
 		jobAggregator = std::make_unique<JobAggregator>(clDeviceCoordinators.size() +
 		                                                processingInfo.ProcessingMode != ProcessingMode::OPENCL_DEVICES

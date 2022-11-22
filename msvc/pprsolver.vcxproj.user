@@ -4,7 +4,7 @@
     <LocalDebuggerEnvironment>PATH=%PATH%;$(TBB_ROOT)\bin
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>../referencni_rozdeleni/poisson SMP</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>../referencni_rozdeleni/uniform SMP</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup>
     <ShowAllFiles>false</ShowAllFiles>

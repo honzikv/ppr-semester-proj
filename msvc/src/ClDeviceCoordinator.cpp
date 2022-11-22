@@ -2,8 +2,9 @@
 #include <fstream>
 
 void ClDeviceCoordinator::onProcessJob() {
-	const auto maxHostChunks = static_cast<size_t>(floor(memoryLimit / chunkSize)) * chunkSize;
-	auto readBuffer = std::vector<double>(maxHostChunks); // allocate with maxHostChunks
+	const auto maxHostChunks = static_cast<size_t>(floor(memoryLimit / chunkSizeBytes)) * chunkSizeBytes;
+	auto readBuffer = std::vector<double>();
+	readBuffer.reserve(maxHostChunks); // allocate with maxHostChunks
 
 	// Open the file
 	auto file = std::ifstream(distFilePath, std::ios::binary);
@@ -12,10 +13,10 @@ void ClDeviceCoordinator::onProcessJob() {
 	auto [start, end] = currentJob->ChunkIdxRange;
 
 	// Move to correct address in the file
-	file.seekg(start * chunkSize * sizeof(double), std::ios::beg);  // NOLINT(bugprone-narrowing-conversions, cppcoreguidelines-narrowing-conversions)
+	file.seekg(start * chunkSizeBytes * sizeof(double), std::ios::beg);  // NOLINT(bugprone-narrowing-conversions, cppcoreguidelines-narrowing-conversions)
 
 	// Create device buffer
-	const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, maxNumberOfChunks * chunkSize);
+	const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, maxNumberOfChunks * chunkSizeBytes);
 
 	// Now simply run while loop until we have chunks to load to the CL device
 	size_t chunksRemaining = end - start;
@@ -34,6 +35,5 @@ void ClDeviceCoordinator::onProcessJob() {
 
 	// No point keeping the data
 	readBuffer.clear();
-
-
+	
 }

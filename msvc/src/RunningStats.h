@@ -1,10 +1,10 @@
 #pragma once
 #include <cmath>
 
-class RunningStatsAvx2;
+class Avx2RunningStats;
 
 class RunningStats {
-	friend class RunningStatsAvx2;
+	friend class Avx2RunningStats;
 
 	size_t n = 0; // Number of items processed
 
@@ -19,7 +19,7 @@ public:
 	void push(const double x) {
 		// Check whether x is FP_NORMAL
 		const auto fpType = std::fpclassify(x);
-		if (fpType != FP_ZERO || fpType != FP_NORMAL) {
+		if (fpType != FP_ZERO && fpType != FP_NORMAL) {
 			return;
 		}
 		
@@ -64,6 +64,10 @@ public:
 	}
 
 	auto operator+(const RunningStats& other) const {
+		if (other.n == 0) {
+			return *this;
+		}
+
 		auto result = RunningStats();
 		result.n = n + other.n;
 
@@ -95,7 +99,7 @@ public:
 		return isIntegerDistribution;
 	}
 
-	[[nodiscard]] inline bool isInt(const double x) const {
+	[[nodiscard]] bool isInt(const double x) const {
 		double intPart;
 		return std::modf(x, &intPart) == 0.0;
 	}

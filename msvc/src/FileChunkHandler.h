@@ -10,15 +10,15 @@ class FileChunkHandler {
 
 public:
 	// File is split into evenly sized chunks which are read by given device
-	const size_t ChunkSize;
+	const size_t ChunkSizeBytes;
 
-	FileChunkHandler(fs::path distFilePath, const size_t chunkSize) :
-		ChunkSize(chunkSize),
+	FileChunkHandler(fs::path distFilePath, const size_t chunkSizeBytes) :
+		ChunkSizeBytes(chunkSizeBytes),
 		distFilePath(std::move(distFilePath)),
 		fileSize(fs::file_size(this->distFilePath)),
-		// We throw away the last chunk if it is smaller than chunkSize
+		// We throw away the last chunk if it is smaller than chunkSizeBytes
 		// The thrown away data are small enough so it won't affect the derived distribution
-		chunkCount(static_cast<size_t>(floor(static_cast<double>(fileSize) / static_cast<double>(chunkSize)))) {
+		chunkCount(static_cast<size_t>(floor(static_cast<double>(fileSize) / static_cast<double>(chunkSizeBytes)))) {
 	}
 
 	inline [[nodiscard]] bool allChunksProcessed() const {

@@ -37,7 +37,7 @@ protected:
 	std::atomic<bool> keepRunning = true; // Whether the coordinator thread should terminate
 	std::thread coordinatorThread; // Thread that is responsible for processing jobs
 
-	size_t chunkSize; // size of chunk to load from file
+	size_t chunkSizeBytes; // size of chunk in bytes
 	size_t memoryLimit; // max amount of memory this coordinator can allocate to buffer
 	size_t maxNumberOfChunks{}; // This needs to be initialized in derived classes
 
@@ -51,10 +51,12 @@ public:
 	inline DeviceCoordinator(const CoordinatorType coordinatorType,
 	                         const ProcessingMode processingMode,
 	                         std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
-	                         const size_t memoryLimit, const size_t chunkSize, fs::path& distFilePath,
+	                         const size_t memoryLimit,
+	                         const size_t chunkSizeBytes,
+	                         fs::path& distFilePath,
 	                         const size_t id):
 		jobFinishedCallback(std::move(jobFinishedCallback)),
-		chunkSize(chunkSize),
+		chunkSizeBytes(chunkSizeBytes),
 		memoryLimit(memoryLimit),
 		distFilePath(distFilePath),
 		id(id) {
@@ -138,7 +140,7 @@ private:
 			std::cout << "Semaphore acquired, trying to get the job!" << std::endl; // TODO remove
 			processJob();
 		}
-		
+
 	}
 
 	/**

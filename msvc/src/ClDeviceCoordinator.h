@@ -18,14 +18,14 @@ class ClDeviceCoordinator final : public DeviceCoordinator {
 public:
 	ClDeviceCoordinator(const CoordinatorType coordinatorType,
 	                    const ProcessingMode processingMode,
-	                    const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
+	                    std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
 	                    const size_t memoryLimit,
 	                    const size_t chunkSize,
 	                    fs::path& distFilePath,
 	                    const cl::Platform& platform,
 	                    const cl::Device& device,
 	                    const size_t id
-	) : DeviceCoordinator(coordinatorType, processingMode, jobFinishedCallback, memoryLimit, chunkSize, distFilePath,
+	) : DeviceCoordinator(coordinatorType, processingMode, std::move(jobFinishedCallback), memoryLimit, chunkSize, distFilePath,
 	                      id),
 	    platform(platform),
 	    device(device) {
@@ -53,7 +53,7 @@ private:
 		const auto bufferSize = static_cast<double>(device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>()) * VIDEO_MEMORY_SCALE;
 		const auto workGroupSize = static_cast<double>(this->workgroupSize);
 
-		maxNumberOfChunks = static_cast<size_t>(floor(bufferSize / workGroupSize) * workGroupSize) / chunkSize;
+		maxNumberOfChunks = static_cast<size_t>(floor(bufferSize / workGroupSize) * workGroupSize) / chunkSizeBytes;
 		context = cl::Context(device);
 		commandQueue = cl::CommandQueue(context, device);
 

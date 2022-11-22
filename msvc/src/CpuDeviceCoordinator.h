@@ -6,22 +6,25 @@
 
 namespace fs = std::filesystem;
 
-class CpuDeviceCoordinator final : public DeviceCoordinator {
+class CpuDeviceCoordinator : public DeviceCoordinator {
 public:
 	CpuDeviceCoordinator(const CoordinatorType coordinatorType,
 	                     const ProcessingMode processingMode,
-	                     const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
+	                     std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
 	                     const size_t memoryLimit,
-	                     const size_t chunkSize,
+	                     const size_t chunkSizeBytes,
 	                     fs::path& distFilePath,
-	                     size_t id
-	) : DeviceCoordinator(coordinatorType, processingMode, jobFinishedCallback, memoryLimit, chunkSize,
-	                     distFilePath, id) {
-		this->maxNumberOfChunks = static_cast<size_t>(floor(memoryLimit / chunkSize));
+	                     const size_t id,
+	                     const size_t nCores = std::thread::hardware_concurrency()
+	) : DeviceCoordinator(coordinatorType, processingMode, std::move(jobFinishedCallback), memoryLimit, chunkSizeBytes,
+	                      distFilePath, id),
+		nCores(nCores) {
+		this->maxNumberOfChunks = static_cast<size_t>(floor(memoryLimit / chunkSizeBytes));
 
 		startCoordinatorThread();
 	}
 
 protected:
+	size_t nCores;
 	void onProcessJob() override;
 };

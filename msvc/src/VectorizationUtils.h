@@ -1,6 +1,6 @@
 #pragma once
 #include <immintrin.h>
-#include <limits>
+#include <iostream>
 
 // To make the code somewhat readable we type alias frequently used intrinsics and types
 using double4 = __m256d;
@@ -14,8 +14,21 @@ using int4 = __m256i;
 #define double4Sub _mm256_sub_pd
 #define double4Div _mm256_div_pd
 
-// Integer arithmetics
-#define int4ToDouble4 _mm256_cvtepi64_pd
+
+inline auto int4ToDouble4(const int4 x) {
+	__m256i magic_i_lo = _mm256_set1_epi64x(0x4330000000000000);                /* 2^52               encoded as floating-point  */
+	__m256i magic_i_hi32 = _mm256_set1_epi64x(0x4530000080000000);                /* 2^84 + 2^63        encoded as floating-point  */
+	__m256i magic_i_all = _mm256_set1_epi64x(0x4530000080100000);                /* 2^84 + 2^63 + 2^52 encoded as floating-point  */
+	__m256d magic_d_all = _mm256_castsi256_pd(magic_i_all);
+
+	__m256i v_lo = _mm256_blend_epi32(magic_i_lo, x, 0b01010101);         /* Blend the 32 lowest significant bits of x with magic_int_lo                                                   */
+	__m256i v_hi = _mm256_srli_epi64(x, 32);                              /* Extract the 32 most significant bits of x                                                                     */
+	v_hi = _mm256_xor_si256(v_hi, magic_i_hi32);                  /* Flip the msb of v_hi and blend with 0x45300000                                                                */
+	__m256d v_hi_dbl = _mm256_sub_pd(_mm256_castsi256_pd(v_hi), magic_d_all); /* Compute in double precision:                                                                                  */
+	__m256d result = _mm256_add_pd(v_hi_dbl, _mm256_castsi256_pd(v_lo));    /* (v_hi - magic_d_all) + v_lo  Do not assume associativity of floating point addition !!                        */
+	return result;
+}
+
 #define int4Add _mm256_add_epi64
 
 // "Boolean operations"
