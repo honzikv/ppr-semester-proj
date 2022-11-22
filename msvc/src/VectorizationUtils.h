@@ -2,8 +2,30 @@
 #include <immintrin.h>
 #include <limits>
 
-const auto EXPONENT_MASK = _mm256_set1_epi64x(0x7fffffffffffffffULL);
-const auto MANTISSA_MASK = _mm256_set1_epi64x(0x000fffffffffffffULL);
+// To make the code somewhat readable we type alias frequently used intrinsics and types
+using double4 = __m256d;
+using int4 = __m256i;
+
+const auto bytesAsInt4 = _mm256_set1_epi64x;
+const auto double4ToInt4 = _mm256_castpd_si256;
+const auto double4Add = _mm256_add_pd;
+const auto double4Mul = _mm256_mul_pd;
+const auto double4Sub = _mm256_sub_pd;
+const auto double4Div = _mm256_div_pd;
+
+// Integer arithmetics
+const auto int4AsDouble4 = _mm256_cvtepi64_pd;
+const auto int4Add = _mm256_add_epi64;
+
+// "Boolean operations"
+const auto int4And = _mm256_and_si256;
+const auto int4CompareGreaterThan = _mm256_cmpgt_epi64;
+const auto int4CompareEquals = _mm256_cmpeq_epi64;
+const auto int4Or = _mm256_or_si256;
+const auto int4Xor = _mm256_xor_si256;
+
+const auto EXPONENT_MASK = bytesAsInt4(0x7fffffffffffffffULL);
+const auto MANTISSA_MASK = bytesAsInt4(0x000fffffffffffffULL);
 
 namespace VectorizationUtils {
 
@@ -15,30 +37,30 @@ namespace VectorizationUtils {
 	 *
 	 * \return "Boolean"-like vector - either containing 111..111 or 000..000 where 111..111 is true and 000..000 is false
 	 */
-	inline auto valuesValid(const __m256d& x) {
-		const auto bits = _mm256_castpd_si256(x); // convert x to integer vector
-		auto exponent = _mm256_and_si256(bits, EXPONENT_MASK); // extract exponent
+	inline auto valuesValid(const double4& x) {
+		const auto bits = double4ToInt4(x); // convert x to integer vector
+		auto exponent = int4And(bits, EXPONENT_MASK); // extract exponent
 		exponent = _mm256_srli_epi64(exponent, 52); // shift by 52 bits to get mantissa
 
 		// if exponent == 0
-		const auto expEqualsZero = _mm256_cmpeq_epi64(exponent, _mm256_setzero_si256());
+		const auto expEqualsZero = int4CompareEquals(exponent, _mm256_setzero_si256());
 
 		// AND bits & MANTISSA_MASK > 0
-		auto bitsAndMantissa = _mm256_and_si256(bits, MANTISSA_MASK);
-		bitsAndMantissa = _mm256_cmpgt_epi64(bitsAndMantissa, _mm256_setzero_si256());
+		auto bitsAndMantissa = int4And(bits, MANTISSA_MASK);
+		bitsAndMantissa = int4CompareGreaterThan(bitsAndMantissa, _mm256_setzero_si256());
 
 		// If exponent == 0 && bits & MANTISSA_MASK set to true
-		const auto invalid1 = _mm256_and_si256(expEqualsZero, bitsAndMantissa);
+		const auto invalid1 = int4And(expEqualsZero, bitsAndMantissa);
 
 		// Similarly if exponent == 0x7ff it is invalid as well
-		const auto invalid2 = _mm256_cmpeq_epi64(exponent, _mm256_set1_epi64x(0x7ff));
+		const auto invalid2 = int4CompareEquals(exponent, bytesAsInt4(0x7ff));
 
 		// Combine both with OR operation
 		// This will return for each element in the vector if they are invalid
-		const auto invalid = _mm256_or_si256(invalid1, invalid2);
+		const auto invalid = int4Or(invalid1, invalid2);
 
 		// Negate - i.e. XOR with 0xFFFFFFFFFFFFFFFF == int64_t(-1) == UINT64_MAX
-		return _mm256_xor_si256(invalid, _mm256_set1_epi64x(UINT64_MAX));
+		return int4Xor(invalid, bytesAsInt4(UINT64_MAX));
 	}
 
 	inline auto valuesInteger(const __m256d& x) {
@@ -50,7 +72,7 @@ namespace VectorizationUtils {
 		const auto result = _mm256_cmp_pd(fraction, _mm256_setzero_pd(), _CMP_EQ_OQ);
 
 		// Convert to "bool" array
-		return _mm256_castpd_si256(result);
+		return double4ToInt4(result);
 	}
 
 	/**
