@@ -8,7 +8,7 @@
 #include "MemoryUtils.h"
 #include "Watchdog.h"
 
-constexpr auto DEFAULT_CHUNK_SIZE = 1024;
+constexpr auto DEFAULT_CHUNK_SIZE = 4096;
 
 class JobScheduler {
 
@@ -27,6 +27,7 @@ class JobScheduler {
 	 * finishing a job
 	 */
 	ConcurrencyUtils::Semaphore jobFinishedSemaphore = ConcurrencyUtils::Semaphore(0);
+	std::mutex coordinatorMutex;
 
 	FileChunkHandler fileChunkHandler;
 
@@ -74,7 +75,7 @@ public:
 
 		// Add CPU device coordinator - this will be set to inactive state if OPENCL_DEVICES mode is used
 		// If CPU supports AVX2 then use AVX2 capable coordinator
-		cpuDeviceCoordinator = !__ISA_AVAILABLE_AVX2
+		cpuDeviceCoordinator = __ISA_AVAILABLE_AVX2
 			                       ? std::make_shared<Avx2CpuDeviceCoordinator>(
 				                       CoordinatorType::TBB,
 				                       processingInfo.ProcessingMode,
@@ -120,6 +121,7 @@ public:
 	 * \return true if there is any coordinator available, false otherwise
 	 */
 	bool anyCoordinatorAvailable() {
+		auto scopedLock = std::scoped_lock(coordinatorMutex);
 		return std::any_of(clDeviceCoordinators.begin(), clDeviceCoordinators.end(), [](const auto& coordinator) {
 			return coordinator->available() && coordinator->active();
 		}) || cpuDeviceCoordinator->available() && cpuDeviceCoordinator->active();
@@ -130,6 +132,7 @@ public:
 	 * \return true if all coordinators are available, false otherwise
 	 */
 	bool allCoordinatorsAvailable() {
+		auto scopedLock = std::scoped_lock(coordinatorMutex);
 		return std::all_of(clDeviceCoordinators.begin(), clDeviceCoordinators.end(), [](const auto& coordinator) {
 			return coordinator->available();
 		}) && cpuDeviceCoordinator->available();
@@ -153,6 +156,8 @@ public:
 	}
 
 	void jobFinishedCallback(std::unique_ptr<Job> job, const size_t coordinatorIdx) {
+		auto scopedLock = std::scoped_lock(coordinatorMutex);
+
 		// Write data to job aggregator
 		jobAggregator->writeProcessedJob(std::move(job), coordinatorIdx);
 		jobFinishedSemaphore.release();
@@ -167,6 +172,8 @@ public:
 	}
 
 	void assignJob() {
+		auto scopedLock = std::scoped_lock(coordinatorMutex);
+
 		// Update processed jobs if there are any
 		jobAggregator->update();
 

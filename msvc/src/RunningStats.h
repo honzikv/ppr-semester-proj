@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include <iostream>
 
 class Avx2RunningStats;
 
@@ -72,10 +73,6 @@ public:
 			return other;
 		}
 
-		if (n == 0 && other.n == 0) {
-			throw std::runtime_error("Both RunningStats are empty");
-		}
-
 		auto result = RunningStats();
 		result.n = n + other.n;
 
@@ -94,6 +91,9 @@ public:
 			4.0 * delta * (n * other.m3 - other.n * m3) / result.n;
 		
 		result.isIntegerDistribution = isIntegerDistribution && other.isIntegerDistribution;
+
+		debugPrint();
+
 		return result;
 	}
 
@@ -110,5 +110,22 @@ public:
 	[[nodiscard]] bool isInt(const double x) const {
 		double intPart;
 		return std::modf(x, &intPart) == 0.0;
+	}
+
+	/**
+	 * \brief Debug
+	 */
+	void debugPrint() const {
+		std::cout << "\nRunningStats" << std::endl;
+		std::cout << "M1: " << m1 << std::endl;
+		std::cout << "M2: " << m2 << std::endl;
+		std::cout << "M3: " << m3 << std::endl;
+		std::cout << "M4: " << m4 << std::endl;
+		std::cout << "n: " << n << std::endl;
+
+		std::cout << "Mean: " << getMean() << std::endl;
+		std::cout << "Skewness: " << getSkewness() << std::endl;
+		std::cout << "Kurtosis: " << getKurtosis() << std::endl;
+		std::cout << std::endl;
 	}
 };

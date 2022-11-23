@@ -4,16 +4,18 @@
 #include "Arghandling.h"
 
 namespace MemoryUtils {
-	constexpr auto DEFAULT_MEMORY_SIZE = 1024 * 1024 * 1024; // 1 GB for everything
+	constexpr auto DEFAULT_MEMORY_SIZE = 512 * 1024 * 1024; // 1 GB for everything
 
 	/**
-	 * \brief 10% of the memory is kept for structures (i.e. discarding coordinator buffers) such as
+	 * \brief 20% of the memory is kept for structures (i.e. discarding coordinator buffers) such as
 	 *		  JobScheduler, Running stats, and so on. Basically anything that is not RAM memory buffer
 	 */
-	constexpr auto DEFAULT_RUNTIME_STRUCTS_MEMORY_RATIO = .1;
+	constexpr auto DEFAULT_RUNTIME_STRUCTS_MEMORY_RATIO = .2;
 
+	/**
+	 * \brief If CPU uses 60% of the memory, rest is split between copy buffers for CL devices
+	 */
 	constexpr auto DEFAULT_CPU_MEMORY_RATIO = .6;
-	// 60% of the memory is used by the CPU, rest is split between CL devices
 
 	/**
 	 * \brief Simple struct containing amount of memory for each device
@@ -62,10 +64,10 @@ namespace MemoryUtils {
 
 		// Check how many CL devices are available
 		const auto nClDevices = std::accumulate(processingInfo.Devices.begin(), processingInfo.Devices.end(), 0,
-			[&](auto sum, auto item) {
-				auto [_, devices] = item;
-				return sum + devices.size();
-			}
+		                                        [&](auto sum, auto item) {
+			                                        auto [_, devices] = item;
+			                                        return sum + devices.size();
+		                                        }
 		);
 
 		if (processingInfo.ProcessingMode == ProcessingMode::ALL) {

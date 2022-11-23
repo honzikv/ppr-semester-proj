@@ -9,7 +9,8 @@
 
 namespace fs = std::filesystem;
 
-constexpr auto VIDEO_MEMORY_SCALE = .9; // 90% of video memory is used for computation (or rather 90% of what OpenCL returns)
+constexpr auto VIDEO_MEMORY_SCALE = .9;
+// 90% of video memory is used for computation (or rather 90% of what OpenCL returns)
 
 /**
  * \brief Wraps OpenCL logic for device coordination
@@ -20,17 +21,19 @@ public:
 	                    const ProcessingMode processingMode,
 	                    std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
 	                    const size_t memoryLimit,
-	                    const size_t chunkSize,
+	                    const size_t chunkSizeBytes,
 	                    fs::path& distFilePath,
 	                    const cl::Platform& platform,
 	                    const cl::Device& device,
 	                    const size_t id
-	) : DeviceCoordinator(coordinatorType, processingMode, std::move(jobFinishedCallback), memoryLimit, chunkSize, distFilePath,
+	) : DeviceCoordinator(coordinatorType, processingMode, std::move(jobFinishedCallback), memoryLimit, chunkSizeBytes,
+	                      distFilePath,
 	                      id),
 	    platform(platform),
-	    device(device) {
+	    device(device),
+	    maxHostChunks(static_cast<size_t>(floor(memoryLimit / chunkSizeBytes)) * chunkSizeBytes) {
 		// Setup openCL device
-		setup();
+		setup(chunkSizeBytes);
 
 		// After we have set everything up start the thread
 		startCoordinatorThread();
@@ -38,7 +41,7 @@ public:
 	}
 
 protected:
-	virtual void onProcessJob() override;
+	void onProcessJob() override;
 
 private:
 	cl::Platform platform; // Device platform
@@ -47,10 +50,12 @@ private:
 	cl::CommandQueue commandQueue; // Command queue
 	cl::Program program; // Compiled program
 	size_t workgroupSize; // Max number of work items in a work group
+	size_t maxHostChunks;
 
-	void setup() {
+	void setup(const size_t chunkSizeBytes) {
 		this->workgroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
-		const auto bufferSize = static_cast<double>(device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>()) * VIDEO_MEMORY_SCALE;
+		const auto bufferSize = static_cast<double>(device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>()) *
+			VIDEO_MEMORY_SCALE;
 		const auto workGroupSize = static_cast<double>(this->workgroupSize);
 
 		maxNumberOfChunks = static_cast<size_t>(floor(bufferSize / workGroupSize) * workGroupSize) / chunkSizeBytes;

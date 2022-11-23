@@ -5,7 +5,7 @@
  * \brief Override for AVX2 capable CPU
  */
 class Avx2CpuDeviceCoordinator final : public CpuDeviceCoordinator {
-
+	
 public:
 	Avx2CpuDeviceCoordinator(const CoordinatorType coordinatorType,
 	                         const ProcessingMode processingMode,

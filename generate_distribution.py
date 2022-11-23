@@ -3,7 +3,7 @@ import numpy as np
 
 
 distributions = {
-    'normal': lambda x: np.random.normal(size=x, loc=0, scale=500),
+    'gauss': lambda x: np.random.normal(size=x, loc=0, scale=500),
     'uniform': lambda x: np.random.uniform(size=x, low=-300, high=300),
     'poisson': lambda x: np.random.poisson(size=x, lam=100),
     'exp': lambda x: np.random.exponential(size=x, scale=100),

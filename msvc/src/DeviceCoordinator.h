@@ -6,6 +6,7 @@
 #include "Arghandling.h"
 #include "Job.h"
 #include "ConcurrencyUtils.h"
+#include "DataLoader.h"
 
 enum CoordinatorType {
 	TBB = 0,
@@ -13,7 +14,7 @@ enum CoordinatorType {
 	SINGLE_CORE = 2,
 };
 
-const auto COORDINATOR_TYPE_LUT = std::vector<std::string>{ "TBB", "OPEN_CL", "SINGLE_CORE" };
+const auto COORDINATOR_TYPE_LUT = std::vector<std::string>{"TBB", "OPEN_CL", "SINGLE_CORE"};
 
 namespace fs = std::filesystem;
 
@@ -40,20 +41,19 @@ protected:
 	std::shared_ptr<ConcurrencyUtils::Semaphore> semaphore = std::make_shared<ConcurrencyUtils::Semaphore>(0);
 	std::atomic<bool> keepRunning = true; // Whether the coordinator thread should terminate
 	std::thread coordinatorThread; // Thread that is responsible for processing jobs
-
-	size_t chunkSizeBytes; // size of chunk in bytes
+	
 	size_t memoryLimit; // max amount of memory this coordinator can allocate to buffer
 	size_t maxNumberOfChunks{}; // This needs to be initialized in derived classes
 
-	fs::path& distFilePath; // reference to the path to the distribution file
+	DataLoader dataLoader; // Data loader instance
 
 	CoordinatorType coordinatorType;
 	size_t id; // id of this coordinator
-
+	
 public:
 	virtual ~DeviceCoordinator() = default;
 
-	inline DeviceCoordinator(const CoordinatorType coordinatorType,
+	DeviceCoordinator(const CoordinatorType coordinatorType,
 	                         const ProcessingMode processingMode,
 	                         std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
 	                         const size_t memoryLimit,
@@ -61,9 +61,8 @@ public:
 	                         fs::path& distFilePath,
 	                         const size_t id):
 		jobFinishedCallback(std::move(jobFinishedCallback)),
-		chunkSizeBytes(chunkSizeBytes),
 		memoryLimit(memoryLimit),
-		distFilePath(distFilePath),
+		dataLoader(distFilePath, chunkSizeBytes),
 		coordinatorType(coordinatorType),
 		id(id) {
 
@@ -79,10 +78,10 @@ public:
 	}
 
 	auto getInfo() const {
-		return std::string{ COORDINATOR_TYPE_LUT.at(coordinatorType)} + " Coordinator with id " + std::to_string(id);
+		return std::string{COORDINATOR_TYPE_LUT.at(coordinatorType)} + " Coordinator with id " + std::to_string(id);
 	}
 
-	inline void startCoordinatorThread() {
+	void startCoordinatorThread() {
 		this->coordinatorThread = std::thread(&DeviceCoordinator::threadMain, this);
 		coordinatorThread.detach();
 	}
@@ -91,7 +90,7 @@ public:
 	 * \brief Returns true whether this coordinator is available - i.e. whether it is not processing any job
 	 * \return true if the coordinator is available, false otherwise
 	 */
-	[[nodiscard]] inline auto available() const {
+	[[nodiscard]] auto available() const {
 		return isAvailable.load();
 	}
 
@@ -99,7 +98,7 @@ public:
 	 * \brief Returns whether this coordinator is active - i.e. whether it is usable for processing
 	 * \return true if the coordinator is active, false otherwise
 	 */
-	[[nodiscard]] inline auto active() const {
+	[[nodiscard]] auto active() const {
 		return isActive;
 	}
 
@@ -108,7 +107,7 @@ public:
 	 * \param job job to be assigned
 	 * \return void
 	 */
-	inline auto assignJob(Job job) {
+	auto assignJob(Job job) {
 		auto scopedLock = std::scoped_lock(jobMutex);
 		isAvailable = false;
 		currentJob = std::make_unique<Job>(std::move(job));
@@ -118,7 +117,7 @@ public:
 	/**
 	 * \brief Terminates running thread by setting keepRunning to false
 	 */
-	inline void terminate() {
+	void terminate() {
 		keepRunning = false;
 		semaphore->release();
 	}
@@ -136,15 +135,16 @@ private:
 	/**
 	 * \brief Main function of the coordinator thread
 	 */
-	inline void threadMain() {
+	void threadMain() {
 		std::cout << "Starting coordinator thread" << std::endl; // TODO remove
-		semaphore->acquire();
 		while (keepRunning) {
+			semaphore->acquire();
+
 			// Try acquiring semaphore - this will be locked by default
 			// and the thread has to wait until it is notified by the scheduler
 			if (!currentJob) {
 				// If there is no current job just sleep
-				semaphore->acquire();
+				// semaphore->acquire();
 				continue;
 			}
 
@@ -157,7 +157,7 @@ private:
 	/**
 	 * \brief Processes given job - calls onProcessJob implementation and then calls jobFinishedCallback
 	 */
-	inline void processJob() {
+	void processJob() {
 		onProcessJob();
 		auto scopedLock = std::scoped_lock(jobMutex);
 		jobFinishedCallback(std::move(currentJob), id);
