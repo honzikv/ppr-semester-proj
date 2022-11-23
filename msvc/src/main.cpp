@@ -42,6 +42,7 @@ int main(int argc, char** argv) {
 	}
 	
 	classifyDistribution(runningStats);
+	runningStats.debugPrint();
 
 	return 0;
 

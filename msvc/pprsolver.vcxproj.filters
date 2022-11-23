@@ -24,6 +24,9 @@
     <Filter Include="Source Files\Concurrency">
       <UniqueIdentifier>{5e9eb789-ecf5-46fa-ba20-4d97597f3f3f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\IO">
+      <UniqueIdentifier>{2eb647d7-df59-4779-b70b-526db6623400}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -61,12 +64,6 @@
     <ClInclude Include="src\Watchdog.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\FileChunkHandler.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
-    <ClInclude Include="src\JobAggregator.h">
-      <Filter>Header Files\Job</Filter>
-    </ClInclude>
     <ClInclude Include="src\CpuDeviceCoordinator.h">
       <Filter>Header Files\Concurrency</Filter>
     </ClInclude>
@@ -102,6 +99,15 @@
     </ClInclude>
     <ClInclude Include="src\Logging.h">
       <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RunningStatsAvx2.h">
+      <Filter>Header Files\Job</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FileChunkHandler.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DataLoader.h">
+      <Filter>Header Files\IO</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

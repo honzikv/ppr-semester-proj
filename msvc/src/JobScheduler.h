@@ -4,7 +4,6 @@
 #include "Avx2CpuDeviceCoordinator.h"
 #include "ClDeviceCoordinator.h"
 #include "FileChunkHandler.h"
-#include "JobAggregator.h"
 #include "MemoryUtils.h"
 #include "Watchdog.h"
 
@@ -31,15 +30,11 @@ class JobScheduler {
 
 	FileChunkHandler fileChunkHandler;
 
-	/**
-	 * \brief Job aggregator instance which is used to store the result. This is unique_ptr for it
-	 * to initialized later in the constructor
-	 */
-	std::unique_ptr<JobAggregator> jobAggregator = nullptr;
-
 	Watchdog watchdog;
 
 	size_t currentJobId = 0;
+
+	RunningStats runningStats;
 
 public:
 	explicit JobScheduler(ProcessingInfo& processingInfo, const size_t chunkSize = DEFAULT_CHUNK_SIZE):
@@ -100,11 +95,6 @@ public:
 				                       processingInfo.DistFilePath,
 				                       coordinatorId
 			                       );
-
-		jobAggregator = std::make_unique<JobAggregator>(clDeviceCoordinators.size() +
-		                                                processingInfo.ProcessingMode != ProcessingMode::OPENCL_DEVICES
-			                                                ? 1
-			                                                : 0);
 	}
 
 	/**
@@ -155,11 +145,17 @@ public:
 			       : std::dynamic_pointer_cast<DeviceCoordinator>(cpuDeviceCoordinator);
 	}
 
+	void addProcessedJob(const std::unique_ptr<Job> job, const size_t coordinatorIdx) {
+		for (const auto& stats : job->Result) {
+			runningStats += stats;
+		}
+	}
+
 	void jobFinishedCallback(std::unique_ptr<Job> job, const size_t coordinatorIdx) {
 		auto scopedLock = std::scoped_lock(coordinatorMutex);
 
 		// Write data to job aggregator
-		jobAggregator->writeProcessedJob(std::move(job), coordinatorIdx);
+		addProcessedJob(std::move(job), coordinatorIdx);
 		jobFinishedSemaphore.release();
 	}
 
@@ -173,9 +169,6 @@ public:
 
 	void assignJob() {
 		auto scopedLock = std::scoped_lock(coordinatorMutex);
-
-		// Update processed jobs if there are any
-		jobAggregator->update();
 
 		// Get the coordinator
 		const auto coordinator = getNextAvailableDeviceCoordinator();
@@ -212,15 +205,12 @@ public:
 			assignJob();
 		}
 
-		// Update job aggregator
-		jobAggregator->update();
-
 		// Terminate watchdog
 		watchdog.terminate();
 
 		// Terminate all coordinators
 		terminateDeviceCoordinators();
 
-		return jobAggregator->getResult();
+		return runningStats;
 	}
 };

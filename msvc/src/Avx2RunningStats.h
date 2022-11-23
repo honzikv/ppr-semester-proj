@@ -120,7 +120,7 @@ public:
 		// + 3.0 * delta * (n * other.m2 - other.n * m2) / result.n
 
 		const auto resultNDouble = int4ToDouble4(result.n);
-
+		 
 		// m3`a = m3 + other.m3
 		const auto m3a = double4Add(m3, other.m3);
 

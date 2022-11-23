@@ -24,11 +24,13 @@ void CpuDeviceCoordinator::onProcessJob() {
 	                          });
 
 	// Merge all running stats
-	auto& mergedRunningStats = runningStats[0];
-	for (auto i = 1; i < static_cast<int>(runningStats.size()); i += 1) {
-		mergedRunningStats += runningStats[i];
-	}
+	// auto& mergedRunningStats = runningStats[0];
+	// for (auto i = 1; i < static_cast<int>(runningStats.size()); i += 1) {
+	// 	mergedRunningStats += runningStats[i];
+	// }
+	//
+	// // Set the result
+	// currentJob->Result = mergedRunningStats;
 
-	// Set the result
-	currentJob->Result = mergedRunningStats;
+	currentJob->Result = runningStats;
 }

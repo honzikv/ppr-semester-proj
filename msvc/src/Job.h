@@ -7,7 +7,7 @@
  */
 struct Job {
 	const std::pair<size_t, size_t> ChunkIdxRange; // start index (inclusive) and end index (exclusive)
-	RunningStats Result; // result of the processing - must be initialized by given DeviceCoordinator
+	std::vector<RunningStats> Result; // result of the processing
 	const size_t Id;
 
 	explicit Job(const std::pair<size_t, size_t> chunkIdxRange, const size_t id):

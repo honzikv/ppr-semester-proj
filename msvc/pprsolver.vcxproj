@@ -29,10 +29,10 @@
   <ItemGroup>
     <ClInclude Include="src\Avx2CpuDeviceCoordinator.h" />
     <ClInclude Include="src\ClSources.h" />
+    <ClInclude Include="src\DataLoader.h" />
     <ClInclude Include="src\DistributionClassification.h" />
     <ClInclude Include="src\Logging.h" />
     <ClInclude Include="src\MemoryUtils.h" />
-    <ClInclude Include="src\JobAggregator.h" />
     <ClInclude Include="src\FileChunkHandler.h" />
     <ClInclude Include="src\CpuDeviceCoordinator.h" />
     <ClInclude Include="src\ClDeviceCoordinator.h" />
@@ -44,6 +44,7 @@
     <ClInclude Include="src\ClCompiler.h" />
     <ClInclude Include="src\RunningStats.h" />
     <ClInclude Include="src\Avx2RunningStats.h" />
+    <ClInclude Include="src\RunningStatsAvx2.h" />
     <ClInclude Include="src\VectorizationUtils.h" />
     <ClInclude Include="src\Watchdog.h" />
   </ItemGroup>

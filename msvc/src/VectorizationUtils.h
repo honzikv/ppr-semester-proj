@@ -14,7 +14,7 @@ using int4 = __m256i;
 #define double4Sub _mm256_sub_pd
 #define double4Div _mm256_div_pd
 
-
+// Since this is not natively supported by AVX2
 inline auto int4ToDouble4(const int4 x) {
 	__m256i magic_i_lo = _mm256_set1_epi64x(0x4330000000000000);                /* 2^52               encoded as floating-point  */
 	__m256i magic_i_hi32 = _mm256_set1_epi64x(0x4530000080000000);                /* 2^84 + 2^63        encoded as floating-point  */

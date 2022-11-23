@@ -92,7 +92,7 @@ public:
 		
 		result.isIntegerDistribution = isIntegerDistribution && other.isIntegerDistribution;
 
-		debugPrint();
+		// debugPrint();
 
 		return result;
 	}

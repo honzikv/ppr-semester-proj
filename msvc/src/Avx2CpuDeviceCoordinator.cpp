@@ -30,11 +30,19 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 	                          });
 
 	// Merge the results
-	auto mergedRunningStats = runningStats[0].asScalar();
-	for (auto i = 1; i < static_cast<int>(runningStats.size()); i += 1) {
-		mergedRunningStats += runningStats[i].asScalar();
+	// auto mergedRunningStats = runningStats[0].asScalar();
+	// for (auto i = 1; i < static_cast<int>(runningStats.size()); i += 1) {
+	// 	mergedRunningStats += runningStats[i].asScalar();
+	// }
+	//
+	// currentJob->Result = mergedRunningStats;
+
+	auto result = std::vector<RunningStats>();
+	for (const auto& avx2RunningStats : runningStats) {
+		result.push_back(avx2RunningStats.asScalar());
 	}
 
-	currentJob->Result = mergedRunningStats;
+	currentJob->Result = result;
+
 	std::cout << "Job Finished" << std::endl;
 }
