@@ -26,7 +26,7 @@ void CpuDeviceCoordinator::onProcessJob() {
 	file.read(reinterpret_cast<char*>(buffer.data()), (end - start) * chunkSizeBytes);
 
 	// OneTBB will use all available cores so create a running stats object for each CPU core
-	auto runningStats = std::vector<RunningStats>(CPU_CORES);
+	auto runningStats = std::vector<RunningStats>(nCores);
 
 	// Run parallel loop
 	oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, buffer.size()),
@@ -49,4 +49,5 @@ void CpuDeviceCoordinator::onProcessJob() {
 
 	// Set the result
 	currentJob->Result = mergedRunningStats;
+	std::cout << "Total N: " << currentJob->Result.getN() << std::endl;
 }

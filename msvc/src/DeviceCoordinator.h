@@ -8,10 +8,12 @@
 #include "ConcurrencyUtils.h"
 
 enum CoordinatorType {
-	TBB,
-	OPEN_CL,
-	SINGLE_CORE,
+	TBB = 0,
+	OPEN_CL = 1,
+	SINGLE_CORE = 2,
 };
+
+const auto COORDINATOR_TYPE_LUT = std::vector<std::string>{ "TBB", "OPEN_CL", "SINGLE_CORE" };
 
 namespace fs = std::filesystem;
 
@@ -30,6 +32,8 @@ protected:
 	std::atomic<bool> isAvailable = true; // Whether the worker is available
 	std::unique_ptr<Job> currentJob = nullptr; // Reference to the current job
 
+	std::mutex jobMutex; // Mutex for assigning job
+
 	/**
 	 * \brief Semaphore used to synchronize access with JobScheduler
 	 */
@@ -43,6 +47,7 @@ protected:
 
 	fs::path& distFilePath; // reference to the path to the distribution file
 
+	CoordinatorType coordinatorType;
 	size_t id; // id of this coordinator
 
 public:
@@ -59,6 +64,7 @@ public:
 		chunkSizeBytes(chunkSizeBytes),
 		memoryLimit(memoryLimit),
 		distFilePath(distFilePath),
+		coordinatorType(coordinatorType),
 		id(id) {
 
 		// Depending on the processing mode CPU coordinator may not be used and thus we don't want to create
@@ -70,6 +76,10 @@ public:
 			isActive = false;
 			return;
 		}
+	}
+
+	auto getInfo() const {
+		return std::string{ COORDINATOR_TYPE_LUT.at(coordinatorType)} + " Coordinator with id " + std::to_string(id);
 	}
 
 	inline void startCoordinatorThread() {
@@ -99,6 +109,7 @@ public:
 	 * \return void
 	 */
 	inline auto assignJob(Job job) {
+		auto scopedLock = std::scoped_lock(jobMutex);
 		isAvailable = false;
 		currentJob = std::make_unique<Job>(std::move(job));
 		semaphore->release();
@@ -148,8 +159,9 @@ private:
 	 */
 	inline void processJob() {
 		onProcessJob();
+		auto scopedLock = std::scoped_lock(jobMutex);
 		jobFinishedCallback(std::move(currentJob), id);
-		isAvailable = true; // TODO possible race condition?
+		isAvailable = true;
 	}
 
 protected:

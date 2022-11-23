@@ -7,7 +7,7 @@
 
 
 // LUT for processing modes so we don't have to do 20 if statements
-const auto processingModes = std::unordered_map<std::string, ProcessingMode>{
+const auto processingModesLut = std::unordered_map<std::string, ProcessingMode>{
 	{"singlethread", ProcessingMode::SINGLE_THREAD},
 	{"smp", ProcessingMode::SMP},
 	{"opencldevices", ProcessingMode::OPENCL_DEVICES},
@@ -131,13 +131,13 @@ auto validateArguments(ProcessingArgs args) -> ProcessingInfo {
 
 	// Validate processing mode
 	const auto processingModeStr = lowercase(args.ProcessingMode);
-	if (processingModes.find(processingModeStr) == processingModes.end()) {
+	if (processingModesLut.find(processingModeStr) == processingModesLut.end()) {
 		std::cout << "Invalid processing mode: \"" << args.ProcessingMode << "\"." << std::endl;
 		printValidModes();
 		exit(1); // NOLINT(concurrency-mt-unsafe)
 	}
 
-	const auto processingMode = processingModes.at(processingModeStr);
+	const auto processingMode = processingModesLut.at(processingModeStr);
 	if (processingMode == ProcessingMode::SINGLE_THREAD || processingMode == ProcessingMode::SMP) {
 		// Return the object as we won't be loading any other devices
 		return {processingMode, distFilePath, {}};

@@ -5,32 +5,35 @@
 #include <iostream>
 #include <thread>
 
+constexpr auto DEFAULT_SLEEP_MS = std::chrono::milliseconds{50000}; // 5s
+
 class Watchdog {
 	std::thread watchdogThread;
 	std::atomic<size_t> counter;
 
-	std::condition_variable startCondition;
-	std::mutex mutex;
+	ConcurrencyUtils::Semaphore startSemaphore = ConcurrencyUtils::Semaphore(0);
 
 	std::atomic<bool> keepRunning = true;
 	std::chrono::milliseconds sleepMs;
 
 public:
-	explicit inline Watchdog(const std::chrono::milliseconds sleepMs): sleepMs(sleepMs) {
+	explicit inline Watchdog(const std::chrono::milliseconds sleepMs = DEFAULT_SLEEP_MS): sleepMs(sleepMs) {
 		// Start the thread
 		watchdogThread = std::thread(&Watchdog::watchdogMain, this);
 		watchdogThread.detach();
 	}
 
-	void updateCounter(const int x) {
+	void updateCounter(const size_t x) {
 		counter += x;
 	}
 
-private:
-	inline void watchdogMain() {
-		auto lock = std::unique_lock(mutex);
-		startCondition.wait(lock);
+	void terminate() {
+		keepRunning = false;
+	}
 
+private:
+	void watchdogMain() {
+		startSemaphore.acquire(); // Try to acquire start semaphore
 		while (keepRunning) {
 			std::this_thread::sleep_for(sleepMs);
 			if (counter == 0) {

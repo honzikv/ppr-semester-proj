@@ -6,6 +6,7 @@
 #include "FileChunkHandler.h"
 #include "JobAggregator.h"
 #include "MemoryUtils.h"
+#include "Watchdog.h"
 
 constexpr auto DEFAULT_CHUNK_SIZE = 1024;
 
@@ -25,7 +26,7 @@ class JobScheduler {
 	 * \brief To synchronize with device coordinators we use a semaphore which is incremented by coordinator after
 	 * finishing a job
 	 */
-	ConcurrencyUtils::Semaphore jobFinishedSemaphore = ConcurrencyUtils::Semaphore(1);
+	ConcurrencyUtils::Semaphore jobFinishedSemaphore = ConcurrencyUtils::Semaphore(0);
 
 	FileChunkHandler fileChunkHandler;
 
@@ -34,6 +35,10 @@ class JobScheduler {
 	 * to initialized later in the constructor
 	 */
 	std::unique_ptr<JobAggregator> jobAggregator = nullptr;
+
+	Watchdog watchdog;
+
+	size_t currentJobId = 0;
 
 public:
 	explicit JobScheduler(ProcessingInfo& processingInfo, const size_t chunkSize = DEFAULT_CHUNK_SIZE):
@@ -69,27 +74,31 @@ public:
 
 		// Add CPU device coordinator - this will be set to inactive state if OPENCL_DEVICES mode is used
 		// If CPU supports AVX2 then use AVX2 capable coordinator
-		cpuDeviceCoordinator = __ISA_AVAILABLE_AVX2 ? std::make_shared<Avx2CpuDeviceCoordinator>(
-			CoordinatorType::TBB,
-			processingInfo.ProcessingMode,
-			[this](auto&& ph1, auto&& ph2) {
-				jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
-			},
-			memoryLimits.CpuMemory,
-				DEFAULT_CHUNK_SIZE,
-				processingInfo.DistFilePath,
-				coordinatorId
-				) : std::make_shared<CpuDeviceCoordinator>(
-					CoordinatorType::TBB,
-					processingInfo.ProcessingMode,
-					[this](auto&& ph1, auto&& ph2) {
-						jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
-					},
-					memoryLimits.CpuMemory,
-						DEFAULT_CHUNK_SIZE,
-						processingInfo.DistFilePath,
-						coordinatorId
-						);
+		cpuDeviceCoordinator = !__ISA_AVAILABLE_AVX2
+			                       ? std::make_shared<Avx2CpuDeviceCoordinator>(
+				                       CoordinatorType::TBB,
+				                       processingInfo.ProcessingMode,
+				                       [this](auto&& ph1, auto&& ph2) {
+					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
+					                                           std::forward<decltype(ph2)>(ph2));
+				                       },
+				                       memoryLimits.CpuMemory,
+				                       DEFAULT_CHUNK_SIZE,
+				                       processingInfo.DistFilePath,
+				                       coordinatorId
+			                       )
+			                       : std::make_shared<CpuDeviceCoordinator>(
+				                       CoordinatorType::TBB,
+				                       processingInfo.ProcessingMode,
+				                       [this](auto&& ph1, auto&& ph2) {
+					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
+					                                           std::forward<decltype(ph2)>(ph2));
+				                       },
+				                       memoryLimits.CpuMemory,
+				                       DEFAULT_CHUNK_SIZE,
+				                       processingInfo.DistFilePath,
+				                       coordinatorId
+			                       );
 
 		jobAggregator = std::make_unique<JobAggregator>(clDeviceCoordinators.size() +
 		                                                processingInfo.ProcessingMode != ProcessingMode::OPENCL_DEVICES
@@ -157,14 +166,27 @@ public:
 		cpuDeviceCoordinator->terminate();
 	}
 
+	void assignJob() {
+		// Update processed jobs if there are any
+		jobAggregator->update();
+
+		// Get the coordinator
+		const auto coordinator = getNextAvailableDeviceCoordinator();
+
+		// Build and assign new job for them
+		const auto chunkRange = fileChunkHandler.getNextNChunks(coordinator->getMaxNumberOfChunks());
+		coordinator->assignJob(Job(chunkRange, currentJobId));
+		currentJobId += 1;
+	}
+
 	/**
 	 * \brief Runs the job scheduler.
 	 */
 	inline auto run() {
 		while (true) {
-			// Check if there is job available
+			// Check if there is a job available
 			if (!jobRemaining()) {
-				// If not check if there are any coordinators working
+				// If there is not check if all coordinators have finished (i.e. are available)
 				if (allCoordinatorsAvailable()) {
 					break; // All coordinators are done - break the loop
 				}
@@ -180,20 +202,14 @@ public:
 				jobFinishedSemaphore.acquire();
 			}
 
-			// Update processed jobs if there are any
-			jobAggregator->update();
-
-			// Get the coordinator
-			const auto coordinator = getNextAvailableDeviceCoordinator();
-
-			// Build and assign new job for them
-			std::cout << "Assigning job!" << std::endl;
-			const auto chunkRange = fileChunkHandler.getNextNChunks(coordinator->getMaxNumberOfChunks());
-			coordinator->assignJob(Job(chunkRange));
+			assignJob();
 		}
 
 		// Update job aggregator
 		jobAggregator->update();
+
+		// Terminate watchdog
+		watchdog.terminate();
 
 		// Terminate all coordinators
 		terminateDeviceCoordinators();

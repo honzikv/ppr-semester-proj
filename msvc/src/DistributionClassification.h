@@ -16,11 +16,7 @@ static constexpr Point2D EXPONENTIAL_DISTRIBUTION = std::make_pair(2.0, 6.0);
 static constexpr Point2D UNIFORM_DISTRIBUTION = std::make_pair(.0, -5.0 / 6.0);
 
 static const auto DISTRIBUTIONS = std::vector{GAUSSIAN_DISTRIBUTION, EXPONENTIAL_DISTRIBUTION, UNIFORM_DISTRIBUTION};
-static const auto DISTRIBUTION_TO_STR_MAPPING = std::unordered_map<size_t, std::string>{
-	{0, "Gaussian"},
-	{1, "Exponential"},
-	{2, "Uniform"},
-};
+static const auto DISTRIBUTION_STR_LUT = std::vector{ "Gaussian", "Exponential", "Uniform" };
 
 inline auto euclideanDistance(std::pair<double, double> a, std::pair<double, double> b) {
 	const auto [x1, y1] = a;
@@ -62,7 +58,7 @@ inline void classifyDistribution(const RunningStats& runningStats) {
 		std::distance(std::begin(distances), std::min_element(distances.begin(), distances.end()));
 
 	// Lookup the distribution name
-	const auto distributionName = DISTRIBUTION_TO_STR_MAPPING.at(static_cast<size_t>(closestDistributionIdx));
+	const auto distributionName = DISTRIBUTION_STR_LUT.at(static_cast<size_t>(closestDistributionIdx));
 
 	// And finally print to the stdout
 	std::cout << "Classified distribution as: \"" << distributionName << "\"" << "\n" << "\n";

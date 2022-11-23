@@ -68,6 +68,14 @@ public:
 			return *this;
 		}
 
+		if (n == 0) {
+			return other;
+		}
+
+		if (n == 0 && other.n == 0) {
+			throw std::runtime_error("Both RunningStats are empty");
+		}
+
 		auto result = RunningStats();
 		result.n = n + other.n;
 

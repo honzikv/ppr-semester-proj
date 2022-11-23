@@ -30,6 +30,7 @@
     <ClInclude Include="src\Avx2CpuDeviceCoordinator.h" />
     <ClInclude Include="src\ClSources.h" />
     <ClInclude Include="src\DistributionClassification.h" />
+    <ClInclude Include="src\Logging.h" />
     <ClInclude Include="src\MemoryUtils.h" />
     <ClInclude Include="src\JobAggregator.h" />
     <ClInclude Include="src\FileChunkHandler.h" />

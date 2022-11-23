@@ -41,7 +41,7 @@ public:
 		const auto validMask = int4ToDouble4(int4And(valid, int4Set(0x1)));
 
 		const auto n1 = int4ToDouble4(n); // n1 = n, we convert to double to avoid casting later
-		n = int4Add(n, int4Set(0x1)); // n += 1
+		n = int4Add(n, int4And(int4Set(1), valid)); // n += valid * 1
 
 		const auto nDouble = int4ToDouble4(n); // nDouble = n, we convert to double to avoid casting later
 		const auto delta = double4Sub(x, m1); // delta = x - m1
@@ -208,19 +208,7 @@ public:
 			results[i].isIntegerDistribution = static_cast<bool>(isIntegerDistribution.m256i_i64[i]);
 		}
 		
-		
-		
 		const auto result =  results[0] + results[1] + results[2] + results[3];
-
-		// auto result = RunningStats{};
-		// for (auto i = 0; i < 4; i += 1) {
-		// 	result.n += static_cast<size_t>(n.m256i_i64[i]);
-		// 	result.m1 += m1.m256d_f64[i] / 4;
-		// 	result.m2 += m2.m256d_f64[i] / 4;
-		// 	result.m3 += m3.m256d_f64[i] / 4;
-		// 	result.m4 += m4.m256d_f64[i] / 4;
-		// 	result.isIntegerDistribution = result.isIntegerDistribution && static_cast<bool>(isIntegerDistribution.m256i_i64[i]);
-		// }
 
 		return result;
 	}

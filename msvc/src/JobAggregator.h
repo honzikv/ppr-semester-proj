@@ -9,16 +9,20 @@
  */
 class JobAggregator {
 
+	std::mutex mutex;
+
 public:
 	explicit JobAggregator(const size_t nCoordinators) {
 		coordinatorJobResults.resize(nCoordinators);
 	}
 
 	void writeProcessedJob(std::unique_ptr<Job> job, const size_t coordinatorIdx) {
+		auto lock = std::scoped_lock(mutex);
 		coordinatorJobResults[coordinatorIdx] = std::move(job);
 	}
 
 	void update() {
+		auto lock = std::scoped_lock(mutex);
 		for (const auto& job : coordinatorJobResults) {
 			if (job != nullptr) {
 				runningStats += job->Result;
@@ -31,7 +35,8 @@ public:
 		}
 	}
 
-	[[nodiscard]] auto getResult() const {
+	[[nodiscard]] auto getResult()  {
+		auto lock = std::scoped_lock(mutex);
 		return runningStats;
 	}
 
