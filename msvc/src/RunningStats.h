@@ -1,6 +1,7 @@
 #pragma once
-#include <cmath>
 #include <iostream>
+
+#include "StatUtils.h"
 
 class Avx2RunningStats;
 
@@ -18,14 +19,12 @@ class RunningStats {
 
 public:
 	void push(const double x) {
-		// Check whether x is FP_NORMAL
-		const auto fpType = std::fpclassify(x);
-		if (fpType != FP_ZERO && fpType != FP_NORMAL) {
+		if (!StatUtils::valueNormalOrZero(x)) {
 			return;
 		}
 		
 		// Check if x is an integer
-		isIntegerDistribution = isIntegerDistribution && isInt(x);
+		isIntegerDistribution = isIntegerDistribution && StatUtils::isValueInteger(x);
 
 		const auto n1 = n;
 		n += 1;
@@ -107,9 +106,12 @@ public:
 		return isIntegerDistribution;
 	}
 
-	[[nodiscard]] bool isInt(const double x) const {
-		double intPart;
-		return std::modf(x, &intPart) == 0.0;
+	/**
+	 * \brief 
+	 * \return true if the values are within reasonable precision
+	 */
+	bool isValid() {
+		 
 	}
 
 	/**

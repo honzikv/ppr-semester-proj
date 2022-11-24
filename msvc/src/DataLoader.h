@@ -66,7 +66,15 @@ public:
 		return buffer;
 	}
 
-	void loadJobDataIntoDeviceBuffer(const Job& job,
+	/**
+	 * \brief Loads job data into device buffer and returns the number of chunks in the device buffer
+	 * \param job job to load
+	 * \param maxHostChunks max number of chunks that can be loaded into host memory at a time
+	 * \param commandQueue command queue for the given device - to write to the device buffer
+	 * \param deviceBuffer reference to the device buffer
+	 * \return number of chunks in the device buffer
+	 */
+	auto loadJobDataIntoDeviceBuffer(const Job& job,
 	                                 const size_t maxHostChunks,
 	                                 const cl::CommandQueue& commandQueue,
 	                                 const cl::Buffer& deviceBuffer) {
@@ -93,5 +101,8 @@ public:
 			currentChunk += chunksToRead;
 			chunksRemaining -= chunksToRead;
 		}
+
+		// Return actual number of chunks
+		return nChunks;
 	}
 };

@@ -1,12 +1,12 @@
 #include <oneapi/tbb.h>
 #include "Avx2RunningStats.h"
 #include "Avx2CpuDeviceCoordinator.h"
-#include <algorithm>
-#include <random>
 
 void Avx2CpuDeviceCoordinator::onProcessJob() {
-	std::cout << "OnProcessJob AVX2 CPU" << std::endl;
 	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
+
+	const auto jobSize = currentJob->size(dataLoader.ChunkSizeBytes);
+	std::cout << "Job size: " << jobSize << std::endl;
 
 	// Create vector for results
 	auto runningStats = std::vector<Avx2RunningStats>(nCores);
@@ -28,14 +28,6 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 			                          });
 		                          }
 	                          });
-
-	// Merge the results
-	// auto mergedRunningStats = runningStats[0].asScalar();
-	// for (auto i = 1; i < static_cast<int>(runningStats.size()); i += 1) {
-	// 	mergedRunningStats += runningStats[i].asScalar();
-	// }
-	//
-	// currentJob->Result = mergedRunningStats;
 
 	auto result = std::vector<RunningStats>();
 	for (const auto& avx2RunningStats : runningStats) {

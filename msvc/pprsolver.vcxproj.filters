@@ -9,23 +9,20 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Header Files\Job">
-      <UniqueIdentifier>{8e287a41-ae3c-402c-8153-e6c9f8eebbd9}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Job">
-      <UniqueIdentifier>{cfbfa0b6-c704-4674-8dc4-3ea9696e3fee}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Util">
-      <UniqueIdentifier>{e650d633-162e-40e9-b9be-9049b9dde4f4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Concurrency">
-      <UniqueIdentifier>{fedbca42-9904-40d9-a2a5-8cc602663155}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\Concurrency">
-      <UniqueIdentifier>{5e9eb789-ecf5-46fa-ba20-4d97597f3f3f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\IO">
       <UniqueIdentifier>{2eb647d7-df59-4779-b70b-526db6623400}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{0a95e712-3b8e-40ba-b160-2f887a8fd525}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\CL">
+      <UniqueIdentifier>{41f6d06d-4a6d-4681-a77e-34b4a35bd221}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Stats">
+      <UniqueIdentifier>{aca6bc71-a829-4e87-af6b-0cd2e9611916}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\CPU">
+      <UniqueIdentifier>{915c0764-c827-4bb4-afa2-596630115244}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -35,79 +32,79 @@
     <ClCompile Include="src\Arghandling.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\JobScheduler.cpp">
-      <Filter>Source Files\Job</Filter>
-    </ClCompile>
-    <ClCompile Include="src\CpuDeviceCoordinator.cpp">
-      <Filter>Source Files\Concurrency</Filter>
+    <ClCompile Include="src\Avx2CpuDeviceCoordinator.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ClDeviceCoordinator.cpp">
-      <Filter>Source Files\Concurrency</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Avx2CpuDeviceCoordinator.cpp">
-      <Filter>Source Files\Concurrency</Filter>
+    <ClCompile Include="src\CpuDeviceCoordinator.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Job.h">
-      <Filter>Header Files\Job</Filter>
-    </ClInclude>
-    <ClInclude Include="src\JobScheduler.h">
-      <Filter>Header Files\Job</Filter>
-    </ClInclude>
-    <ClInclude Include="src\RunningStats.h">
-      <Filter>Header Files\Job</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Arghandling.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Watchdog.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\CpuDeviceCoordinator.h">
-      <Filter>Header Files\Concurrency</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ClDeviceCoordinator.h">
-      <Filter>Header Files\Concurrency</Filter>
-    </ClInclude>
-    <ClInclude Include="src\DeviceCoordinator.h">
-      <Filter>Header Files\Concurrency</Filter>
-    </ClInclude>
-    <ClInclude Include="src\MemoryUtils.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ConcurrencyUtils.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
-    <ClInclude Include="src\DistributionClassification.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ClCompiler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ClSources.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\VectorizationUtils.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Avx2RunningStats.h">
-      <Filter>Header Files\Job</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Avx2CpuDeviceCoordinator.h">
-      <Filter>Header Files\Concurrency</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Logging.h">
-      <Filter>Header Files\Util</Filter>
-    </ClInclude>
-    <ClInclude Include="src\RunningStatsAvx2.h">
-      <Filter>Header Files\Job</Filter>
-    </ClInclude>
     <ClInclude Include="src\FileChunkHandler.h">
       <Filter>Header Files\IO</Filter>
     </ClInclude>
     <ClInclude Include="src\DataLoader.h">
       <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Avx2CpuDeviceCoordinator.h">
+      <Filter>Header Files\CPU</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CpuDeviceCoordinator.h">
+      <Filter>Header Files\CPU</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DeviceCoordinator.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\JobScheduler.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Job.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ClDeviceCoordinator.h">
+      <Filter>Header Files\CL</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ClSources.h">
+      <Filter>Header Files\CL</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DistributionClassification.h">
+      <Filter>Header Files\Stats</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Watchdog.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VectorizationUtils.h">
+      <Filter>Header Files\CPU</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MemoryUtils.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ConcurrencyUtils.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Logging.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Arghandling.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Avx2RunningStats.h">
+      <Filter>Header Files\Stats</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RunningStats.h">
+      <Filter>Header Files\Stats</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RunningStatsAvx2.h">
+      <Filter>Header Files\Stats</Filter>
+    </ClInclude>
+    <ClInclude Include="src\StatUtils.h">
+      <Filter>Header Files\Stats</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OpenClTest.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

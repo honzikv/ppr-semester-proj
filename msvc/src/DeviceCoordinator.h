@@ -136,7 +136,6 @@ private:
 	 * \brief Main function of the coordinator thread
 	 */
 	void threadMain() {
-		std::cout << "Starting coordinator thread" << std::endl; // TODO remove
 		while (keepRunning) {
 			semaphore->acquire();
 
@@ -147,8 +146,7 @@ private:
 				// semaphore->acquire();
 				continue;
 			}
-
-			std::cout << "Semaphore acquired, trying to get the job!" << std::endl; // TODO remove
+			
 			processJob();
 		}
 

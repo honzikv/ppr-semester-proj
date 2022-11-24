@@ -17,6 +17,7 @@ if __name__ == '__main__':
                           required=True, help='Number of samples to generate')
     argparser.add_argument('--output_file', type=str,
                            required=True, help='Path to output file')
+    argparser.add_argument('--noise', type=float, default=0.0, max=0.5, min=0.0, help='Noise to add to the distribution')
     
     args = argparser.parse_args()
     

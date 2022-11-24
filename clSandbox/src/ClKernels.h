@@ -8,12 +8,10 @@ constexpr auto DEFAULT_BUILD_FLAG = "-cl-std=CL2.0";
 
 constexpr auto testKernel = R"CLC(
 
-__kernel void processArray(__global double* array, __global double* bufferSize) {
+__kernel void processArray(__global double* inputArray, __global double* outputArray, int nItemsToProcess) {
     size_t threadIdx = get_global_id(0);
-    size_t nItemsToProcess = *bufferSize / threadIdx;
-
     for (size_t i = 0; i < nItemsToProcess; i += 1) {
-        array[i + 1] = (double)threadIdx;
+        outputArray[i] = inputArray[i] * inputArray[i];
     }
 }
 

@@ -7,7 +7,7 @@
 #include "MemoryUtils.h"
 #include "Watchdog.h"
 
-constexpr auto DEFAULT_CHUNK_SIZE = 4096;
+constexpr auto DEFAULT_CHUNK_SIZE = 1024;
 
 class JobScheduler {
 
@@ -156,6 +156,7 @@ public:
 
 		// Write data to job aggregator
 		addProcessedJob(std::move(job), coordinatorIdx);
+		watchdog.updateCounter(1);
 		jobFinishedSemaphore.release();
 	}
 

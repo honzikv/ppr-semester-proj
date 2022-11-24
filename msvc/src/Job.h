@@ -15,4 +15,13 @@ struct Job {
 		Id(id) {
 	}
 
+	/**
+	 * \brief Returns size of the job in bytes
+	 * \param chunkSizeBytes 
+	 * \return 
+	 */
+	[[nodiscard]] auto size(const size_t chunkSizeBytes) const {
+		return (ChunkIdxRange.second - ChunkIdxRange.first) * chunkSizeBytes;
+	}
+
 };

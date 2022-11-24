@@ -5,12 +5,27 @@
 
 #include "DeviceCoordinator.h"
 #include "ClSources.h"
-#include "ClCompiler.h"
+#include <stdexcept>
+#include <CL/cl.hpp>
+#include <string>
 
 namespace fs = std::filesystem;
 
-constexpr auto VIDEO_MEMORY_SCALE = .9;
-// 90% of video memory is used for computation (or rather 90% of what OpenCL returns)
+constexpr auto VIDEO_MEMORY_SCALE = .8;
+constexpr auto KERNEL_NAME = "computeStats";
+// 80% of video memory is used for computation (or rather 90% of what OpenCL returns)
+
+static constexpr auto DEFAULT_BUILD_FLAG = "-cl-std=CL2.0";
+
+/**
+ * \brief Custom error for control flow
+ */
+class ClCompileErr final : public std::runtime_error {
+public:
+	explicit ClCompileErr(const std::string& what = "") : std::runtime_error(what) {
+	}
+};
+
 
 /**
  * \brief Wraps OpenCL logic for device coordination
@@ -31,8 +46,9 @@ public:
 	                      id),
 	    platform(platform),
 	    device(device),
-	    maxHostChunks(static_cast<size_t>(floor(memoryLimit / chunkSizeBytes)) * chunkSizeBytes) {
-		// Setup openCL device
+	    maxHostChunks(memoryLimit / chunkSizeBytes) {
+
+		// Setup the device
 		setup(chunkSizeBytes);
 
 		// After we have set everything up start the thread
@@ -40,29 +56,79 @@ public:
 
 	}
 
-protected:
-	void onProcessJob() override;
-
 private:
 	cl::Platform platform; // Device platform
 	cl::Device device; // The actual device
 	cl::Context context; // Cl context
 	cl::CommandQueue commandQueue; // Command queue
 	cl::Program program; // Compiled program
-	size_t workgroupSize; // Max number of work items in a work group
+	size_t workGroupSize{}; // Max number of work items in a work group
 	size_t maxHostChunks;
+	size_t bufferSizePerWorkerBytes{};
+
+	/**
+	 * \brief Compiles given source into program
+	 * \param source string containing source code to be compiled
+	 * \param programName name of the program
+	 * \param deviceContext device context
+	 * \param device device to compile for
+	 * \return cl::Program instance or throws ClCompileErr if the program cannot be compiled
+	 */
+	static auto compile(const std::string& source, const std::string& programName, const cl::Context& deviceContext) {
+		const auto program = cl::Program(deviceContext, source);
+		if (const auto result = program.build(DEFAULT_BUILD_FLAG); result != CL_BUILD_SUCCESS) {
+			throw ClCompileErr(
+				"Error during OpenCL Program compilation ( " + programName + " )\n. Error: " + std::to_string(result));
+		}
+
+		return program;
+	}
 
 	void setup(const size_t chunkSizeBytes) {
-		this->workgroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
-		const auto bufferSize = static_cast<double>(device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>()) *
-			VIDEO_MEMORY_SCALE;
-		const auto workGroupSize = static_cast<double>(this->workgroupSize);
+		workGroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+		const auto bufferSize = static_cast<size_t>(static_cast<double>(device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>())
+			* VIDEO_MEMORY_SCALE);
 
-		maxNumberOfChunks = static_cast<size_t>(floor(bufferSize / workGroupSize) * workGroupSize) / chunkSizeBytes;
+		// Calculate max number of chunks which is basically size of the buffer split into chunks that are split for threads
+		bufferSizePerWorkerBytes = bufferSize / chunkSizeBytes / workGroupSize;
+		maxNumberOfChunks = bufferSizePerWorkerBytes * workGroupSize;
+
+		// OpenCL boilerplate
 		context = cl::Context(device);
 		commandQueue = cl::CommandQueue(context, device);
-
-		// Compile the program
 		program = compile(CL_PROGRAM, "program", context);
+	}
+
+protected:
+	void onProcessJob() {
+		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, maxNumberOfChunks);
+		const auto chunksLoaded = dataLoader.loadJobDataIntoDeviceBuffer(
+			*currentJob, maxHostChunks, commandQueue, deviceBuffer);
+
+		// Compute the number of workers
+		auto nWorkers = chunksLoaded / bufferSizePerWorkerBytes;
+		auto itemsPerWorker = bufferSizePerWorkerBytes / sizeof(double);
+		if (nWorkers == 0) {
+			// This means that the job is smaller than buffer size for a single worker
+			// So the job will be done only on one worker
+			itemsPerWorker = chunksLoaded * dataLoader.ChunkSizeBytes / sizeof(double);
+			nWorkers = 1;
+		}
+
+		// Get the kernel
+		auto kernel = cl::Kernel(program, KERNEL_NAME);
+
+		// Pass the params
+		kernel.setArg(0, deviceBuffer);
+		kernel.setArg(1, itemsPerWorker);
+
+		// Run the kernel
+		commandQueue.enqueueNDRangeKernel(
+			kernel,
+			cl::NullRange,
+			cl::NDRange(nWorkers * workGroupSize),
+			cl::NDRange(workGroupSize)
+		);
+
 	}
 };
