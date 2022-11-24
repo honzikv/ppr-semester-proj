@@ -32,37 +32,77 @@ __kernel void computeStats(__global double* buffer, uint64_t numElements) {
     size_t threadIdx = get_global_id(0);
 
     // Emulate a RunningStats object
-    size_t n = 0;
+    uint64_t n = 0;
     bool integerOnly = true;
-    double m[4]; // m1, m2, m3, m4
-    double intPart;
+    double m1 = 0.0, m2 = 0.0, m3 = 0.0, m4 = 0.0;
+    double intPart = 0.0;
 
     // Process numElements elements
-    for (size_t i = 0; i < numElements; i += 1) {
-        double x = buffer[i];
-        // if (!valueNormalOrZero(x)) {
-        //     // Skip if x is NaN, infinity or denormal
-        //     continue;
-        // }
+    for (uint64_t i = 0; i < numElements; i += 1) {
+        double x = buffer[threadIdx*numElements+i];
+        if (!valueNormalOrZero(x)) {
+            // Skip if x is NaN, infinity or denormal
+            continue;
+        }
 
         n += 1;
         integerOnly = integerOnly && modf(x, &intPart) == 0.0;
-        double delta = x - m[0];
+        double delta = x - m1;
         double deltaN = delta / n;
         double deltaNSquared = deltaN * deltaN;
         double term1 = delta * deltaN * (n - 1);
 
-        m[0] += deltaN;
-        m[3] += term1 * deltaNSquared * (n * n - 3 * n + 3) + 6 * deltaNSquared * m[1] - 4 * deltaN * m[2];
-        m[2] += term1 * deltaN * (n - 2) - 3 * deltaNSquared * m[1];
-        m[1] += term1;
+        m1 += deltaN;
+        m4 += term1 * deltaNSquared * (n * n - 3 * n + 3) + 6 * deltaNSquared * m2 - 4 * deltaN * m3;
+        m3 += term1 * deltaN * (n - 2) - 3 * deltaNSquared * m2;
+        m2 += term1;
     }
-
+    
     // Write results to the buffer
     buffer[threadIdx*6] = n;
-    buffer[threadIdx*6 + 1] = m[0];
-    buffer[threadIdx*6 + 2] = m[1];
-    buffer[threadIdx*6 + 3] = m[2];
-    buffer[threadIdx*6 + 4] = m[3];
+    buffer[threadIdx*6 + 1] = m1;
+    buffer[threadIdx*6 + 2] = m2;
+    buffer[threadIdx*6 + 3] = m3;
+    buffer[threadIdx*6 + 4] = m4;
+    buffer[threadIdx*6 + 5] = integerOnly;
+}
+
+
+__kernel void computeStatsFUNCTIONAL(__global double* buffer, ulong numElements) {
+    size_t threadIdx = get_global_id(0);
+
+    // Emulate a RunningStats object
+    int n = 0;
+    bool integerOnly = true;
+    double m1 = 0.0, m2 = 0.0, m3 = 0.0, m4 = 0.0;
+    double intPart = 0.0;
+
+    // Process numElements elements
+    for (ulong i = 0; i < numElements; i += 1) {
+        double x = buffer[threadIdx*numElements+i];
+        if (!valueNormalOrZero(x)) {
+            // Skip if x is NaN, infinity or denormal
+            continue;
+        }
+
+        n += 1;
+        integerOnly = integerOnly && modf(x, &intPart) == 0.0;
+        double delta = x - m1;
+        double deltaN = delta / n;
+        double deltaNSquared = deltaN * deltaN;
+        double term1 = delta * deltaN * (n - 1);
+
+        m1 += deltaN;
+        m4 += term1 * deltaNSquared * (n * n - 3 * n + 3) + 6 * deltaNSquared * m2 - 4 * deltaN * m3;
+        m3 += term1 * deltaN * (n - 2) - 3 * deltaNSquared * m2;
+        m2 += term1;
+    }
+    
+    // Write results to the buffer
+    buffer[threadIdx*6] = n;
+    buffer[threadIdx*6 + 1] = m1;
+    buffer[threadIdx*6 + 2] = m2;
+    buffer[threadIdx*6 + 3] = m3;
+    buffer[threadIdx*6 + 4] = m4;
     buffer[threadIdx*6 + 5] = integerOnly;
 }

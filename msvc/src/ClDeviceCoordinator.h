@@ -1,4 +1,6 @@
 #pragma once
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+
 
 #include <CL/cl.hpp>
 #include <filesystem>
@@ -103,7 +105,7 @@ private:
 protected:
 	void onProcessJob() override {
 		std::cout << "Processing job on CL device" << std::endl;
-		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, maxNumberOfChunks);
+		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, 512  * 1024 * 1024);
 		const auto chunksLoaded = dataLoader.loadJobDataIntoDeviceBuffer(
 			*currentJob, maxHostChunks, commandQueue, deviceBuffer);
 
@@ -122,6 +124,7 @@ protected:
 
 		// Pass the params
 		kernel.setArg(0, deviceBuffer);
+		// kernel.setArg(1, outputBuffer);
 		kernel.setArg(1, itemsPerWorker);
 
 		// Run the kernel
@@ -142,6 +145,10 @@ protected:
 				output[workerId * 6 + 4],
 				static_cast<bool>(output[workerId * 6 + 5]),
 			};
+		}
+
+		for (auto i = 0; i < results.size() / 2; i += 2) {
+			results[i] = results[i] + results[i + 1];
 		}
 
 		currentJob->Result = results;
