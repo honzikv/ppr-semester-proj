@@ -104,7 +104,7 @@
       <Filter>Header Files\Stats</Filter>
     </ClInclude>
     <ClInclude Include="src\OpenClTest.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files\CL</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

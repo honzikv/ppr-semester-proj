@@ -1,5 +1,5 @@
-#define true 1  // From hell
-#define false 0
+// #define true 1  // From hell
+// #define false 0
 #define EXPONENT_MASK 0x7fffffffffffffffULL
 #define MANTISSA_MASK 0x000fffffffffffffULL
 
@@ -83,7 +83,7 @@ inline void push(size_t* n, double* m, bool* integerOnly, double x) {
 
 
 __kernel void computeStats(__global double* buffer, uint64_t numElements) {
-    size_t id = get_global_id(0);
+    size_t threadIdx = get_global_id(0);
 
     // Emulate a RunningStats object
     size_t n = 0;
@@ -92,16 +92,16 @@ __kernel void computeStats(__global double* buffer, uint64_t numElements) {
 
     // Process numElements elements
     for (size_t i = 0; i < numElements; i += 1) {
-        push(&n, m, &integerOnly, buffer[id*numElements + i]);
+        push(&n, m, &integerOnly, buffer[threadIdx*numElements + i]);
     }
 
     // Write results to the buffer
-    buffer[id*6] = n;
-    buffer[id*6 + 1] = m[0];
-    buffer[id*6 + 2] = m[1];
-    buffer[id*6 + 3] = m[2];
-    buffer[id*6 + 4] = m[3];
-    buffer[id*6 + 5] = integerOnly;
+    buffer[threadIdx*6] = n;
+    buffer[threadIdx*6 + 1] = m[0];
+    buffer[threadIdx*6 + 2] = m[1];
+    buffer[threadIdx*6 + 3] = m[2];
+    buffer[threadIdx*6 + 4] = m[3];
+    buffer[threadIdx*6 + 5] = integerOnly;
 }
 
 __kernel void processArray(__global double* inputArray, __global double* outputArray, int nItemsToProcess) {

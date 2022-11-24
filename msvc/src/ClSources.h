@@ -5,14 +5,14 @@
 #include <stdexcept>
 
 constexpr auto CL_PROGRAM = R"CLC(
-#define true 1  // From hell
-#define false 0
 #define EXPONENT_MASK 0x7fffffffffffffffULL
 #define MANTISSA_MASK 0x000fffffffffffffULL
 
 typedef ulong uint64_t;
 typedef int int16_t;
 
+// Modification of std::fpclassify
+// Returns true if the number is FP_NORMAL or FP_ZERO
 inline bool valueNormalOrZero(double x) {
     uint64_t bits = *(uint64_t*)&x;
     uint64_t exponent = (bits & EXPONENT_MASK) >> 52;
@@ -67,7 +67,6 @@ inline double modf(double x) {
 }
 
 // An equivalent of RunningStats::push
-// This should get inlined by the compiler
 inline void push(size_t* n, double* m, bool* integerOnly, double x) {
     if (!valueNormalOrZero(x)) {
         // Skip if x is NaN, infinity or denormal
@@ -87,29 +86,27 @@ inline void push(size_t* n, double* m, bool* integerOnly, double x) {
     m[1] += term1;
 }
 
-__kernel void computeStats(__global double* buffer) {
-    size_t id = get_global_id(0);
 
-    // Now we can basically emulate the running stats code here
-    // This work item will process N elements and write to the beginning of the buffer
+__kernel void computeStats(__global double* buffer, uint64_t numElements) {
+    size_t threadIdx = get_global_id(0);
+
+    // Emulate a RunningStats object
     size_t n = 0;
     bool integerOnly = true;
     double m[4]; // m1, m2, m3, m4
 
-    size_t localSize = get_local_size(0);
-
-    // Process localSize elements
-    for (size_t i = 0; i < localSize; i += 1) {
-        push(&n, m, &integerOnly, buffer[id*localSize + i]);
+    // Process numElements elements
+    for (size_t i = 0; i < numElements; i += 1) {
+        push(&n, m, &integerOnly, buffer[threadIdx*numElements + i]);
     }
 
-    // Write results at the beginning of the buffer
-    buffer[id*6] = n;
-    buffer[id*6 + 1] = m[0];
-    buffer[id*6 + 2] = m[1];
-    buffer[id*6 + 3] = m[2];
-    buffer[id*6 + 4] = m[3];
-    buffer[id*6 + 5] = integerOnly;
+    // Write results to the buffer
+    buffer[threadIdx*6] = n;
+    buffer[threadIdx*6 + 1] = m[0];
+    buffer[threadIdx*6 + 2] = m[1];
+    buffer[threadIdx*6 + 3] = m[2];
+    buffer[threadIdx*6 + 4] = m[3];
+    buffer[threadIdx*6 + 5] = integerOnly;
 }
 
 )CLC";
