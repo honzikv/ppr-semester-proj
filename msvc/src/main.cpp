@@ -3,6 +3,8 @@
 #include "JobScheduler.h"
 #include <fstream>
 
+#include "OpenClTest.h"
+
 int main(int argc, char** argv) {
 	auto args = parseArguments(argc, argv);
 	auto processingInfo = validateArguments(args);
@@ -11,10 +13,10 @@ int main(int argc, char** argv) {
 	
 	// Classify the result
 	classifyDistribution(result);
-
+	
 	// VectorizationUtils::testValuesInvalidFn();
 	// VectorizationUtils::TestValuesIntegerFn();
-
+	
 	std::cout << "TEST SINGLE THREAD" << std::endl;
 	auto filePath = processingInfo.DistFilePath;
 	
@@ -43,6 +45,8 @@ int main(int argc, char** argv) {
 	
 	classifyDistribution(runningStats);
 	runningStats.debugPrint();
+
+	// openClTest();
 
 	return 0;
 

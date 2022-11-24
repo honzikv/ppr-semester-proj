@@ -35,9 +35,6 @@
     <ClCompile Include="src\Avx2CpuDeviceCoordinator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ClDeviceCoordinator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\CpuDeviceCoordinator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

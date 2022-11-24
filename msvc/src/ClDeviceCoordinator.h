@@ -15,7 +15,9 @@ constexpr auto VIDEO_MEMORY_SCALE = .8;
 constexpr auto KERNEL_NAME = "computeStats";
 // 80% of video memory is used for computation (or rather 90% of what OpenCL returns)
 
-static constexpr auto DEFAULT_BUILD_FLAG = "-cl-std=CL2.0";
+constexpr auto DEFAULT_BUILD_FLAG = "-cl-std=CL2.0";
+
+constexpr auto N_CL_OUT_PARAMS = 6;
 
 /**
  * \brief Custom error for control flow
@@ -53,7 +55,6 @@ public:
 
 		// After we have set everything up start the thread
 		startCoordinatorThread();
-
 	}
 
 private:
@@ -100,7 +101,8 @@ private:
 	}
 
 protected:
-	void onProcessJob() {
+	void onProcessJob() override {
+		std::cout << "Processing job on CL device" << std::endl;
 		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, maxNumberOfChunks);
 		const auto chunksLoaded = dataLoader.loadJobDataIntoDeviceBuffer(
 			*currentJob, maxHostChunks, commandQueue, deviceBuffer);
@@ -123,12 +125,25 @@ protected:
 		kernel.setArg(1, itemsPerWorker);
 
 		// Run the kernel
-		commandQueue.enqueueNDRangeKernel(
-			kernel,
-			cl::NullRange,
-			cl::NDRange(nWorkers * workGroupSize),
-			cl::NDRange(workGroupSize)
-		);
+		commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, nWorkers);
 
+		// Read back to host
+		auto output = std::vector<double>(nWorkers * N_CL_OUT_PARAMS);
+		commandQueue.enqueueReadBuffer(deviceBuffer, CL_TRUE, 0, output.size() * sizeof(double), output.data());
+
+		// Aggregate the results
+		auto results = std::vector<RunningStats>(nWorkers);
+		for (auto workerId = 0ULL; workerId < nWorkers; workerId += 1) {
+			results[workerId] = {
+				static_cast<size_t>(output[workerId * 6]),
+				output[workerId * 6 + 1],
+				output[workerId * 6 + 2],
+				output[workerId * 6 + 3],
+				output[workerId * 6 + 4],
+				static_cast<bool>(output[workerId * 6 + 5]),
+			};
+		}
+
+		currentJob->Result = results;
 	}
 };

@@ -138,12 +138,7 @@ private:
 	void threadMain() {
 		while (keepRunning) {
 			semaphore->acquire();
-
-			// Try acquiring semaphore - this will be locked by default
-			// and the thread has to wait until it is notified by the scheduler
 			if (!currentJob) {
-				// If there is no current job just sleep
-				// semaphore->acquire();
 				continue;
 			}
 			

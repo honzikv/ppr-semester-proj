@@ -18,6 +18,11 @@ class RunningStats {
 	bool isIntegerDistribution = true;
 
 public:
+	RunningStats() = default;
+
+	RunningStats(const size_t n, const double m1, const double m2, const double m3, const double m4, const bool isIntegerDistribution) :
+		n(n), m1(m1), m2(m2), m3(m3), m4(m4), isIntegerDistribution(isIntegerDistribution) {}
+
 	void push(const double x) {
 		if (!StatUtils::valueNormalOrZero(x)) {
 			return;

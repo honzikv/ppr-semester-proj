@@ -21,7 +21,6 @@
   <ItemGroup>
     <ClCompile Include="src\Arghandling.cpp" />
     <ClCompile Include="src\Avx2CpuDeviceCoordinator.cpp" />
-    <ClCompile Include="src\ClDeviceCoordinator.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\CpuDeviceCoordinator.cpp" />
   </ItemGroup>

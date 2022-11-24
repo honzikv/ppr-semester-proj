@@ -49,7 +49,7 @@ void openClTest() {
     auto nWorkers = count / dataPerWorker;
 
 	auto program = cl::Program(context, cl::Program::Sources{ 1, std::make_pair(kernel, strlen(kernel)) });
-    program.build({device});
+    program.build("-cl-std=CL2.0");
 	auto queue = cl::CommandQueue(context, device);
 
 	auto kernel = cl::Kernel(program, "processArray");
@@ -57,7 +57,9 @@ void openClTest() {
 	auto output = std::vector<double>(count);
 
 	// Write data to device
-	auto deviceInputBuffer = cl::Buffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, sizeof(double) * count, data.data());
+	auto deviceInputBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * count);
+	queue.enqueueWriteBuffer(deviceInputBuffer, CL_TRUE, 0, sizeof(double) * count / 2, data.data());
+	queue.enqueueWriteBuffer(deviceInputBuffer, CL_TRUE, sizeof(double) * count / 2, sizeof(double) * count / 2, data.data());
 	// auto deviceOutputBuffer = cl::Buffer(context, , sizeof(double) * count);
 
 	kernel.setArg(0, deviceInputBuffer);
@@ -74,4 +76,15 @@ void openClTest() {
 		}
 	}
     std::cout << std::endl;
+
+    // auto dataLoader = DataLoader(distFilePath, 4096);
+
+
+
+
+
+
+
+
+
 }
