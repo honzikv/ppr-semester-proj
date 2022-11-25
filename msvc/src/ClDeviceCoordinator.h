@@ -33,25 +33,28 @@ public:
  * \brief Wraps OpenCL logic for device coordination
  */
 class ClDeviceCoordinator final : public DeviceCoordinator {
-public:
-	ClDeviceCoordinator(const CoordinatorType coordinatorType,
-	                    const ProcessingMode processingMode,
-	                    std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
-	                    const size_t memoryLimit,
-	                    const size_t chunkSizeBytes,
-	                    fs::path& distFilePath,
-	                    const cl::Platform& platform,
-	                    const cl::Device& device,
-	                    const size_t id
-	) : DeviceCoordinator(coordinatorType, processingMode, std::move(jobFinishedCallback), memoryLimit, chunkSizeBytes,
-	                      distFilePath,
-	                      id),
-	    platform(platform),
-	    device(device),
-	    maxHostChunks(memoryLimit / chunkSizeBytes) {
 
+
+public:
+	ClDeviceCoordinator(
+		const CoordinatorType coordinatorType,
+		const ProcessingMode processingMode,
+		const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
+		const size_t chunkSizeBytes,
+		const size_t bytesPerAccumulator,
+		const size_t clHostBufferSizeBytes,
+		fs::path& distFilePath,
+		const size_t id,
+		const cl::Platform& platform,
+		const cl::Device& device)
+		: DeviceCoordinator(
+			  coordinatorType, processingMode, jobFinishedCallback, chunkSizeBytes,
+			  bytesPerAccumulator, distFilePath, id),
+		  platform(platform),
+		  device(device),
+		  maxHostChunks(clHostBufferSizeBytes / chunkSizeBytes) {
 		// Setup the device
-		setup(chunkSizeBytes);
+		setup();
 
 		// After we have set everything up start the thread
 		startCoordinatorThread();
@@ -85,14 +88,14 @@ private:
 		return program;
 	}
 
-	void setup(const size_t chunkSizeBytes) {
+	void setup() {
 		workGroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
 		const auto bufferSize = static_cast<size_t>(static_cast<double>(device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>())
 			* VIDEO_MEMORY_SCALE);
 
 		// Calculate max number of chunks which is basically size of the buffer split into chunks that are split for threads
 		bufferSizePerWorkerBytes = bufferSize / chunkSizeBytes / workGroupSize;
-		maxNumberOfChunks = bufferSizePerWorkerBytes * workGroupSize;
+		maxNumberOfChunksPerJob = bufferSizePerWorkerBytes * workGroupSize;
 
 		// OpenCL boilerplate
 		context = cl::Context(device);
@@ -103,8 +106,8 @@ private:
 protected:
 	void onProcessJob() override {
 		std::cout << "Processing job on CL device" << std::endl;
-		auto dataLoader = DataLoader(distFilePath, chunkSizeBytes);
-		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, 512  * 1024 * 1024);
+		auto dataLoader = DataLoader(filePath, chunkSizeBytes);
+		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, 512 * 1024 * 1024);
 		const auto chunksLoaded = dataLoader.loadJobDataIntoDeviceBuffer(
 			*currentJob, maxHostChunks, commandQueue, deviceBuffer);
 

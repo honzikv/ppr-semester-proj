@@ -10,17 +10,18 @@ class CpuDeviceCoordinator : public DeviceCoordinator {
 public:
 	CpuDeviceCoordinator(const CoordinatorType coordinatorType,
 	                     const ProcessingMode processingMode,
-	                     std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
-	                     const size_t memoryLimit,
+	                     const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
 	                     const size_t chunkSizeBytes,
+	                     const size_t bytesPerAccumulator,
+	                     const size_t cpuBufferSizeBytes,
 	                     fs::path& distFilePath,
 	                     const size_t id,
 	                     const size_t nCores = std::thread::hardware_concurrency()
-	) : DeviceCoordinator(coordinatorType, processingMode, std::move(jobFinishedCallback), memoryLimit, chunkSizeBytes,
-	                      distFilePath, id),
-		nCores(nCores) {
-		this->maxNumberOfChunks = static_cast<size_t>(floor(memoryLimit / chunkSizeBytes));
-
+	) : DeviceCoordinator(
+		coordinatorType, processingMode, jobFinishedCallback, 
+		chunkSizeBytes, bytesPerAccumulator, distFilePath, id),
+	    nCores(nCores) {
+		maxNumberOfChunksPerJob = cpuBufferSizeBytes / chunkSizeBytes;
 		startCoordinatorThread();
 	}
 

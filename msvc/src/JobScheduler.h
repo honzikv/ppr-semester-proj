@@ -4,7 +4,7 @@
 #include "Avx2CpuDeviceCoordinator.h"
 #include "ClDeviceCoordinator.h"
 #include "FileChunkHandler.h"
-#include "MemoryUtils.h"
+#include "MemoryAllocation.h"
 #include "Watchdog.h"
 
 constexpr auto DEFAULT_CHUNK_SIZE = 1024;
@@ -33,7 +33,7 @@ class JobScheduler {
 	Watchdog watchdog;
 
 	size_t currentJobId = 0;
-	
+
 	std::vector<StatsAccumulator> statsAccumulators;
 
 public:
@@ -41,27 +41,27 @@ public:
 		fileChunkHandler(processingInfo.DistFilePath, chunkSize) {
 		auto coordinatorId = 0;
 
-		// Compute memory limits
-		const auto memoryLimits = MemoryUtils::computeCoordinatorMemoryLimits(processingInfo);
-		const auto clDeviceMemory = memoryLimits.ClDeviceCount == 0
-			                            ? 0
-			                            : memoryLimits.ClDeviceMemory / memoryLimits.ClDeviceCount;
+		// Create memory configuration
+		auto memoryConfig = MemoryAllocation::buildMemoryConfig(processingInfo);
 
-		// Add CL devices if any
+
+		// Add CL devices
 		for (const auto& [platform, devices] : processingInfo.Devices) {
 			for (const auto& device : devices) {
 				clDeviceCoordinators.push_back(std::make_shared<ClDeviceCoordinator>(
 						CoordinatorType::OPEN_CL,
 						processingInfo.ProcessingMode,
+						// Call member function of this
 						[this](auto&& ph1, auto&& ph2) {
 							jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
 						},
-						clDeviceMemory,
-						DEFAULT_CHUNK_SIZE,
+						chunkSize,
+						memoryConfig.BytesPerClAccumulator,
+						memoryConfig.MaxClHostBufferSizeBytes,
 						processingInfo.DistFilePath,
+						coordinatorId,
 						platform,
-						device,
-						coordinatorId
+						device
 					)
 				);
 				coordinatorId += 1;
@@ -70,7 +70,7 @@ public:
 
 		// Add CPU device coordinator - this will be set to inactive state if OPENCL_DEVICES mode is used
 		// If CPU supports AVX2 then use AVX2 capable coordinator
-		cpuDeviceCoordinator =  __ISA_AVAILABLE_AVX2
+		cpuDeviceCoordinator = __ISA_AVAILABLE_AVX2
 			                       ? std::make_shared<Avx2CpuDeviceCoordinator>(
 				                       CoordinatorType::TBB,
 				                       processingInfo.ProcessingMode,
@@ -78,10 +78,14 @@ public:
 					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
 					                                           std::forward<decltype(ph2)>(ph2));
 				                       },
-				                       memoryLimits.CpuMemory,
-				                       DEFAULT_CHUNK_SIZE,
+				                       chunkSize,
+				                       memoryConfig.BytesPerCpuAccumulator,
+				                       memoryConfig.MaxCpuBufferSizeBytes,
 				                       processingInfo.DistFilePath,
-				                       coordinatorId
+				                       coordinatorId,
+				                       processingInfo.ProcessingMode == ProcessingMode::SINGLE_THREAD
+					                       ? 1
+					                       : std::thread::hardware_concurrency()
 			                       )
 			                       : std::make_shared<CpuDeviceCoordinator>(
 				                       CoordinatorType::TBB,
@@ -90,10 +94,14 @@ public:
 					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
 					                                           std::forward<decltype(ph2)>(ph2));
 				                       },
-				                       memoryLimits.CpuMemory,
-				                       DEFAULT_CHUNK_SIZE,
+				                       chunkSize,
+				                       memoryConfig.BytesPerCpuAccumulator,
+				                       memoryConfig.MaxCpuBufferSizeBytes,
 				                       processingInfo.DistFilePath,
-				                       coordinatorId
+				                       coordinatorId,
+				                       processingInfo.ProcessingMode == ProcessingMode::SINGLE_THREAD
+					                       ? 1
+					                       : std::thread::hardware_concurrency()
 			                       );
 	}
 
@@ -113,8 +121,8 @@ public:
 	bool anyCoordinatorAvailable() {
 		auto scopedLock = std::scoped_lock(coordinatorMutex);
 		return std::any_of(clDeviceCoordinators.begin(), clDeviceCoordinators.end(), [](const auto& coordinator) {
-			return coordinator->available() && coordinator->active();
-		}) || cpuDeviceCoordinator->available() && cpuDeviceCoordinator->active();
+			return coordinator->available() && coordinator->enabled();
+		}) || cpuDeviceCoordinator->available() && cpuDeviceCoordinator->enabled();
 	}
 
 	/**
@@ -137,7 +145,7 @@ public:
 		// We prioritize CL devices over SMP
 		const auto clDevice = std::find_if(clDeviceCoordinators.begin(), clDeviceCoordinators.end(),
 		                                   [](const auto& coordinator) {
-			                                   return coordinator->active() && coordinator->available();
+			                                   return coordinator->enabled() && coordinator->available();
 		                                   });
 
 		return clDevice != clDeviceCoordinators.end()

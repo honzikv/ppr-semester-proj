@@ -4,19 +4,24 @@
 
 
 void Avx2CpuDeviceCoordinator::onProcessJob() {
-	auto dataLoader = DataLoader(distFilePath, chunkSizeBytes);
+	auto dataLoader = DataLoader(filePath, chunkSizeBytes);
+
+	// Load data into the vector
 	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
 
-	// Create vector for results
-	auto nJobs = nCores * 16;
-	auto jobSize = buffer.size() / nJobs;
-	auto statsAccumulators = std::vector<Avx2StatsAccumulator>(nJobs);
+	// Compute number of jobs per core / worker
+	// For algorithm to work we need to have similar amount of elements in each stats accumulator
 
-	oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, nJobs),
+
+	// Create vector for results
+	auto nAccumulators = buffer.size() / bytesPerAccumulator;
+	auto statsAccumulators = std::vector<Avx2StatsAccumulator>(nAccumulators);
+
+	oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
 	                          [&](const tbb::blocked_range<size_t> r) {
 		                          for (auto i = r.begin(); i < r.end(); i += 1) {
-			                          auto jobStart = i * jobSize / 4;
-			                          auto jobEnd = (i + 1) * jobSize / 4;
+			                          const auto jobStart = i * bytesPerAccumulator / 4;
+			                          const auto jobEnd = (i + 1) * bytesPerAccumulator / 4;
 			                          for (auto j = jobStart; j < jobEnd; j += 1) {
 				                          statsAccumulators[i].push({
 					                          buffer[j * 4],

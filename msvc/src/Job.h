@@ -16,16 +16,6 @@ struct Job {
 	}
 
 	/**
-	 * \brief Returns size of the job in bytes
-	 * \param chunkSizeBytes 
-	 * \return 
-	 */
-	[[nodiscard]] auto size(const size_t chunkSizeBytes) const {
-		return (ChunkIdxRange.second - ChunkIdxRange.first) * chunkSizeBytes;
-	}
-
-
-	/**
 	 * \brief Splits job into multiple smaller evenly sized jobs with or without a remainder
 	 * \param chunksPerJob number of chunks per job
 	 * \param discardRemainder whether to discard a remainder

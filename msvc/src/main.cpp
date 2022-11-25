@@ -13,9 +13,10 @@ int main(int argc, char** argv) {
 	auto processingInfo = validateArguments(args);
 	auto jobScheduler = JobScheduler(processingInfo);
 	auto res = jobScheduler.run();
-	
+
+	std::cout << sizeof(StatsAccumulator) * res.size() << std::endl;
 	// Classify the result
-	classifyDistribution(StatUtils::mergePairwise(res));
+	classifyDistribution(StatUtils::mergeLeftToRight(res));
 
 	// std::cout << "\nTEST SINGLE THREAD" << std::endl;
 	// auto filePath = processingInfo.DistFilePath;

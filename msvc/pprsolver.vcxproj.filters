@@ -73,13 +73,7 @@
     <ClInclude Include="src\VectorizationUtils.h">
       <Filter>Header Files\CPU</Filter>
     </ClInclude>
-    <ClInclude Include="src\MemoryUtils.h">
-      <Filter>Header Files\Core</Filter>
-    </ClInclude>
     <ClInclude Include="src\ConcurrencyUtils.h">
-      <Filter>Header Files\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Logging.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\Arghandling.h">
@@ -89,9 +83,6 @@
       <Filter>Header Files\Stats</Filter>
     </ClInclude>
     <ClInclude Include="src\StatsAccumulator.h">
-      <Filter>Header Files\Stats</Filter>
-    </ClInclude>
-    <ClInclude Include="src\StatsAccumulatorAvx2.h">
       <Filter>Header Files\Stats</Filter>
     </ClInclude>
     <ClInclude Include="src\StatUtils.h">
@@ -108,6 +99,9 @@
     </ClInclude>
     <ClInclude Include="src\CpuDeviceCoordinator.h">
       <Filter>Header Files\CPU</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MemoryAllocation.h">
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
