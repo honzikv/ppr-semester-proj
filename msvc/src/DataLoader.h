@@ -101,6 +101,9 @@ public:
 			auto ret = commandQueue.enqueueWriteBuffer(deviceBuffer, CL_TRUE, currentChunk * ChunkSizeBytes,
 			                                           chunksToRead * ChunkSizeBytes,
 			                                           hostBuffer.data());
+			if (ret != 0) {
+				throw std::runtime_error("");
+			}
 
 			// Update
 			currentChunk += chunksToRead;

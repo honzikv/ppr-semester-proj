@@ -35,17 +35,17 @@ inline bool valueNormalOrZero(double x) {
     return true;
 }
 
-__kernel void computeStats(__global double* buffer, ulong numElements) {
+__kernel void computeStats(__global double* buffer, uint64_t numElements) {
     size_t threadIdx = get_global_id(0);
 
-    // Emulate a RunningStats object
-    int n = 0;
+    // Emulate a StatsAccumulator object
+    uint64_t n = 0;
     bool integerOnly = true;
     double m1 = 0.0, m2 = 0.0, m3 = 0.0, m4 = 0.0;
     double intPart = 0.0;
 
     // Process numElements elements
-    for (ulong i = 0; i < numElements; i += 1) {
+    for (uint64_t i = 0; i < numElements; i += 1) {
         double x = buffer[threadIdx*numElements+i];
         if (!valueNormalOrZero(x)) {
             // Skip if x is NaN, infinity or denormal

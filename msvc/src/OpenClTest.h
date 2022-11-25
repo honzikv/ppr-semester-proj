@@ -114,7 +114,7 @@ void openClTest() {
 
 	auto context = cl::Context(device);
 
-    const auto count = 20 * 1024 * 1024;
+    const auto count = 128 * 1024 * 1024;
 	auto data = std::vector<double>(count);
     std::random_device rd;
 
@@ -126,7 +126,7 @@ void openClTest() {
 		value = dist(e2);
 	}
 
-    auto nWorkers = 8;
+    auto nWorkers = 1024;
     const auto dataPerWorker = count / nWorkers;
 
 

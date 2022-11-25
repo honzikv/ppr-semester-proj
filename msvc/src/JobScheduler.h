@@ -8,7 +8,7 @@
 #include "Watchdog.h"
 
 constexpr auto DEFAULT_CHUNK_SIZE = 4096;
-constexpr auto SMALL_SIZE_LIMIT = 1024 * 1024 * 1024; // 1 MB
+constexpr auto SMALL_SIZE_LIMIT = 1024 * 1024; // 1 MB
 
 class JobScheduler {
 

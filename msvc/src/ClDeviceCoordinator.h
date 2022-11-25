@@ -7,10 +7,12 @@
 
 #include "DeviceCoordinator.h"
 #include "ClSources.h"
+#include "StatUtils.h"
+#define CL_HPP_ENABLE_EXCEPTIONS
 
 namespace fs = std::filesystem;
 
-constexpr auto VIDEO_MEMORY_SCALE = .8;
+constexpr auto VIDEO_MEMORY_SCALE = .5;
 constexpr auto KERNEL_NAME = "computeStats";
 // 80% of video memory is used for computation (or rather 90% of what OpenCL returns)
 
@@ -88,14 +90,16 @@ private:
 
 	void setup() {
 		maxWorkGroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+		auto mem = static_cast<double>(device.getInfo<
+			CL_DEVICE_MAX_MEM_ALLOC_SIZE>());
 		const auto maxDeviceBufferSize = static_cast<size_t>(static_cast<double>(device.getInfo<
 				CL_DEVICE_MAX_MEM_ALLOC_SIZE>())
 			* VIDEO_MEMORY_SCALE);
 
 		// Per job we schedule one work group - therefore we need to make sure that there is enough memory to fit in all the data
 		maxNumberOfChunksPerJob = bytesPerAccumulator * maxWorkGroupSize > maxDeviceBufferSize
-			                         ? maxDeviceBufferSize / bytesPerAccumulator
-			                         : maxWorkGroupSize;
+			? maxDeviceBufferSize / bytesPerAccumulator / chunkSizeBytes
+			                         : bytesPerAccumulator * maxWorkGroupSize / chunkSizeBytes;
 
 		// OpenCL boilerplate
 		context = cl::Context(device);
@@ -114,8 +118,8 @@ protected:
 			*currentJob, maxHostChunks, commandQueue, context);
 
 		// Compute number of work items
-		auto nWorkItems = nChunksLoaded / bytesPerAccumulator;
-		auto itemsPerWorker = bytesPerAccumulator;
+		auto nWorkItems = nChunksLoaded * chunkSizeBytes / bytesPerAccumulator / sizeof(double);
+		auto itemsPerWorker = bytesPerAccumulator / sizeof(double);
 
 		if (nWorkItems == 0) {
 			if (nChunksLoaded == 0) {
@@ -134,10 +138,10 @@ protected:
 		// Pass the params
 		kernel.setArg(0, deviceBuffer);
 		// kernel.setArg(1, outputBuffer);
-		kernel.setArg(1, itemsPerWorker);
+		kernel.setArg(1, static_cast<size_t>(itemsPerWorker));
 
 		// Run the kernel
-		commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, nWorkItems, nWorkItems);
+		int res = commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, nWorkItems);
 
 		// Read back to host
 		auto output = std::vector<double>(nWorkItems * N_CL_OUT_PARAMS);
@@ -156,6 +160,7 @@ protected:
 			};
 		}
 
-		currentJob->Result = results;
+		currentJob->Result = {StatUtils::mergePairwise(results)};
+		// currentJob->Result = results;
 	}
 };

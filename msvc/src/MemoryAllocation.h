@@ -8,7 +8,7 @@ namespace MemoryAllocation {
 	constexpr auto DEFAULT_APP_MEMORY_LIMIT = 1024 * 1024 * 1024; // 1GB
 	constexpr auto DEFAULT_APP_RUNTIME_RATIO = .2; // 20%
 	constexpr auto DEFAULT_CPU_MEMORY_RATIO = .5; // CPU will use 50% of the buffer memory if OpenCL devices are used
-	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU = 64ULL * 1024 * sizeof(double);
+	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU = 128ULL * 1024 * sizeof(double);
 	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL = 64ULL * 1024 * sizeof(double);
 
 	/**
