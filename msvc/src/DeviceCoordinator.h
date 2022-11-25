@@ -41,28 +41,29 @@ protected:
 	std::shared_ptr<ConcurrencyUtils::Semaphore> semaphore = std::make_shared<ConcurrencyUtils::Semaphore>(0);
 	std::atomic<bool> keepRunning = true; // Whether the coordinator thread should terminate
 	std::thread coordinatorThread; // Thread that is responsible for processing jobs
-	
+
 	size_t memoryLimit; // max amount of memory this coordinator can allocate to buffer
 	size_t maxNumberOfChunks{}; // This needs to be initialized in derived classes
-
-	DataLoader dataLoader; // Data loader instance
+	size_t chunkSizeBytes;
+	fs::path& distFilePath;
 
 	CoordinatorType coordinatorType;
 	size_t id; // id of this coordinator
-	
+
 public:
-	virtual ~DeviceCoordinator() = default;
+	virtual ~DeviceCoordinator();
 
 	DeviceCoordinator(const CoordinatorType coordinatorType,
-	                         const ProcessingMode processingMode,
-	                         std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
-	                         const size_t memoryLimit,
-	                         const size_t chunkSizeBytes,
-	                         fs::path& distFilePath,
-	                         const size_t id):
+	                  const ProcessingMode processingMode,
+	                  std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
+	                  const size_t memoryLimit,
+	                  const size_t chunkSizeBytes,
+	                  fs::path& distFilePath,
+	                  const size_t id):
 		jobFinishedCallback(std::move(jobFinishedCallback)),
 		memoryLimit(memoryLimit),
-		dataLoader(distFilePath, chunkSizeBytes),
+		chunkSizeBytes(chunkSizeBytes),
+		distFilePath(distFilePath),
 		coordinatorType(coordinatorType),
 		id(id) {
 
@@ -141,7 +142,7 @@ private:
 			if (!currentJob) {
 				continue;
 			}
-			
+
 			processJob();
 		}
 
@@ -162,6 +163,11 @@ protected:
 	 * \brief This method is overriden by given implementation and called in processJob method
 	 *		  Implementation must ensure that Watchdog is periodically notified - e.g. after each operation
 	 */
-	virtual void onProcessJob() = 0;
+	virtual void onProcessJob();
 
 };
+
+inline DeviceCoordinator::~DeviceCoordinator() = default;
+
+inline void DeviceCoordinator::onProcessJob() {
+}

@@ -35,21 +35,18 @@
     <ClCompile Include="src\Avx2CpuDeviceCoordinator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\StatsAccumulator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\CpuDeviceCoordinator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\FileChunkHandler.h">
-      <Filter>Header Files\IO</Filter>
-    </ClInclude>
     <ClInclude Include="src\DataLoader.h">
       <Filter>Header Files\IO</Filter>
     </ClInclude>
     <ClInclude Include="src\Avx2CpuDeviceCoordinator.h">
-      <Filter>Header Files\CPU</Filter>
-    </ClInclude>
-    <ClInclude Include="src\CpuDeviceCoordinator.h">
       <Filter>Header Files\CPU</Filter>
     </ClInclude>
     <ClInclude Include="src\DeviceCoordinator.h">
@@ -88,13 +85,13 @@
     <ClInclude Include="src\Arghandling.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
-    <ClInclude Include="src\Avx2RunningStats.h">
+    <ClInclude Include="src\Avx2StatsAccumulator.h">
       <Filter>Header Files\Stats</Filter>
     </ClInclude>
-    <ClInclude Include="src\RunningStats.h">
+    <ClInclude Include="src\StatsAccumulator.h">
       <Filter>Header Files\Stats</Filter>
     </ClInclude>
-    <ClInclude Include="src\RunningStatsAvx2.h">
+    <ClInclude Include="src\StatsAccumulatorAvx2.h">
       <Filter>Header Files\Stats</Filter>
     </ClInclude>
     <ClInclude Include="src\StatUtils.h">
@@ -102,6 +99,15 @@
     </ClInclude>
     <ClInclude Include="src\OpenClTest.h">
       <Filter>Header Files\CL</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SingleThreadStatsComputation.h">
+      <Filter>Header Files\Stats</Filter>
+    </ClInclude>
+    <ClInclude Include="src\FileChunkHandler.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CpuDeviceCoordinator.h">
+      <Filter>Header Files\CPU</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

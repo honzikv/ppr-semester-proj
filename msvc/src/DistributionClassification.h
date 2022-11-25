@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "RunningStats.h"
+#include "StatsAccumulator.h"
 
 
 using Point2D = std::pair<double, double>;
@@ -24,25 +24,25 @@ inline auto euclideanDistance(std::pair<double, double> a, std::pair<double, dou
 	return std::hypot(x1 - x2, y1 - y2);
 }
 
-inline void printStats(const RunningStats& runningStats) {
-	std::cout << "Mean: " << runningStats.getMean() << "\n";
-	std::cout << "Variance: " << runningStats.getVariance() << "\n";
-	std::cout << "Standard Deviation: " << runningStats.getStandardDeviation() << "\n";
-	std::cout << "Skewness: " << runningStats.getSkewness() << "\n";
-	std::cout << "Kurtosis: " << runningStats.getKurtosis() << std::endl;
+inline void printStats(const StatsAccumulator& statsAccumulator) {
+	std::cout << "Mean: " << statsAccumulator.getMean() << "\n";
+	std::cout << "Variance: " << statsAccumulator.getVariance() << "\n";
+	std::cout << "Standard Deviation: " << statsAccumulator.getStandardDeviation() << "\n";
+	std::cout << "Skewness: " << statsAccumulator.getSkewness() << "\n";
+	std::cout << "Kurtosis: " << statsAccumulator.getKurtosis() << std::endl;
 }
 
-inline void classifyDistribution(const RunningStats& runningStats) {
-	const auto estimatedPt = std::make_pair(runningStats.getSkewness(), runningStats.getKurtosis());
+inline void classifyDistribution(const StatsAccumulator& statsAccumulator) {
+	const auto estimatedPt = std::make_pair(statsAccumulator.getSkewness(), statsAccumulator.getKurtosis());
 
 	std::cout << "Results" << "\n";
 
-	if (runningStats.integerDistribution()) {
+	if (statsAccumulator.integerDistribution()) {
 		// If running stats has only integers we know that the distribution is Poisson
 		std::cout << "Classified distribution as: \"Poisson\"" << "\n" << "\n";
 		std::cout << "Distribution comprises only integers (no decimal numbers were detected)" << "\n";
 		std::cout << "Therefore classifying as \"Poisson\"" << "\n";
-		printStats(runningStats);
+		printStats(statsAccumulator);
 		return;
 	}
 
@@ -62,5 +62,5 @@ inline void classifyDistribution(const RunningStats& runningStats) {
 
 	// And finally print to the stdout
 	std::cout << "Classified distribution as: \"" << distributionName << "\"" << "\n" << "\n";
-	printStats(runningStats);
+	printStats(statsAccumulator);
 }

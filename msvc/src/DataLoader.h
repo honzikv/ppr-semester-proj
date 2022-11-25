@@ -80,7 +80,7 @@ public:
 	                                 const cl::Buffer& deviceBuffer) {
 		const auto [nChunks, _, address] = computeJobMetadata(job);
 		auto hostBuffer = std::vector<double>(maxHostChunks * ChunkSizeBytes / sizeof(double));
-		
+
 		// Move to correct address in the file
 		file.seekg(static_cast<int64_t>(address), std::ios::beg);
 
@@ -95,8 +95,8 @@ public:
 
 			// Copy host buffer to the device buffer
 			auto ret = commandQueue.enqueueWriteBuffer(deviceBuffer, CL_TRUE, currentChunk * ChunkSizeBytes,
-			                                chunksToRead * ChunkSizeBytes,
-			                                hostBuffer.data());
+			                                           chunksToRead * ChunkSizeBytes,
+			                                           hostBuffer.data());
 
 			// Update
 			currentChunk += chunksToRead;

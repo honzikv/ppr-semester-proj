@@ -1,15 +1,13 @@
 #pragma once
-#pragma OPENCL EXTENSION cl_khr_fp64 : enable
-
 
 #include <CL/cl.hpp>
 #include <filesystem>
+#include <stdexcept>
+#include <string>
+
 
 #include "DeviceCoordinator.h"
 #include "ClSources.h"
-#include <stdexcept>
-#include <CL/cl.hpp>
-#include <string>
 
 namespace fs = std::filesystem;
 
@@ -105,6 +103,7 @@ private:
 protected:
 	void onProcessJob() override {
 		std::cout << "Processing job on CL device" << std::endl;
+		auto dataLoader = DataLoader(distFilePath, chunkSizeBytes);
 		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, 512  * 1024 * 1024);
 		const auto chunksLoaded = dataLoader.loadJobDataIntoDeviceBuffer(
 			*currentJob, maxHostChunks, commandQueue, deviceBuffer);
@@ -135,7 +134,7 @@ protected:
 		commandQueue.enqueueReadBuffer(deviceBuffer, CL_TRUE, 0, output.size() * sizeof(double), output.data());
 
 		// Aggregate the results
-		auto results = std::vector<RunningStats>(nWorkers);
+		auto results = std::vector<StatsAccumulator>(nWorkers);
 		for (auto workerId = 0ULL; workerId < nWorkers; workerId += 1) {
 			results[workerId] = {
 				static_cast<size_t>(output[workerId * 6]),

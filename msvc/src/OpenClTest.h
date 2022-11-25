@@ -46,7 +46,7 @@ inline bool valueNormalOrZero(double x) {
 __kernel void computeStats(__global double* buffer, uint64_t numElements) {
     size_t threadIdx = get_global_id(0);
 
-    // Emulate a RunningStats object
+    // Emulate a StatsAccumulator object
     uint64_t n = 0;
     bool integerOnly = true;
     double m1 = 0.0, m2 = 0.0, m3 = 0.0, m4 = 0.0;

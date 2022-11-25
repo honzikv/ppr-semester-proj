@@ -1,37 +1,36 @@
 #include <oneapi/tbb.h>
-#include "Avx2RunningStats.h"
+#include "Avx2StatsAccumulator.h"
 #include "Avx2CpuDeviceCoordinator.h"
 
+
 void Avx2CpuDeviceCoordinator::onProcessJob() {
+	auto dataLoader = DataLoader(distFilePath, chunkSizeBytes);
 	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
 
-	const auto jobSize = currentJob->size(dataLoader.ChunkSizeBytes);
-	std::cout << "Job size: " << jobSize << std::endl;
-
 	// Create vector for results
-	auto runningStats = std::vector<Avx2RunningStats>(nCores);
+	auto nJobs = nCores * 16;
+	auto jobSize = buffer.size() / nJobs;
+	auto statsAccumulators = std::vector<Avx2StatsAccumulator>(nJobs);
 
-	auto mutex = std::mutex{};
-	// Run parallel_for
-	// We divide the max range by four, because our vectors hold 4 doubles
-	oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, buffer.size() / 4),
-	                          [&](const oneapi::tbb::blocked_range<size_t> range) {
-		                          const auto threadIdx = oneapi::tbb::this_task_arena::current_thread_index();
-		                          for (auto i = range.begin(); i < range.end(); i += 1) {
-			                          auto idx = i * 4;
-			                          runningStats[threadIdx].push({
-				                          // Add items - indices are scaled back to the original index space
-				                          buffer[idx],
-				                          buffer[idx + 1],
-				                          buffer[idx + 2],
-				                          buffer[idx + 3]
-			                          });
+	oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, nJobs),
+	                          [&](const tbb::blocked_range<size_t> r) {
+		                          for (auto i = r.begin(); i < r.end(); i += 1) {
+			                          auto jobStart = i * jobSize / 4;
+			                          auto jobEnd = (i + 1) * jobSize / 4;
+			                          for (auto j = jobStart; j < jobEnd; j += 1) {
+				                          statsAccumulators[i].push({
+					                          buffer[j * 4],
+					                          buffer[j * 4 + 1],
+					                          buffer[j * 4 + 2],
+					                          buffer[j * 4 + 3],
+				                          });
+			                          }
 		                          }
 	                          });
 
-	auto result = std::vector<RunningStats>();
-	for (const auto& avx2RunningStats : runningStats) {
-		result.push_back(avx2RunningStats.asScalar());
+	auto result = std::vector<StatsAccumulator>();
+	for (const auto& avx2StatsAccumulator : statsAccumulators) {
+		result.push_back(avx2StatsAccumulator.asScalar());
 	}
 
 	currentJob->Result = result;

@@ -1,26 +1,26 @@
-﻿#include "Arghandling.h"
+﻿#include <oneapi/tbb.h>
+#include "Arghandling.h"
 #include "DistributionClassification.h"
 #include "JobScheduler.h"
 #include <fstream>
+#include "SingleThreadStatsComputation.h"
 
 #include "OpenClTest.h"
+#include "StatUtils.h"
 
 int main(int argc, char** argv) {
 	auto args = parseArguments(argc, argv);
 	auto processingInfo = validateArguments(args);
 	auto jobScheduler = JobScheduler(processingInfo);
-	auto result = jobScheduler.run();
+	auto res = jobScheduler.run();
 	
 	// Classify the result
-	classifyDistribution(result);
-	//
-	// // VectorizationUtils::testValuesInvalidFn();
-	// // VectorizationUtils::TestValuesIntegerFn();
-	//
-	// std::cout << "TEST SINGLE THREAD" << std::endl;
+	classifyDistribution(StatUtils::mergePairwise(res));
+
+	// std::cout << "\nTEST SINGLE THREAD" << std::endl;
 	// auto filePath = processingInfo.DistFilePath;
 	//
-	// auto runningStats = RunningStats();
+	// auto statsAccumulators = std::vector<StatsAccumulator>();
 	//
 	// auto buffer = std::vector<double>();
 	// auto file = std::ifstream(filePath, std::ios::binary);
@@ -28,9 +28,10 @@ int main(int argc, char** argv) {
 	// auto bufferSize = 8 * 1024 * 1024;
 	// auto fileSize = fs::file_size(filePath);
 	// auto nReads = static_cast<size_t>(ceil(fileSize / bufferSize));
+	// statsAccumulators.resize(nReads);
 	//
 	// auto bytesRemaining = fileSize;
-	// for (auto i = 0; i < nReads; i += 1) {
+	// for (auto bufferId = 0; bufferId < nReads; bufferId += 1) {
 	// 	auto bytesToRead = bytesRemaining < bufferSize ? bytesRemaining : bufferSize;
 	//
 	// 	// Read to buffer
@@ -38,13 +39,44 @@ int main(int argc, char** argv) {
 	// 	file.read(reinterpret_cast<char*>(buffer.data()), bytesToRead);
 	//
 	// 	for (size_t i = 0; i < buffer.size(); i += 1) {
-	// 		runningStats.push(buffer[i]);
+	// 		statsAccumulators[bufferId].push(buffer[i]);
 	// 	}
+	//
 	// 	bytesRemaining -= bytesToRead;
 	// }
 	//
-	// classifyDistribution(runningStats);
-	// runningStats.debugPrint();
+	// std::cout << "Merged from left to right" << std::endl;
+	// auto resultMergedLeftRight = statsAccumulators[0];
+	// for (auto i = 1ULL; i < statsAccumulators.size(); i += 1) {
+	// 	resultMergedLeftRight += statsAccumulators[i];
+	// }
+	// classifyDistribution(resultMergedLeftRight);
+	//
+	//
+	// std::cout << "Reduced from right to left" << std::endl;
+	// auto itemsToProcess = statsAccumulators.size();
+	// while (true) {
+	// 	auto nPairs = itemsToProcess / 2 + itemsToProcess % 2;
+	// 	for (auto i = 0ULL; i < nPairs; i += 1) {
+	// 		statsAccumulators[i] = i * 2 + 1 < itemsToProcess ? statsAccumulators[i * 2] + statsAccumulators[i * 2 + 1] : statsAccumulators[i * 2];
+	// 	}
+	//
+	// 	if (nPairs == itemsToProcess) {
+	// 		break;
+	// 	}
+	//
+	// 	itemsToProcess = nPairs;
+	// }
+	// classifyDistribution(statsAccumulators[0]);
+
+
+	// std::cout << "\nSingle Thread Test\n" << std::endl;
+	// const auto singleThreadComputation = SingleThreadStatsComputation(4096, args, 8, 256 * 1024 * 1024 / 6);
+	//
+	// auto results = singleThreadComputation.run();
+	// std::cout << "N results: " << results.size() << std::endl;
+	// classifyDistribution(StatUtils::mergePairwise(results));
+
 
 	// openClTest();
 

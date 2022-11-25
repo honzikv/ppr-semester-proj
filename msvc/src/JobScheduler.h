@@ -33,8 +33,8 @@ class JobScheduler {
 	Watchdog watchdog;
 
 	size_t currentJobId = 0;
-
-	RunningStats runningStats;
+	
+	std::vector<StatsAccumulator> statsAccumulators;
 
 public:
 	explicit JobScheduler(ProcessingInfo& processingInfo, const size_t chunkSize = DEFAULT_CHUNK_SIZE):
@@ -70,7 +70,7 @@ public:
 
 		// Add CPU device coordinator - this will be set to inactive state if OPENCL_DEVICES mode is used
 		// If CPU supports AVX2 then use AVX2 capable coordinator
-		cpuDeviceCoordinator = __ISA_AVAILABLE_AVX2
+		cpuDeviceCoordinator =  __ISA_AVAILABLE_AVX2
 			                       ? std::make_shared<Avx2CpuDeviceCoordinator>(
 				                       CoordinatorType::TBB,
 				                       processingInfo.ProcessingMode,
@@ -146,8 +146,8 @@ public:
 	}
 
 	void addProcessedJob(const std::unique_ptr<Job> job, const size_t coordinatorIdx) {
-		for (const auto& stats : job->Result) {
-			runningStats += stats;
+		for (const auto& statsAcc : job->Result) {
+			statsAccumulators.push_back(statsAcc);
 		}
 	}
 
@@ -212,6 +212,6 @@ public:
 		// Terminate all coordinators
 		terminateDeviceCoordinators();
 
-		return runningStats;
+		return statsAccumulators;
 	}
 };
