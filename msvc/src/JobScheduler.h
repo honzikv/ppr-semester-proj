@@ -7,7 +7,8 @@
 #include "MemoryAllocation.h"
 #include "Watchdog.h"
 
-constexpr auto DEFAULT_CHUNK_SIZE = 1024;
+constexpr auto DEFAULT_CHUNK_SIZE = 4096;
+constexpr auto SMALL_SIZE_LIMIT = 1024 * 1024 * 1024; // 1 MB
 
 class JobScheduler {
 
@@ -28,22 +29,27 @@ class JobScheduler {
 	ConcurrencyUtils::Semaphore jobFinishedSemaphore = ConcurrencyUtils::Semaphore(0);
 	std::mutex coordinatorMutex;
 
-	FileChunkHandler fileChunkHandler;
+	std::unique_ptr<FileChunkHandler> fileChunkHandler;
 
 	Watchdog watchdog;
 
 	size_t currentJobId = 0;
 
-	std::vector<StatsAccumulator> statsAccumulators;
+	std::vector<StatsAccumulator> accumulators;
 
 public:
-	explicit JobScheduler(ProcessingInfo& processingInfo, const size_t chunkSize = DEFAULT_CHUNK_SIZE):
-		fileChunkHandler(processingInfo.DistFilePath, chunkSize) {
+	explicit JobScheduler(ProcessingInfo& processingInfo, size_t chunkSizeBytes = DEFAULT_CHUNK_SIZE) {
 		auto coordinatorId = 0;
+
+		const auto fileSize = fs::file_size(processingInfo.DistFilePath);
+		if (fileSize < chunkSizeBytes || fileSize < SMALL_SIZE_LIMIT) {
+			chunkSizeBytes = 1; // Set chunk size to 1 - this way all bytes are processed
+		}
+
+		fileChunkHandler = std::make_unique<FileChunkHandler>(processingInfo.DistFilePath, chunkSizeBytes);
 
 		// Create memory configuration
 		auto memoryConfig = MemoryAllocation::buildMemoryConfig(processingInfo);
-
 
 		// Add CL devices
 		for (const auto& [platform, devices] : processingInfo.Devices) {
@@ -55,7 +61,7 @@ public:
 						[this](auto&& ph1, auto&& ph2) {
 							jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
 						},
-						chunkSize,
+						chunkSizeBytes,
 						memoryConfig.BytesPerClAccumulator,
 						memoryConfig.MaxClHostBufferSizeBytes,
 						processingInfo.DistFilePath,
@@ -78,14 +84,11 @@ public:
 					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
 					                                           std::forward<decltype(ph2)>(ph2));
 				                       },
-				                       chunkSize,
+				                       chunkSizeBytes,
 				                       memoryConfig.BytesPerCpuAccumulator,
 				                       memoryConfig.MaxCpuBufferSizeBytes,
 				                       processingInfo.DistFilePath,
-				                       coordinatorId,
-				                       processingInfo.ProcessingMode == ProcessingMode::SINGLE_THREAD
-					                       ? 1
-					                       : std::thread::hardware_concurrency()
+				                       coordinatorId
 			                       )
 			                       : std::make_shared<CpuDeviceCoordinator>(
 				                       CoordinatorType::TBB,
@@ -94,15 +97,11 @@ public:
 					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
 					                                           std::forward<decltype(ph2)>(ph2));
 				                       },
-				                       chunkSize,
+				                       chunkSizeBytes,
 				                       memoryConfig.BytesPerCpuAccumulator,
 				                       memoryConfig.MaxCpuBufferSizeBytes,
 				                       processingInfo.DistFilePath,
-				                       coordinatorId,
-				                       processingInfo.ProcessingMode == ProcessingMode::SINGLE_THREAD
-					                       ? 1
-					                       : std::thread::hardware_concurrency()
-			                       );
+				                       coordinatorId);
 	}
 
 	/**
@@ -111,7 +110,7 @@ public:
 	 */
 	[[nodiscard]] auto jobRemaining() const {
 		// Job is available when there are still some chunks left to process
-		return !fileChunkHandler.allChunksProcessed();
+		return !fileChunkHandler->allChunksProcessed();
 	}
 
 	/**
@@ -155,7 +154,7 @@ public:
 
 	void addProcessedJob(const std::unique_ptr<Job> job, const size_t coordinatorIdx) {
 		for (const auto& statsAcc : job->Result) {
-			statsAccumulators.push_back(statsAcc);
+			accumulators.push_back(statsAcc);
 		}
 	}
 
@@ -183,7 +182,7 @@ public:
 		const auto coordinator = getNextAvailableDeviceCoordinator();
 
 		// Build and assign new job for them
-		const auto chunkRange = fileChunkHandler.getNextNChunks(coordinator->getMaxNumberOfChunks());
+		const auto chunkRange = fileChunkHandler->getNextNChunks(coordinator->getMaxNumberOfChunks());
 		coordinator->assignJob(Job(chunkRange, currentJobId));
 		currentJobId += 1;
 	}
@@ -220,6 +219,6 @@ public:
 		// Terminate all coordinators
 		terminateDeviceCoordinators();
 
-		return statsAccumulators;
+		return accumulators;
 	}
 };

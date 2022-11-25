@@ -15,15 +15,8 @@ public:
 	                     const size_t bytesPerAccumulator,
 	                     const size_t cpuBufferSizeBytes,
 	                     fs::path& distFilePath,
-	                     const size_t id,
-	                     const size_t nCores = std::thread::hardware_concurrency()
-	) : DeviceCoordinator(
-		coordinatorType, processingMode, jobFinishedCallback, 
-		chunkSizeBytes, bytesPerAccumulator, distFilePath, id),
-	    nCores(nCores) {
-		maxNumberOfChunksPerJob = cpuBufferSizeBytes / chunkSizeBytes;
-		startCoordinatorThread();
-	}
+	                     const size_t id
+	);
 
 protected:
 	size_t nCores;

@@ -55,6 +55,9 @@ public:
 
 		// Create memory buffer, note that we assume that chunkSizeBytes is a multiple of sizeof(double)
 		auto buffer = std::vector<double>(bytesToRead / sizeof(double));
+		if (buffer.empty()) {
+			return buffer;
+		}
 
 		// Move to correct address in the file
 		file.seekg(static_cast<int64_t>(address), std::ios::beg);
@@ -71,15 +74,16 @@ public:
 	 * \param job job to load
 	 * \param maxHostChunks max number of chunks that can be loaded into host memory at a time
 	 * \param commandQueue command queue for the given device - to write to the device buffer
-	 * \param deviceBuffer reference to the device buffer
+	 * \param context device context
 	 * \return number of chunks in the device buffer
 	 */
 	auto loadJobDataIntoDeviceBuffer(const Job& job,
 	                                 const size_t maxHostChunks,
 	                                 const cl::CommandQueue& commandQueue,
-	                                 const cl::Buffer& deviceBuffer) {
+	                                 const cl::Context& context) {
 		const auto [nChunks, _, address] = computeJobMetadata(job);
 		auto hostBuffer = std::vector<double>(maxHostChunks * ChunkSizeBytes / sizeof(double));
+		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, nChunks * ChunkSizeBytes);
 
 		// Move to correct address in the file
 		file.seekg(static_cast<int64_t>(address), std::ios::beg);
@@ -104,6 +108,7 @@ public:
 		}
 
 		// Return actual number of chunks
-		return nChunks;
+		return std::make_pair(deviceBuffer, nChunks);
 	}
+	
 };

@@ -5,7 +5,6 @@
 #include <stdexcept>
 #include <string>
 
-
 #include "DeviceCoordinator.h"
 #include "ClSources.h"
 
@@ -66,9 +65,8 @@ private:
 	cl::Context context; // Cl context
 	cl::CommandQueue commandQueue; // Command queue
 	cl::Program program; // Compiled program
-	size_t workGroupSize{}; // Max number of work items in a work group
+	size_t maxWorkGroupSize{}; // Max number of work items in a work group
 	size_t maxHostChunks;
-	size_t bufferSizePerWorkerBytes{};
 
 	/**
 	 * \brief Compiles given source into program
@@ -89,13 +87,15 @@ private:
 	}
 
 	void setup() {
-		workGroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
-		const auto bufferSize = static_cast<size_t>(static_cast<double>(device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>())
+		maxWorkGroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+		const auto maxDeviceBufferSize = static_cast<size_t>(static_cast<double>(device.getInfo<
+				CL_DEVICE_MAX_MEM_ALLOC_SIZE>())
 			* VIDEO_MEMORY_SCALE);
 
-		// Calculate max number of chunks which is basically size of the buffer split into chunks that are split for threads
-		bufferSizePerWorkerBytes = bufferSize / chunkSizeBytes / workGroupSize;
-		maxNumberOfChunksPerJob = bufferSizePerWorkerBytes * workGroupSize;
+		// Per job we schedule one work group - therefore we need to make sure that there is enough memory to fit in all the data
+		maxNumberOfChunksPerJob = bytesPerAccumulator * maxWorkGroupSize > maxDeviceBufferSize
+			                         ? maxDeviceBufferSize / bytesPerAccumulator
+			                         : maxWorkGroupSize;
 
 		// OpenCL boilerplate
 		context = cl::Context(device);
@@ -106,19 +106,26 @@ private:
 protected:
 	void onProcessJob() override {
 		std::cout << "Processing job on CL device" << std::endl;
-		auto dataLoader = DataLoader(filePath, chunkSizeBytes);
-		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, 512 * 1024 * 1024);
-		const auto chunksLoaded = dataLoader.loadJobDataIntoDeviceBuffer(
-			*currentJob, maxHostChunks, commandQueue, deviceBuffer);
 
-		// Compute the number of workers
-		auto nWorkers = chunksLoaded / bufferSizePerWorkerBytes;
-		auto itemsPerWorker = bufferSizePerWorkerBytes / sizeof(double);
-		if (nWorkers == 0) {
-			// This means that the job is smaller than buffer size for a single worker
-			// So the job will be done only on one worker
-			itemsPerWorker = chunksLoaded * dataLoader.ChunkSizeBytes / sizeof(double);
-			nWorkers = 1;
+		// Create data loader
+		auto dataLoader = DataLoader(filePath, chunkSizeBytes);
+
+		const auto [deviceBuffer, nChunksLoaded] = dataLoader.loadJobDataIntoDeviceBuffer(
+			*currentJob, maxHostChunks, commandQueue, context);
+
+		// Compute number of work items
+		auto nWorkItems = nChunksLoaded / bytesPerAccumulator;
+		auto itemsPerWorker = bytesPerAccumulator;
+
+		if (nWorkItems == 0) {
+			if (nChunksLoaded == 0) {
+				// If no chunks were loaded then there is nothing to process, return
+				currentJob->Result = {};
+				return;
+			}
+			// The work is too small so we will just compute it in one work item
+			nWorkItems = 1;
+			itemsPerWorker = nChunksLoaded * chunkSizeBytes / sizeof(double);
 		}
 
 		// Get the kernel
@@ -130,15 +137,15 @@ protected:
 		kernel.setArg(1, itemsPerWorker);
 
 		// Run the kernel
-		commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, nWorkers);
+		commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, nWorkItems, nWorkItems);
 
 		// Read back to host
-		auto output = std::vector<double>(nWorkers * N_CL_OUT_PARAMS);
+		auto output = std::vector<double>(nWorkItems * N_CL_OUT_PARAMS);
 		commandQueue.enqueueReadBuffer(deviceBuffer, CL_TRUE, 0, output.size() * sizeof(double), output.data());
 
-		// Aggregate the results
-		auto results = std::vector<StatsAccumulator>(nWorkers);
-		for (auto workerId = 0ULL; workerId < nWorkers; workerId += 1) {
+		// Read out the results
+		auto results = std::vector<StatsAccumulator>(nWorkItems);
+		for (auto workerId = 0ULL; workerId < nWorkItems; workerId += 1) {
 			results[workerId] = {
 				static_cast<size_t>(output[workerId * 6]),
 				output[workerId * 6 + 1],
@@ -147,10 +154,6 @@ protected:
 				output[workerId * 6 + 4],
 				static_cast<bool>(output[workerId * 6 + 5]),
 			};
-		}
-
-		for (auto i = 0; i < results.size() / 2; i += 2) {
-			results[i] = results[i] + results[i + 1];
 		}
 
 		currentJob->Result = results;

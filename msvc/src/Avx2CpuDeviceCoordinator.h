@@ -14,11 +14,10 @@ public:
 	                         const size_t bytesPerAccumulator,
 	                         const size_t cpuBufferSizeBytes,
 	                         fs::path& distFilePath,
-	                         const size_t id,
-	                         const size_t nCores)
+	                         const size_t id)
 		: CpuDeviceCoordinator(
 			coordinatorType, processingMode, jobFinishedCallback, chunkSizeBytes, bytesPerAccumulator,
-			cpuBufferSizeBytes, distFilePath, id, nCores) {
+			cpuBufferSizeBytes, distFilePath, id) {
 	}
 
 protected:
