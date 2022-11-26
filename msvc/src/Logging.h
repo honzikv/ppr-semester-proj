@@ -13,7 +13,7 @@ inline auto mutex = std::mutex{};
 const auto TIME_FORMAT = "%Y-%m-%d %H:%M:%S";
 const auto MS_FORMAT = ".%03d";
 
-enum LogType {
+enum LogSeverity {
 	INFO = 0,
 	DEBUG = 1,
 	CRITICAL = 2
@@ -33,8 +33,8 @@ inline auto getCurrentTimeAsStr() {
 	return std::string(buf.data());
 }
 
-inline void log(const LogType logType, const std::string& message) {
+inline void log(const LogSeverity logSeverity, const std::string& message) {
 	const auto lock = std::scoped_lock(mutex);
-	std::cout << "[" << getCurrentTimeAsStr() << "] " << LOG_TYPE_LUT[logType] << " " << message << std::endl;
+	std::cout << "[" << getCurrentTimeAsStr() << "] " << LOG_TYPE_LUT[logSeverity] << " " << message << std::endl;
 }
 

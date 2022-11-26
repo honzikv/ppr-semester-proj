@@ -1,6 +1,8 @@
 #pragma once
 #include <chrono>
 
+#include "Logging.h"
+
 /**
  * \brief Simple class for measuring execution time
  */
@@ -34,7 +36,17 @@ public:
 	 * \return Elapsed time in milliseconds
 	 */
 	auto getElapsedTimeNanoSecs() {
-		return std::chrono::duration_cast<std::chrono::nanoseconds>(startTimePoint - endTimePoint);
+		return std::chrono::duration_cast<std::chrono::nanoseconds>(endTimePoint - startTimePoint).count();
+	}
+
+	auto logResults(LogSeverity logSeverity = INFO) {
+		const auto elapsedTime = getElapsedTimeNanoSecs();
+		// Print time in ns, ms and seconds
+		log(logSeverity, "Elapsed time: " + std::to_string(elapsedTime) + " ns = "
+		    + std::to_string(elapsedTime / 1000000) + " ms = " + std::to_string(
+			    elapsedTime / 1000000000)
+		    + " s)");
+
 	}
 
 };

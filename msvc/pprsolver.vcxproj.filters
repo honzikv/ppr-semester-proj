@@ -109,7 +109,7 @@
     <ClInclude Include="src\Logging.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
-    <ClInclude Include="Timer.h">
+    <ClInclude Include="src\Timer.h">
       <Filter>Header Files\Benchmark</Filter>
     </ClInclude>
   </ItemGroup>

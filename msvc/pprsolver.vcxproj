@@ -47,7 +47,7 @@
     <ClInclude Include="src\StatUtils.h" />
     <ClInclude Include="src\VectorizationUtils.h" />
     <ClInclude Include="src\Watchdog.h" />
-    <ClInclude Include="Timer.h" />
+    <ClInclude Include="src\Timer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
