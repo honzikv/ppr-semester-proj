@@ -50,7 +50,8 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 			const auto deviceName = std::string(device.getInfo<CL_DEVICE_NAME>());
 
 			// Skip if we cant find double precision extension
-			if (!deviceExtensions.find(DOUBLE_PRECISION_DEFAULT) || !deviceExtensions.find(DOUBLE_PRECISION_AMD)) {
+			if (!devices.empty() && (!deviceExtensions.find(DOUBLE_PRECISION_DEFAULT) || !deviceExtensions.find(
+				DOUBLE_PRECISION_AMD))) {
 				log(INFO, "Skipping OpenCL device \"" + deviceName + "\" because it doesn't support double precision");
 				continue;
 			}
@@ -87,25 +88,42 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 	return result;
 }
 
-ProcessingConfig ArgumentParser::processArgs(int argc, char** argv) const {
+ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const {
 	// For argument parsing we use cxxopts
-	auto options = cxxopts::Options("PPR Distribution Estimator", "A simple distribution estimator tool");
+	auto options = cxxopts::Options("PPR Distribution Estimator");
 	options.add_options()
-		("f, file", "Path to the file with distribution (either absolute or relative)",
+		("f,file", "Path to the file with distribution (either absolute or relative)",
 		 cxxopts::value<std::filesystem::path>())
-		("m, mode", "Processing mode", cxxopts::value<std::string>())
-		("d, devices", "List of devices to use", cxxopts::value<std::vector<std::string>>())
-		("memory", "Memory limit in MBs - defaults to 1024.",
-		 cxxopts::value<size_t>()->default_value("1024"))
-		("h, help", "Print help");
+		("m,mode", "Processing mode", cxxopts::value<std::string>())
+		("d,devices", "List of devices to use", cxxopts::value<std::vector<std::string>>())
+		("l,list_cl_devices", "List all available OpenCL devices")
+		("x,memory_limit", "Max amount of application memory in MB (1GB to 4GB, 1024MB is exactly 1GB)",
+			cxxopts::value<size_t>()->default_value("1024"))
+		("b,benchmark", "Runs given mode as benchmark")
+		("benchmark_runs", "Number of benchmark runs", cxxopts::value<size_t>()->default_value("10"))
+		("h,help", "Print help");
+
+	options.parse_positional({"file", "mode", "devices"});
+	const auto result = options.parse(argc, argv);
+
+	if (result.count("help")) {
+		std::cout << options.help() << std::endl;
+		exit(0);
+	}
+
+	if (result.count("list_cl_devices")) {
+		std::cout << "Available OpenCL devices: " << "\n";
+		const auto clDevices = queryClDevices({});
+		for (const auto& clDevice : clDevices) {
+			std::cout << "  -\t" << "\"" << clDevice.getInfo<CL_DEVICE_NAME>() << "\"" << std::endl;
+		}
+		exit(0);
+	}
 
 	if (argc < 3) {
 		std::cout << options.help();
 		exit(1);
 	}
-
-	options.parse_positional({"file", "mode", "devices"});
-	const auto result = options.parse(argc, argv);
 
 	return validateArgs(result);
 }
@@ -120,7 +138,7 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 	try {
 		filePath = args["file"].as<std::filesystem::path>();
 	}
-	catch (const std::exception& ) {
+	catch (const std::exception&) {
 		throw std::runtime_error("Could not parse file path");
 	}
 
@@ -139,13 +157,13 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 	const auto modeArg = args["mode"].as<std::string>();
 	const auto modePosArgIsADevice = processingModesLut.find(lowercase(modeArg)) == processingModesLut.end();
 	const auto processingMode = modePosArgIsADevice
-		? ProcessingMode::OPENCL_DEVICES
-		: processingModesLut.at(modeArg);
+		                            ? ProcessingMode::OPENCL_DEVICES
+		                            : processingModesLut.at(modeArg);
 
 	// Check memory limit
-	const auto memoryLimit = args.count("memory") > 0
-		? args["memory"].as<size_t>() * 1024 * 1024
-		: DEFAULT_MEMORY_LIMIT;
+	const auto memoryLimit = args.count("memory_limit") > 0
+		                         ? args["memory_limit"].as<size_t>() * 1024 * 1024
+		                         : DEFAULT_MEMORY_LIMIT;
 	if (memoryLimit > MAX_MEMORY_LIMIT) {
 		throw std::runtime_error("Memory limit too high, maximum of 4 GB is allowed");
 	}
@@ -154,20 +172,20 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 	}
 
 	if (processingMode == ProcessingMode::SMP || processingMode == ProcessingMode::SINGLE_THREAD) {
-		return { processingMode, filePath, {}, memoryLimit };
+		return {processingMode, filePath, {}, memoryLimit};
 	}
 
 	// Otherwise we have OpenCL devices or ALL mode
 	// Query all OpenCL devices and filter them if necessary
 	if (processingMode == ProcessingMode::ALL) {
-		return { processingMode, filePath, queryClDevices({}), memoryLimit };
+		return {processingMode, filePath, queryClDevices({}), memoryLimit};
 	}
 
 	// Otherwise we have OpenCL devices mode
 	// Check if we have any devices specified - this can be saved in mode as well since we positionally parsed the input
 	auto deviceNames = args.count("devices") > 0
-		? args["devices"].as<std::vector<std::string>>()
-		: std::vector<std::string>();
+		                   ? args["devices"].as<std::vector<std::string>>()
+		                   : std::vector<std::string>();
 
 	// Check if mode is a device
 	if (modePosArgIsADevice) {
@@ -178,10 +196,10 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 		throw std::runtime_error("No OpenCL devices specified");
 	}
 
-	const auto clDevices = queryClDevices({ deviceNames.begin(), deviceNames.end() });
+	const auto clDevices = queryClDevices({deviceNames.begin(), deviceNames.end()});
 	if (clDevices.empty()) {
 		throw std::runtime_error("No OpenCL devices found");
 	}
 
-	return { processingMode, filePath, clDevices, memoryLimit };
+	return {processingMode, filePath, clDevices, memoryLimit};
 }
