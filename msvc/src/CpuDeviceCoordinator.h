@@ -19,6 +19,6 @@ public:
 	);
 
 protected:
-	size_t nCores;
+	size_t nCores{};
 	void onProcessJob() override;
 };

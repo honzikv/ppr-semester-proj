@@ -1,6 +1,7 @@
 #pragma once
 #include <immintrin.h>
 #include <iostream>
+#include <array>
 
 // To make the code somewhat readable we type alias frequently used intrinsics and types
 using double4 = __m256d;
@@ -8,24 +9,30 @@ using int4 = __m256i;
 
 #define double4Set  _mm256_set1_pd
 #define int4Set  _mm256_set1_epi64x
-#define double4ToInt4 _mm256_castpd_si256
+#define castDouble4ToInt4 _mm256_castpd_si256
 #define double4Add _mm256_add_pd
 #define double4Mul _mm256_mul_pd
 #define double4Sub _mm256_sub_pd
 #define double4Div _mm256_div_pd
+#define castInt4ToDouble4 _mm256_castsi256_pd
 
 // Since this is not natively supported by AVX2
-inline auto int4ToDouble4(const int4 x) {
-	__m256i magic_i_lo = _mm256_set1_epi64x(0x4330000000000000);                /* 2^52               encoded as floating-point  */
-	__m256i magic_i_hi32 = _mm256_set1_epi64x(0x4530000080000000);                /* 2^84 + 2^63        encoded as floating-point  */
-	__m256i magic_i_all = _mm256_set1_epi64x(0x4530000080100000);                /* 2^84 + 2^63 + 2^52 encoded as floating-point  */
+inline auto convertInt4ToDouble4(const int4 x) {
+	__m256i magic_i_lo = _mm256_set1_epi64x(0x4330000000000000); /* 2^52               encoded as floating-point  */
+	__m256i magic_i_hi32 = _mm256_set1_epi64x(0x4530000080000000); /* 2^84 + 2^63        encoded as floating-point  */
+	__m256i magic_i_all = _mm256_set1_epi64x(0x4530000080100000); /* 2^84 + 2^63 + 2^52 encoded as floating-point  */
 	__m256d magic_d_all = _mm256_castsi256_pd(magic_i_all);
 
-	__m256i v_lo = _mm256_blend_epi32(magic_i_lo, x, 0b01010101);         /* Blend the 32 lowest significant bits of x with magic_int_lo                                                   */
-	__m256i v_hi = _mm256_srli_epi64(x, 32);                              /* Extract the 32 most significant bits of x                                                                     */
-	v_hi = _mm256_xor_si256(v_hi, magic_i_hi32);                  /* Flip the msb of v_hi and blend with 0x45300000                                                                */
-	__m256d v_hi_dbl = _mm256_sub_pd(_mm256_castsi256_pd(v_hi), magic_d_all); /* Compute in double precision:                                                                                  */
-	__m256d result = _mm256_add_pd(v_hi_dbl, _mm256_castsi256_pd(v_lo));    /* (v_hi - magic_d_all) + v_lo  Do not assume associativity of floating point addition !!                        */
+	__m256i v_lo = _mm256_blend_epi32(magic_i_lo, x, 0b01010101);
+	/* Blend the 32 lowest significant bits of x with magic_int_lo                                                   */
+	__m256i v_hi = _mm256_srli_epi64(x, 32);
+	/* Extract the 32 most significant bits of x                                                                     */
+	v_hi = _mm256_xor_si256(v_hi, magic_i_hi32);
+	/* Flip the msb of v_hi and blend with 0x45300000                                                                */
+	__m256d v_hi_dbl = _mm256_sub_pd(_mm256_castsi256_pd(v_hi), magic_d_all);
+	/* Compute in double precision:                                                                                  */
+	__m256d result = _mm256_add_pd(v_hi_dbl, _mm256_castsi256_pd(v_lo));
+	/* (v_hi - magic_d_all) + v_lo  Do not assume associativity of floating point addition !!                        */
 	return result;
 }
 
@@ -52,7 +59,7 @@ namespace VectorizationUtils {
 	 * \return "Boolean"-like vector - either containing 111..111 or 000..000 where 111..111 is true and 000..000 is false
 	 */
 	inline auto valuesValid(const double4& x) {
-		const auto bits = double4ToInt4(x); // convert x to integer vector
+		const auto bits = castDouble4ToInt4(x); // convert x to integer vector
 		auto exponent = int4And(bits, EXPONENT_MASK); // extract exponent
 		exponent = _mm256_srli_epi64(exponent, 52); // shift by 52 bits to get mantissa
 
@@ -86,7 +93,17 @@ namespace VectorizationUtils {
 		const auto result = _mm256_cmp_pd(fraction, _mm256_setzero_pd(), _CMP_EQ_OQ);
 
 		// Convert to "bool" array
-		return double4ToInt4(result);
+		return castDouble4ToInt4(result);
+	}
+
+	/**
+	 * \brief Masks given double4 vector with given "boolean" vector and returns the result as double4 vector
+	 * \param value value to be masked - this value is set to 0 if the mask is false, otherwise it is left unchanged
+	 * \param mask mask containing either 1s or 0s depending on the value
+	 * \return masked variant of the vector, 0 where the mask is false, original values where the mask is true
+	 */
+	inline auto maskDouble4(const double4 value, const int4 mask) {
+		return castInt4ToDouble4(int4And(castDouble4ToInt4(value), mask));
 	}
 
 	/**
@@ -130,7 +147,7 @@ namespace VectorizationUtils {
 		std::cout << "Is 1.0e-308 valid: " << booleanInvalid1[0] << std::endl;
 	}
 
-	inline void TestValuesIntegerFn() {
+	inline void testValuesIntegerFn() {
 		// Test with 0, 1.0, 1.5, 999.999
 		const auto test = _mm256_set_pd(0.0, 1.0, 1.5, 999.999);
 
@@ -148,5 +165,24 @@ namespace VectorizationUtils {
 		std::cout << "Is 1 integer: " << booleanResults[2] << std::endl;
 		std::cout << "Is 1.5 integer: " << booleanResults[1] << std::endl;
 		std::cout << "Is 999.999 integer: " << booleanResults[0] << std::endl;
+	}
+
+	inline void testValidMasking() {
+		// Test for several values
+
+		const double4 inputValues = {INFINITY, NAN, 1.0, 0.0};
+		const double4 myValues = {5, 5, 4, 5};
+
+		const auto validMask = valuesValid(inputValues);
+		const auto maskedValues = maskDouble4(inputValues, validMask);
+
+		// Add to myValues
+		const auto result = double4Add(maskedValues, myValues);
+
+		// Print the values - they should all be 5.0
+		for (int i = 0; i < 4; i++) {
+			std::cout << "Result " << i << ": " << result.m256d_f64[i] << std::endl;
+		}
+
 	}
 }

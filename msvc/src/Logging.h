@@ -9,7 +9,7 @@
 
 // Simple logging module
 
-auto mutex = std::mutex{};
+inline auto mutex = std::mutex{};
 const auto TIME_FORMAT = "%Y-%m-%d %H:%M:%S";
 const auto MS_FORMAT = ".%03d";
 
@@ -22,7 +22,7 @@ enum LogType {
 const auto LOG_TYPE_LUT = std::vector<std::string>{"(Info)", "(Debug)", "(Error)"};
 
 inline auto getCurrentTimeAsStr() {
-	auto now = time(nullptr);
+	const auto now = time(nullptr);
 	auto timeStruct = tm{};
 	auto buf = std::array<char, 80>();
 

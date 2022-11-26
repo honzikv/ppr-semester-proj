@@ -24,6 +24,9 @@
     <Filter Include="Header Files\CPU">
       <UniqueIdentifier>{915c0764-c827-4bb4-afa2-596630115244}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Benchmark">
+      <UniqueIdentifier>{b746121d-b1fa-41cf-a3f0-743d7b0bfd22}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp">
@@ -105,6 +108,9 @@
     </ClInclude>
     <ClInclude Include="src\Logging.h">
       <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>Header Files\Benchmark</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

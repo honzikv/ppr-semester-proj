@@ -7,6 +7,7 @@
 #include "Job.h"
 #include "ConcurrencyUtils.h"
 #include "DataLoader.h"
+#include "Logging.h"
 
 enum CoordinatorType {
 	TBB = 0,
@@ -14,7 +15,7 @@ enum CoordinatorType {
 	SINGLE_CORE = 2,
 };
 
-const auto COORDINATOR_TYPE_LUT = std::vector<std::string>{"TBB", "OPEN_CL", "SINGLE_CORE"};
+const auto COORDINATOR_TYPE_LUT = std::vector<std::string>{"SMP", "OPEN_CL", "SINGLE_CORE"};
 
 namespace fs = std::filesystem;
 
@@ -75,6 +76,8 @@ protected:
 	 */
 	size_t id;
 
+	DataLoader dataLoader;
+
 public:
 	virtual ~DeviceCoordinator();
 
@@ -100,7 +103,8 @@ public:
 		bytesPerAccumulator(bytesPerAccumulator),
 		filePath(distFilePath),
 		coordinatorType(coordinatorType),
-		id(id) {
+		id(id),
+		dataLoader(filePath, chunkSizeBytes) {
 
 		// Depending on the processing mode CPU coordinator may not be used and thus we don't want to create
 		// an unnecessary thread - i.e. we check the coordinator type and processing mode, if they are

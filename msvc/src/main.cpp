@@ -3,26 +3,29 @@
 #include "DistributionClassification.h"
 #include "JobScheduler.h"
 #include <fstream>
+
+#include "Avx2StatsAccumulator.h"
+#include "Logging.h"
 #include "SingleThreadStatsComputation.h"
 
 #include "OpenClTest.h"
 #include "StatUtils.h"
+#include "VectorizationUtils.h"
 
 int main(int argc, char** argv) {
+	accuTest();
+
+
 	auto args = parseArguments(argc, argv);
 	auto processingInfo = validateArguments(args);
-
+	
 	auto tbbThreadControl = oneapi::tbb::global_control(oneapi::tbb::global_control::max_allowed_parallelism,
 		processingInfo.ProcessingMode == SINGLE_THREAD ? 1 : oneapi::tbb::this_task_arena::max_concurrency()
 	);
-
-	std::cout << tbbThreadControl.active_value(oneapi::tbb::global_control::max_allowed_parallelism) << std::endl;
 	
-
 	auto jobScheduler = JobScheduler(processingInfo);
 	auto res = jobScheduler.run();
-
-	std::cout << sizeof(StatsAccumulator) * res.size() << std::endl;
+	std::cout << "Result takes approx " << res.size() * sizeof(StatsAccumulator) << " bytes" << std::endl;
 	// Classify the result
 	classifyDistribution(StatUtils::mergeLeftToRight(res));
 
@@ -79,12 +82,12 @@ int main(int argc, char** argv) {
 	// classifyDistribution(accumulators[0]);
 
 
-	// std::cout << "\nSingle Thread Test\n" << std::endl;
-	// const auto singleThreadComputation = SingleThreadStatsComputation(4096, args, 8, 256 * 1024 * 1024 / 6);
-	//
-	// auto results = singleThreadComputation.run();
-	// std::cout << "N results: " << results.size() << std::endl;
-	// classifyDistribution(StatUtils::mergePairwise(results));
+	std::cout << "\nSingle Thread Test\n" << std::endl;
+	const auto singleThreadComputation = SingleThreadStatsComputation(4096, args, 8, 256 * 1024 * 1024 / 6);
+	
+	auto results = singleThreadComputation.run(256ULL * 256 * sizeof(double));
+	std::cout << "N results: " << results.size() << std::endl;
+	classifyDistribution(StatUtils::mergeLeftToRight(results));
 
 
 	// openClTest();

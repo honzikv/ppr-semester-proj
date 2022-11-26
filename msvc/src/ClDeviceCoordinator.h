@@ -69,6 +69,7 @@ private:
 	cl::Program program; // Compiled program
 	size_t maxWorkGroupSize{}; // Max number of work items in a work group
 	size_t maxHostChunks;
+	std::string deviceName;
 
 	/**
 	 * \brief Compiles given source into program
@@ -105,12 +106,12 @@ private:
 		context = cl::Context(device);
 		commandQueue = cl::CommandQueue(context, device);
 		program = compile(CL_PROGRAM, "program", context);
+		deviceName = device.getInfo<CL_DEVICE_NAME>();
 	}
 
 protected:
 	void onProcessJob() override {
-		std::cout << "Processing job on CL device" << std::endl;
-
+		log(INFO, "Processing job with id " + std::to_string(currentJob->Id) + " on OpenCL device: " + deviceName);
 		// Create data loader
 		auto dataLoader = DataLoader(filePath, chunkSizeBytes);
 

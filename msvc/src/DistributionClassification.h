@@ -36,6 +36,8 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator) {
 	const auto estimatedPt = std::make_pair(statsAccumulator.getSkewness(), statsAccumulator.getKurtosis());
 
 	std::cout << "Results" << "\n";
+	std::cout << "-------" << "\n";
+	std::cout << "N items: " << statsAccumulator.getN() << "\n"; // TODO remove
 
 	if (statsAccumulator.integerDistribution()) {
 		// If running stats has only integers we know that the distribution is Poisson

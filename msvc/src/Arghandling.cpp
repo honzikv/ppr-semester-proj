@@ -5,6 +5,8 @@
 #include <utility>
 #include <unordered_set>
 
+#include "Logging.h"
+
 
 // LUT for processing modes so we don't have to do 20 if statements
 const auto processingModesLut = std::unordered_map<std::string, ProcessingMode>{
@@ -39,25 +41,6 @@ auto parseArguments(const int argc, char** argv) -> ProcessingArgs {
 		return {mode, distFilePath, {}};
 	}
 
-	// TODO it parses strings by default so I guess ignore this - use this if not working in release
-	// Otherwise extract the deviceNames
-	// auto deviceNames = std::vector<std::string>();
-
-	// Take all arguments after the first two
-	// auto deviceListStr = std::string();
-	// for (auto i = 2; i < argc; i += 1) {
-	// 	std::cout << argv[i] << std::endl;
-	// 	deviceListStr.append(argv[i]);
-	// }
-
-	// Now extract devices which are in quotes
-	// for (auto iter = std::sregex_iterator(deviceListStr.begin(), deviceListStr.end(), QUOTES_REGEX);
-	//      iter != std::sregex_iterator();
-	//      ++iter) {
-	// 	const auto matchStr = (*iter).str();
-	// 	deviceNames.push_back(matchStr.substr(1, matchStr.size() - 2));
-	// }
-
 	auto deviceNames = std::vector<std::string>();
 	for (auto i = 2; i < argc; i += 1) {
 		deviceNames.push_back(argv[i]);
@@ -81,6 +64,10 @@ auto loadAllClDevices() {
 
 		// Otherwise add record to the result
 		result.push_back({platform, platformDevices});
+
+		for (const auto platformDevice : platformDevices) {
+			log(INFO, "Found OpenCL device: " + platformDevice.getInfo<CL_DEVICE_NAME>());
+		}
 	}
 
 	return result;

@@ -5,6 +5,8 @@
 #include <iostream>
 #include <thread>
 
+#include "Logging.h"
+
 constexpr auto DEFAULT_SLEEP_MS = std::chrono::milliseconds{50000}; // 5s
 
 class Watchdog {
@@ -23,6 +25,10 @@ public:
 		watchdogThread.detach();
 	}
 
+	/**
+	 * \brief Updates Watchdog's counter with value x
+	 * \param x value to update counter with
+	 */
 	void updateCounter(const size_t x) {
 		counter += x;
 	}
@@ -36,12 +42,16 @@ private:
 		startSemaphore.acquire(); // Try to acquire start semaphore
 		while (keepRunning) {
 			std::this_thread::sleep_for(sleepMs);
-			if (counter == 0) {
-				std::cout << "No job detected ..." << std::endl;
+			const auto counterVal = counter.exchange(0);
+			if (counterVal == 0 && keepRunning) {
+				log(CRITICAL, "Watchdog: No progress in the last" + std::to_string(sleepMs.count()) + " ms" );
 				continue;
 			}
 
-			counter = 0;
+			if (counterVal > 0) {
+				log(INFO, "Processed " + std::to_string(counterVal) + " chunks since last update.");
+			}
+			
 		}
 	}
 };

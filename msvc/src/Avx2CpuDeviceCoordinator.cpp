@@ -1,13 +1,23 @@
 #include <oneapi/tbb.h>
 #include "Avx2StatsAccumulator.h"
 #include "Avx2CpuDeviceCoordinator.h"
+#include "StatUtils.h"
 
 
 void Avx2CpuDeviceCoordinator::onProcessJob() {
-	auto dataLoader = DataLoader(filePath, chunkSizeBytes);
-
+	log(INFO, "Processing job with id " + std::to_string(currentJob->Id) + " on CPU / SMP ");
 	// Load data into the vector
-	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
+	auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
+
+	// Filter out invalid data
+	// size_t currentIdx = 0;
+	// for (auto i = 0ULL; i < buffer.size(); i += 1) {
+	// 	if (StatUtils::valueNormalOrZero(buffer[i])) {
+	// 		buffer[currentIdx] = buffer[i];
+	// 		currentIdx += 1;
+	// 	}
+	// }
+	// buffer.resize(currentIdx + 1);
 
 	// Create vector for results
 	const auto nAccumulators = buffer.size() / bytesPerAccumulator;
@@ -18,7 +28,7 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 		// Therefore do it in a single thread
 		auto accumulator = Avx2StatsAccumulator();
 		for (auto i = 0ULL; i < buffer.size() / 4; i += 4) {
-			accumulator.push({
+			accumulator.pushWithFiltering({
 				buffer[i * 4],
 				buffer[i * 4 + 1],
 				buffer[i * 4 + 2],
@@ -34,7 +44,7 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 				                          const auto jobStart = accumulatorId * bytesPerAccumulator / 4;
 				                          const auto jobEnd = (accumulatorId + 1) * bytesPerAccumulator / 4;
 				                          for (auto i = jobStart; i < jobEnd; i += 1) {
-					                          accumulators[accumulatorId].push({
+					                          accumulators[accumulatorId].pushWithFiltering({
 						                          buffer[i * 4],
 						                          buffer[i * 4 + 1],
 						                          buffer[i * 4 + 2],
@@ -45,12 +55,14 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 		                          });
 	}
 
+	// Notify the watchdog
+
+
 	auto result = std::vector<StatsAccumulator>();
 	for (const auto& accumulator : accumulators) {
-		result.push_back(accumulator.asScalar());
+		auto items = accumulator.asVectorOfScalars();
+		result.insert(result.end(), items.begin(), items.end());
 	}
 
 	currentJob->Result = result;
-
-	std::cout << "Job Finished" << std::endl;
 }

@@ -30,7 +30,7 @@ public:
 		processingArgs(std::move(processingArgs)) {
 	}
 
-	auto run(int64_t maxBytesPerAccumulator = -1) const {
+	[[nodiscard]] auto run(int64_t maxBytesPerAccumulator = -1) const {
 		if (maxBytesPerAccumulator == -1 || static_cast<size_t>(maxBytesPerAccumulator) >
 			defaultMaxSizePerAccumulator) {
 			maxBytesPerAccumulator = static_cast<int64_t>(defaultMaxSizePerAccumulator);
