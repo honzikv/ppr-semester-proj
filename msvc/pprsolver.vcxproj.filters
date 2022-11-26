@@ -136,5 +136,8 @@
     <ClInclude Include="src\ProcessingConfig.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
+    <ClInclude Include="src\Benchmark.h">
+      <Filter>Header Files\Benchmark</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

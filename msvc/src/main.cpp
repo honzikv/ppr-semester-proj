@@ -4,16 +4,23 @@
 #include "JobScheduler.h"
 #include "Logging.h"
 #include "SingleThreadStatsComputation.h"
-
-// #include "OpenClTest.h"
 #include "StatUtils.h"
 #include "Timer.h"
 #include "ArgParser.h"
 
 int main(int argc, char** argv) {
+	// Parse arguments
 	auto argParser = ArgumentParser();
-	auto processingConfig = argParser.processArgs(argc, argv);
 
+	ProcessingConfig processingConfig;
+	try {
+		processingConfig = argParser.processArgs(argc, argv);
+	}
+	catch (const std::runtime_error err) {
+		std::cout << err.what() << std::endl;
+		exit(1);
+	}
+	// Create timer to measure benchmark
 	auto timer = Timer();
 
 	auto tbbThreadControl = oneapi::tbb::global_control(oneapi::tbb::global_control::max_allowed_parallelism,

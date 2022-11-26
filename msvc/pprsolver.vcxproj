@@ -30,6 +30,7 @@
   <ItemGroup>
     <ClInclude Include="src\ArgParser.h" />
     <ClInclude Include="src\Avx2CpuDeviceCoordinator.h" />
+    <ClInclude Include="src\Benchmark.h" />
     <ClInclude Include="src\ClSources.h" />
     <ClInclude Include="src\CpuDeviceCoordinator.h" />
     <ClInclude Include="src\DataLoader.h" />

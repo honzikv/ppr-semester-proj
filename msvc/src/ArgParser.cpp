@@ -1,5 +1,8 @@
 #include "ArgParser.h"
-// #include "Logging.h"
+
+#include <iostream>
+
+#include "Logging.h"
 
 // Type alias
 using PlatformWithDevices = std::pair<cl::Platform, std::vector<cl::Device>>;
@@ -48,7 +51,7 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 
 			// Skip if we cant find double precision extension
 			if (!deviceExtensions.find(DOUBLE_PRECISION_DEFAULT) || !deviceExtensions.find(DOUBLE_PRECISION_AMD)) {
-				// log(INFO, "Skipping OpenCL device \"" + deviceName + "\" because it doesn't support double precision");
+				log(INFO, "Skipping OpenCL device \"" + deviceName + "\" because it doesn't support double precision");
 				continue;
 			}
 
@@ -67,13 +70,18 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 			}
 
 			// If it is not log that it is skipped and continue
-			// log(INFO, "Skipping OpenCL device \"" + deviceName + "\"");
+			log(INFO, "Skipping OpenCL device \"" + deviceName + "\"");
 		}
 	}
 
 	// Check if all devices were found, if not log this
 	if (!deviceNamesFilter.empty()) {
-		// log(WARNING, "Could not find OpenCL devices: " + std::string(deviceNamesFilter.begin(), deviceNamesFilter.end()));
+		log(WARNING, "Could not find following OpenCL devices: ");
+		for (const auto& deviceName : deviceNamesFilter) {
+			std::cout << deviceName << "\n";
+		}
+
+		std::cout << "They will not be utilized" << std::endl;
 	}
 
 	return result;
@@ -92,7 +100,7 @@ ProcessingConfig ArgumentParser::processArgs(int argc, char** argv) const {
 		("h, help", "Print help");
 
 	if (argc < 3) {
-		// std::cout << options.help();
+		std::cout << options.help();
 		exit(1);
 	}
 
