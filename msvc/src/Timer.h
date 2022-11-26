@@ -46,7 +46,6 @@ public:
 		    + std::to_string(elapsedTime / 1000000) + " ms = " + std::to_string(
 			    elapsedTime / 1000000000)
 		    + " s)");
-
 	}
 
 };

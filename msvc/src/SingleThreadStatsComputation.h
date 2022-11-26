@@ -1,7 +1,7 @@
 #pragma once
 #include "FileChunkHandler.h"
 #include <filesystem>
-#include "Arghandling.h"
+#include "ProcessingConfig.h"
 #include "DataLoader.h"
 
 
@@ -16,18 +16,18 @@ class SingleThreadStatsComputation {
 	size_t maxBufferSize;
 	size_t nWorkers;
 	size_t defaultMaxSizePerAccumulator;
-	ProcessingArgs processingArgs;
+	ProcessingConfig processingConfig;
 
 public:
 	SingleThreadStatsComputation(const size_t chunkSize,
-	                             ProcessingArgs processingArgs,
+	                             ProcessingConfig processingArgs,
 	                             const size_t nWorkers,
 	                             const size_t maxBufferSize):
 		chunkSizeBytes(chunkSize),
 		maxBufferSize(maxBufferSize),
 		nWorkers(nWorkers),
 		defaultMaxSizePerAccumulator(maxBufferSize / nWorkers),
-		processingArgs(std::move(processingArgs)) {
+		processingConfig(std::move(processingArgs)) {
 	}
 
 	[[nodiscard]] auto run(int64_t maxBytesPerAccumulator = -1) const {
@@ -37,8 +37,8 @@ public:
 		}
 
 		// Create jobs
-		auto fileChunkHandler = FileChunkHandler(processingArgs.DistFilePath, chunkSizeBytes);
-		auto dataLoader = DataLoader(processingArgs.DistFilePath, chunkSizeBytes);
+		auto fileChunkHandler = FileChunkHandler(processingConfig.DistFilePath, chunkSizeBytes);
+		auto dataLoader = DataLoader(processingConfig.DistFilePath, chunkSizeBytes);
 		auto results = std::vector<StatsAccumulator>();
 		const auto chunksPerJob = maxBytesPerAccumulator / chunkSizeBytes;
 		auto id = 0;

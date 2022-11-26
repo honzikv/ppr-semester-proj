@@ -11,7 +11,6 @@ namespace ConcurrencyUtils {
 		std::condition_variable conditionVariable;
 		size_t count;
 
-
 	public:
 		auto acquire() {
 			auto lock = std::unique_lock(mutex);

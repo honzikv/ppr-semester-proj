@@ -1,23 +1,15 @@
 #include <oneapi/tbb.h>
+
 #include "Avx2StatsAccumulator.h"
 #include "Avx2CpuDeviceCoordinator.h"
+#include "Logging.h"
 #include "StatUtils.h"
 
 
 void Avx2CpuDeviceCoordinator::onProcessJob() {
 	log(INFO, "Processing job with id " + std::to_string(currentJob->Id) + " on CPU / SMP ");
 	// Load data into the vector
-	auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
-
-	// Filter out invalid data
-	// size_t currentIdx = 0;
-	// for (auto i = 0ULL; i < buffer.size(); i += 1) {
-	// 	if (StatUtils::valueNormalOrZero(buffer[i])) {
-	// 		buffer[currentIdx] = buffer[i];
-	// 		currentIdx += 1;
-	// 	}
-	// }
-	// buffer.resize(currentIdx + 1);
+	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
 
 	// Create vector for results
 	const auto nAccumulators = buffer.size() / bytesPerAccumulator;
@@ -56,7 +48,6 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 	}
 
 	// Notify the watchdog
-
 
 	auto result = std::vector<StatsAccumulator>();
 	for (const auto& accumulator : accumulators) {

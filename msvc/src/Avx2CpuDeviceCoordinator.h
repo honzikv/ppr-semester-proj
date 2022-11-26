@@ -1,4 +1,5 @@
 #pragma once
+#include "ProcessingConfig.h"
 #include "CpuDeviceCoordinator.h"
 
 /**

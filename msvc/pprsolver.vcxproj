@@ -19,13 +19,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Arghandling.cpp" />
     <ClCompile Include="src\Avx2CpuDeviceCoordinator.cpp" />
+    <ClCompile Include="src\ClDeviceCoordinator.cpp" />
     <ClCompile Include="src\CpuDeviceCoordinator.cpp" />
+    <ClCompile Include="src\ArgParser.cpp" />
+    <ClCompile Include="src\DataLoader.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\StatsAccumulator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ArgParser.h" />
     <ClInclude Include="src\Avx2CpuDeviceCoordinator.h" />
     <ClInclude Include="src\ClSources.h" />
     <ClInclude Include="src\CpuDeviceCoordinator.h" />
@@ -36,11 +39,11 @@
     <ClInclude Include="src\FileChunkHandler.h" />
     <ClInclude Include="src\ClDeviceCoordinator.h" />
     <ClInclude Include="src\DeviceCoordinator.h" />
-    <ClInclude Include="src\Arghandling.h" />
     <ClInclude Include="src\Job.h" />
     <ClInclude Include="src\JobScheduler.h" />
     <ClInclude Include="src\ConcurrencyUtils.h" />
     <ClInclude Include="src\OpenClTest.h" />
+    <ClInclude Include="src\ProcessingConfig.h" />
     <ClInclude Include="src\StatsAccumulator.h" />
     <ClInclude Include="src\Avx2StatsAccumulator.h" />
     <ClInclude Include="src\SingleThreadStatsComputation.h" />
@@ -104,10 +107,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>..\compiled\</OutDir>
     <LibraryPath>$(TBB_ROOT)\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(PROJECT_ROOT)\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>..\compiled\</OutDir>
     <LibraryPath>$(TBB_ROOT)\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(PROJECT_ROOT)\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LibraryPath>$TBB_LIB_X86_DIR);$(LibraryPath)</LibraryPath>
@@ -130,7 +135,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(CUDA_PATH)\include;$(TBB_ROOT)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH)\include;$(PROJECT_ROOT)\include;$(TBB_ROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <AdditionalOptions>/Qvec-report:2 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -174,7 +179,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <AdditionalOptions>/Qvec-report:2 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(CUDA_PATH)\include;$(TBB_ROOT)\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH)\include;$(PROJECT_ROOT)\..\include;$(TBB_ROOT)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

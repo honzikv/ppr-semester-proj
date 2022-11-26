@@ -21,7 +21,7 @@ public:
 		chunkCount(static_cast<size_t>(floor(static_cast<double>(fileSize) / static_cast<double>(chunkSizeBytes)))) {
 	}
 
-	inline [[nodiscard]] bool allChunksProcessed() const {
+	[[nodiscard]] bool allChunksProcessed() const {
 		return currentChunkIdx == chunkCount;
 	}
 
@@ -30,7 +30,7 @@ public:
 	 * \param n number of chunks to add
 	 * \return pair of start and end (exclusive) chunk index
 	 */
-	inline auto getNextNChunks(const size_t n) {
+	auto getNextNChunks(const size_t n) {
 		const auto actualChunksAdded = currentChunkIdx + n > chunkCount ? chunkCount - currentChunkIdx : n;
 		auto result = std::pair<size_t, size_t>(currentChunkIdx, currentChunkIdx + actualChunksAdded);
 		currentChunkIdx += actualChunksAdded;

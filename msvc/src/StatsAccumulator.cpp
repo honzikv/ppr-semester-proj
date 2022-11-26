@@ -61,11 +61,13 @@ StatsAccumulator& StatsAccumulator::operator+=(const StatsAccumulator& rhs) {
 
 StatsAccumulator StatsAccumulator::operator+(const StatsAccumulator& other) const {
 	if (other.n == 0 || !other.valid()) {
+	// if (other.n == 0) {
 		std::cout << "discarded other" << std::endl;
 		return *this;
 	}
 
 	if (n == 0 || !this->valid()) {
+	// if (n == 0) {
 		std::cout << "discarded this" << std::endl;
 		return other;
 	}

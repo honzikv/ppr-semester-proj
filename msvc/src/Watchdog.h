@@ -1,8 +1,6 @@
 #pragma once
 #include <atomic>
 #include <chrono>
-#include <condition_variable>
-#include <iostream>
 #include <thread>
 
 #include "Logging.h"
@@ -16,7 +14,7 @@ class Watchdog {
 	ConcurrencyUtils::Semaphore startSemaphore = ConcurrencyUtils::Semaphore(0);
 
 	std::atomic<bool> keepRunning = true;
-	std::chrono::milliseconds sleepMs;
+	std::chrono::milliseconds sleepMs{};
 
 public:
 	explicit inline Watchdog(const std::chrono::milliseconds sleepMs = DEFAULT_SLEEP_MS): sleepMs(sleepMs) {
@@ -44,14 +42,14 @@ private:
 			std::this_thread::sleep_for(sleepMs);
 			const auto counterVal = counter.exchange(0);
 			if (counterVal == 0 && keepRunning) {
-				log(CRITICAL, "Watchdog: No progress in the last" + std::to_string(sleepMs.count()) + " ms" );
+				log(CRITICAL, "Watchdog: No progress in the last" + std::to_string(sleepMs.count()) + " ms");
 				continue;
 			}
 
 			if (counterVal > 0) {
 				log(INFO, "Processed " + std::to_string(counterVal) + " chunks since last update.");
 			}
-			
+
 		}
 	}
 };

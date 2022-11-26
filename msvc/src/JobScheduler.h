@@ -1,6 +1,6 @@
 #pragma once
+#include "ArgParser.h"
 #include "CpuDeviceCoordinator.h"
-#include "Arghandling.h"
 #include "Avx2CpuDeviceCoordinator.h"
 #include "ClDeviceCoordinator.h"
 #include "FileChunkHandler.h"
@@ -38,40 +38,37 @@ class JobScheduler {
 	std::vector<StatsAccumulator> accumulators;
 
 public:
-	explicit JobScheduler(ProcessingInfo& processingInfo, size_t chunkSizeBytes = DEFAULT_CHUNK_SIZE) {
+	explicit JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeBytes = DEFAULT_CHUNK_SIZE) {
 		auto coordinatorId = 0;
 
-		const auto fileSize = fs::file_size(processingInfo.DistFilePath);
+		const auto fileSize = fs::file_size(processingConfig.DistFilePath);
 		if (fileSize < chunkSizeBytes || fileSize < SMALL_SIZE_LIMIT) {
 			chunkSizeBytes = 1; // Set chunk size to 1 - this way all bytes are processed
 		}
 
-		fileChunkHandler = std::make_unique<FileChunkHandler>(processingInfo.DistFilePath, chunkSizeBytes);
+		fileChunkHandler = std::make_unique<FileChunkHandler>(processingConfig.DistFilePath, chunkSizeBytes);
 
 		// Create memory configuration
-		auto memoryConfig = MemoryAllocation::buildMemoryConfig(processingInfo);
+		auto memoryConfig = MemoryAllocation::buildMemoryConfig(processingConfig);
 
 		// Add CL devices
-		for (const auto& [platform, devices] : processingInfo.Devices) {
-			for (const auto& device : devices) {
-				clDeviceCoordinators.push_back(std::make_shared<ClDeviceCoordinator>(
-						CoordinatorType::OPEN_CL,
-						processingInfo.ProcessingMode,
-						// Call member function of this
-						[this](auto&& ph1, auto&& ph2) {
-							jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
-						},
-						chunkSizeBytes,
-						memoryConfig.BytesPerClAccumulator,
-						memoryConfig.MaxClHostBufferSizeBytes,
-						processingInfo.DistFilePath,
-						coordinatorId,
-						platform,
-						device
-					)
-				);
-				coordinatorId += 1;
-			}
+		for (const auto& device : processingConfig.Devices) {
+			clDeviceCoordinators.push_back(std::make_shared<ClDeviceCoordinator>(
+					CoordinatorType::OPEN_CL,
+					processingConfig.ProcessingMode,
+					// Call member function of this
+					[this](auto&& ph1, auto&& ph2) {
+						jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
+					},
+					chunkSizeBytes,
+					memoryConfig.BytesPerClAccumulator,
+					memoryConfig.MaxClHostBufferSizeBytes,
+					processingConfig.DistFilePath,
+					coordinatorId,
+					device
+				)
+			);
+			coordinatorId += 1;
 		}
 
 		// Add CPU device coordinator - this will be set to inactive state if OPENCL_DEVICES mode is used
@@ -79,7 +76,7 @@ public:
 		cpuDeviceCoordinator = __ISA_AVAILABLE_AVX2
 			                       ? std::make_shared<Avx2CpuDeviceCoordinator>(
 				                       CoordinatorType::TBB,
-				                       processingInfo.ProcessingMode,
+				                       processingConfig.ProcessingMode,
 				                       [this](auto&& ph1, auto&& ph2) {
 					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
 					                                           std::forward<decltype(ph2)>(ph2));
@@ -87,12 +84,12 @@ public:
 				                       chunkSizeBytes,
 				                       memoryConfig.BytesPerCpuAccumulator,
 				                       memoryConfig.MaxCpuBufferSizeBytes,
-				                       processingInfo.DistFilePath,
+				                       processingConfig.DistFilePath,
 				                       coordinatorId
 			                       )
 			                       : std::make_shared<CpuDeviceCoordinator>(
 				                       CoordinatorType::TBB,
-				                       processingInfo.ProcessingMode,
+				                       processingConfig.ProcessingMode,
 				                       [this](auto&& ph1, auto&& ph2) {
 					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
 					                                           std::forward<decltype(ph2)>(ph2));
@@ -100,7 +97,7 @@ public:
 				                       chunkSizeBytes,
 				                       memoryConfig.BytesPerCpuAccumulator,
 				                       memoryConfig.MaxCpuBufferSizeBytes,
-				                       processingInfo.DistFilePath,
+				                       processingConfig.DistFilePath,
 				                       coordinatorId);
 	}
 

@@ -1,15 +1,12 @@
 #pragma once
-#include <numeric>
-
-#include "Arghandling.h"
 
 namespace MemoryAllocation {
 
 	constexpr auto DEFAULT_APP_MEMORY_LIMIT = 1024 * 1024 * 1024; // 1GB
 	constexpr auto DEFAULT_APP_RUNTIME_RATIO = .2; // 20%
 	constexpr auto DEFAULT_CPU_MEMORY_RATIO = .2; // CPU will use 20% of the buffer memory if OpenCL devices are used
-	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU = 256ULL * 1024 * sizeof(double);
-	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL = 16ULL * 1024 * sizeof(double);
+	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU = 128ULL * 1024 * sizeof(double);
+	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL = 128ULL * 1024 * sizeof(double);
 
 	/**
 	 * \brief Contains data for memory configuration for all devices
@@ -57,7 +54,7 @@ namespace MemoryAllocation {
 		BytesPerClAccumulator(bytesProcessedPerAccumulatorCl) {
 	}
 
-	inline MemoryConfig buildMemoryConfig(const ProcessingInfo& processingInfo,
+	inline MemoryConfig buildMemoryConfig(const ProcessingConfig& processingConfig,
 	                                      const size_t bytesProcessedPerAccumulatorCpu =
 		                                      DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU,
 	                                      const size_t bytesProcessedPerAccumulatorCl =
@@ -65,7 +62,7 @@ namespace MemoryAllocation {
 	                                      const size_t appMemoryLimit = DEFAULT_APP_MEMORY_LIMIT,
 	                                      const double appRuntimeSize = DEFAULT_APP_RUNTIME_RATIO
 	) {
-		const auto processingMode = processingInfo.ProcessingMode;
+		const auto processingMode = processingConfig.ProcessingMode;
 
 		// Max amount of memory for all buffers (both CPU and CL)
 		const auto bufferMemoryLimit = static_cast<size_t>(static_cast<double>(appMemoryLimit) * (1 - appRuntimeSize));
@@ -84,15 +81,7 @@ namespace MemoryAllocation {
 		// Otherwise our mode is either OpenCL devices or ALL
 		size_t maxCpuBufferBytes = 0;
 		size_t clDevicesMemory;
-
-		// Check how many CL devices are available
-		const auto nClDevices = std::accumulate(processingInfo.Devices.begin(), processingInfo.Devices.end(), 0ULL,
-		                                        [&](auto sum, auto item) {
-			                                        auto [_, devices] = item;
-			                                        return sum + devices.size();
-		                                        }
-		);
-
+		const auto nClDevices = processingConfig.Devices.size();
 		if (processingMode == ProcessingMode::ALL) {
 			// There is a special case when we use ALL and do not actually have any CL device.
 			// This would use only % of the available memory and slow down the computation.

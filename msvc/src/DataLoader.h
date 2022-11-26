@@ -98,11 +98,11 @@ public:
 			file.read(reinterpret_cast<char*>(hostBuffer.data()), static_cast<int64_t>(bytesToRead));
 
 			// Copy host buffer to the device buffer
-			auto ret = commandQueue.enqueueWriteBuffer(deviceBuffer, CL_TRUE, currentChunk * ChunkSizeBytes,
-			                                           chunksToRead * ChunkSizeBytes,
-			                                           hostBuffer.data());
-			if (ret != 0) {
-				throw std::runtime_error("");
+			const auto returnValue = commandQueue.enqueueWriteBuffer(deviceBuffer, CL_TRUE, currentChunk * ChunkSizeBytes,
+			                                                 chunksToRead * ChunkSizeBytes,
+			                                                 hostBuffer.data());
+			if (returnValue != 0) {
+				throw std::runtime_error("Could not allocate memory on the device, the program cannot continue!");
 			}
 
 			// Update

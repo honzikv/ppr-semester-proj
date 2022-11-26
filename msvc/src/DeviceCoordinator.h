@@ -1,13 +1,9 @@
 #pragma once
 #include <condition_variable>
 #include <functional>
-#include <iostream>
-
-#include "Arghandling.h"
 #include "Job.h"
 #include "ConcurrencyUtils.h"
 #include "DataLoader.h"
-#include "Logging.h"
 
 enum CoordinatorType {
 	TBB = 0,

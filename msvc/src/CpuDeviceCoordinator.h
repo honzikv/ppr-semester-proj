@@ -1,6 +1,8 @@
 #pragma once
 #include <filesystem>
 #include <cmath>
+
+#include "ProcessingConfig.h"
 #include "DeviceCoordinator.h"
 
 

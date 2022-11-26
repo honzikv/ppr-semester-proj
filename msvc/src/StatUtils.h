@@ -29,7 +29,7 @@ namespace StatUtils {
 		return fpClassification == FP_ZERO || fpClassification == FP_NORMAL;
 	}
 
-	static auto mergePairwise(std::vector<StatsAccumulator>& results) {
+	static auto mergePairwise(std::vector<StatsAccumulator>& results, const bool filterInvalid = true) {
 		auto itemsToProcess = results.size();
 		while (true) {
 			const auto nPairs = itemsToProcess / 2 + itemsToProcess % 2;
@@ -47,7 +47,12 @@ namespace StatUtils {
 		return results[0];
 	}
 
-	static auto mergeLeftToRight(std::vector<StatsAccumulator>& results) {
+	static auto mergeLeftToRight(std::vector<StatsAccumulator>& results, const bool filterInvalid = true) {
+		auto filtered = std::vector<StatsAccumulator>();
+		if (filterInvalid) {
+			
+		}
+
 		auto& result = results[0];
 		for (auto i = 0ULL; i < results.size(); i += 1) {
 			result += results[i];
