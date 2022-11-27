@@ -13,6 +13,7 @@ public:
 	CpuDeviceCoordinator(const CoordinatorType coordinatorType,
 	                     const ProcessingMode processingMode,
 	                     const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
+		std::function<void(size_t)> notifyWatchdogCallback,
 	                     const size_t chunkSizeBytes,
 	                     const size_t bytesPerAccumulator,
 	                     const size_t cpuBufferSizeBytes,

@@ -59,7 +59,7 @@ private:
 			// Null the counter and take out the previous value for comparison
 			const auto counterVal = counter.exchange(0);
 			if (counterVal <= 0 && keepRunning) {
-				log(CRITICAL, "[WATCHDOG] No progress in the last" + std::to_string(sleepMs.count()) + " ms");
+				log(CRITICAL, "[WATCHDOG] No progress in the last " + std::to_string(sleepMs.count()) + " ms");
 				continue;
 			}
 
@@ -67,7 +67,7 @@ private:
 			if (keepRunning) {
 				const auto kbsProcessed = counterVal / 1024;
 				const auto mbsProcessed = kbsProcessed / 1024;
-				log(INFO, "[WATCHDOG] Processed " + std::to_string(kbsProcessed) + " kBs (" + std::to_string(mbsProcessed) + " MBs) since last update.");
+				log(INFO, "[WATCHDOG] Processed " + std::to_string(kbsProcessed) + " kBs (" + std::to_string(mbsProcessed) + " MBs) since the last update.");
 			}
 		}
 	}

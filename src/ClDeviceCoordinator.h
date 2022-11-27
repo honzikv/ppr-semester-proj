@@ -12,7 +12,7 @@
 
 namespace fs = std::filesystem;
 
-constexpr auto BUFFER_MAX_SIZE_SCALE = .75;
+constexpr auto BUFFER_MAX_SIZE_SCALE = .9;
 constexpr auto KERNEL_NAME = "computeStats";
 // 80% of video memory is used for computation (or rather 90% of what OpenCL returns)
 
@@ -48,23 +48,13 @@ public:
 		const CoordinatorType coordinatorType,
 		const ProcessingMode processingMode,
 		const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
+		std::function<void(size_t)> notifyWatchdogCallback,
 		const size_t chunkSizeBytes,
 		const size_t bytesPerAccumulator,
 		const size_t clHostBufferSizeBytes,
 		fs::path& distFilePath,
 		const size_t id,
-		const cl::Device& device)
-		: DeviceCoordinator(
-			  coordinatorType, processingMode, jobFinishedCallback, chunkSizeBytes,
-			  bytesPerAccumulator, distFilePath, id),
-		  device(device),
-		  maxHostChunks(clHostBufferSizeBytes / chunkSizeBytes) {
-		// Setup the device
-		setup();
-
-		// After we have set everything up start the thread
-		startCoordinatorThread();
-	}
+		const cl::Device& device);
 
 private:
 	cl::Device device; // The actual device
@@ -97,10 +87,17 @@ private:
 		}
 	}
 
-protected:
+	/**
+	 * \brief Estimates workgroup size
+	 * \return None
+	 */
+	void estimateWorkgroupSize();
 
+protected:
 	/**
 	 * \brief Function override to perform computation on OpenCL device
 	 */
 	void onProcessJob() override;
+
+
 };

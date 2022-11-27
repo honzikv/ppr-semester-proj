@@ -27,6 +27,11 @@ protected:
 	 */
 	std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback;
 
+	/**
+	 * \brief Callback function for notifying Watchdog
+	 */
+	std::function<void(size_t)> notifyWatchdogCallback;
+
 	bool isEnabled = true; // Whether this coordinator is actually used (e.g. CPU is not used in OPENCL only mode)
 	std::atomic<bool> isAvailable = true; // Whether the worker is available
 	std::unique_ptr<Job> currentJob = nullptr; // Reference to the current job
@@ -82,6 +87,7 @@ public:
 	 * \param coordinatorType type of the coordinator
 	 * \param processingMode processing mode
 	 * \param jobFinishedCallback callback after job is finished
+	 * \param notifyWatchdogCallback callback for notifying watchdog
 	 * \param chunkSizeBytes chunk size in bytes
 	 * \param bytesPerAccumulator number of bytes processed by each StatsAccumulator
 	 * \param distFilePath path to the file that is being processed
@@ -90,11 +96,13 @@ public:
 	DeviceCoordinator(const CoordinatorType coordinatorType,
 	                  const ProcessingMode processingMode,
 	                  std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
+	                  std::function<void(size_t)> notifyWatchdogCallback,
 	                  const size_t chunkSizeBytes,
 	                  const size_t bytesPerAccumulator,
 	                  fs::path& distFilePath,
 	                  const size_t id):
 		jobFinishedCallback(std::move(jobFinishedCallback)),
+		notifyWatchdogCallback(std::move(notifyWatchdogCallback)),
 		chunkSizeBytes(chunkSizeBytes),
 		bytesPerAccumulator(bytesPerAccumulator),
 		filePath(distFilePath),

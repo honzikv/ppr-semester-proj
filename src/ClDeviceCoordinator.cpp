@@ -14,19 +14,41 @@ auto ClDeviceCoordinator::compile(const std::string& source, const std::string& 
 	return program;
 }
 
+ClDeviceCoordinator::ClDeviceCoordinator(const CoordinatorType coordinatorType,
+                                         const ProcessingMode processingMode,
+                                         const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
+                                         std::function<void(size_t)> notifyWatchdogCallback,
+                                         const size_t chunkSizeBytes,
+                                         const size_t bytesPerAccumulator,
+                                         const size_t clHostBufferSizeBytes,
+                                         fs::path& distFilePath,
+                                         const size_t id,
+                                         const cl::Device& device
+): DeviceCoordinator(
+	   coordinatorType, processingMode,
+	   jobFinishedCallback,
+	   notifyWatchdogCallback,
+	   chunkSizeBytes,
+	   bytesPerAccumulator, distFilePath, id),
+   device(device),
+   maxHostChunks(
+	   clHostBufferSizeBytes / chunkSizeBytes) {
+	// Setup the device
+	setup();
+
+	// After we have set everything up start the thread
+	startCoordinatorThread();
+}
+
 void ClDeviceCoordinator::setup() {
 	// OpenCL boilerplate
 	context = cl::Context(device);
 	commandQueue = cl::CommandQueue(context, device);
 	program = compile(CL_PROGRAM, "program", context);
 	deviceName = device.getInfo<CL_DEVICE_NAME>();
+	estimateWorkgroupSize();
 
-	// Load the kernel
-	const auto kernel = cl::Kernel(program, KERNEL_NAME);
-
-	// Use CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE as a hint for the number of work items in a work group
-	//https://www.intel.com/content/www/us/en/develop/documentation/iocl-opg/top/coding-for-the-intel-cpu-opencl-device/work-group-size-considerations.html
-	maxWorkGroupSize = kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(device);
+	maxWorkGroupSize = 128;
 	const auto maxDeviceBufferSize = static_cast<size_t>(static_cast<double>(device.getInfo<
 			CL_DEVICE_MAX_MEM_ALLOC_SIZE>())
 		* BUFFER_MAX_SIZE_SCALE);
@@ -40,22 +62,43 @@ void ClDeviceCoordinator::setup() {
 
 	// If we get more host memory than device memory align host memory to device memory
 	maxHostChunks = maxHostChunks * chunkSizeBytes > maxDeviceBufferSize
-		? static_cast<size_t>(std::floor(static_cast<double>(maxDeviceBufferSize) / static_cast<double>(chunkSizeBytes)))
-		: maxHostChunks;
+		                ? static_cast<size_t>(std::floor(
+			                static_cast<double>(maxDeviceBufferSize) / static_cast<double>(chunkSizeBytes)))
+		                : maxHostChunks;
 }
+
+void ClDeviceCoordinator::estimateWorkgroupSize() {
+	const auto kernel = cl::Kernel(program, KERNEL_NAME);
+	const auto clRecommendedWorkgroupSize = kernel.getWorkGroupInfo<
+		CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(device);
+
+	// The same could be done for AMD Radeon GPUs
+	const auto vendorName = device.getInfo<CL_DEVICE_VENDOR>();
+	const auto deviceName = device.getInfo<CL_DEVICE_NAME>();
+	if (vendorName.find("NVIDIA") != std::string::npos && (deviceName.find("GTX") != std::string::npos ||
+		deviceName.find("RTX") != std::string::npos)) {
+		// Any modern
+		const auto nvidiaWorkgroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() / 8;
+
+		if (nvidiaWorkgroupSize < clRecommendedWorkgroupSize) {
+			maxWorkGroupSize = nvidiaWorkgroupSize;
+			return;
+		}
+
+		maxWorkGroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() / 8;
+
+		return;
+	}
+
+	maxWorkGroupSize = clRecommendedWorkgroupSize;
+}
+
 
 void ClDeviceCoordinator::onProcessJob() {
 	log(INFO, "[OpenCL] Processing job with id " + std::to_string(currentJob->Id) + " on device \"" + deviceName +
 	    "\"");
 
-	// To utilize the GPU fully we need to ideally use maximum workgroup size
-	// Unfortunately, there is a tradeoff since we are limited by total application memory (i.e. 1 GB)
-	// and OpenCL is not at all generous with memory allocation
-
-	// We cannot allocate more than maxDeviceBufferSize at once since OpenCL does not copy it to the device without
-	// using additional memory
-	// Therefore, we split the job into smaller pieces where we at once load only maxDeviceBufferSize bytes or less
-	// and let the device compute it
+	// Ideally we would copy as much data as possible to the GPU / CL device but 
 
 	// Get total number of accumulators
 	const auto nAccumulators = currentJob->getNChunks() / chunksPerAccumulator;
@@ -67,7 +110,8 @@ void ClDeviceCoordinator::onProcessJob() {
 
 	// Create buffer for results
 	auto clStatus = cl_int{};
-	const auto accumulatorsBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, nAccumulators * 6 * sizeof(double), nullptr,
+	const auto accumulatorsBuffer = cl::Buffer(context, CL_MEM_READ_WRITE,
+	                                           nAccumulators * N_CL_OUT_ITEMS * sizeof(double), nullptr,
 	                                           &clStatus);
 	throwIfStatusUnsuccessful(clStatus);
 
@@ -92,7 +136,6 @@ void ClDeviceCoordinator::onProcessJob() {
 	auto bytesRemaining = totalBytes;
 	const auto [startIdx, endIdx] = currentJob->ChunkIdxRange;
 	auto currentIdx = startIdx;
-	int i = 0;
 	while (currentIdx < endIdx && bytesRemaining > 0) {
 		// Now keep loading data into the buffer
 		const auto chunksToLoad = bytesRemaining > maxHostChunks * chunkSizeBytes
@@ -113,8 +156,8 @@ void ClDeviceCoordinator::onProcessJob() {
 
 		currentIdx = currentIdx + chunksToLoad;
 		bytesRemaining -= chunksToLoad * chunkSizeBytes;
-		i += 1;
-		std::cout << "Run" << i << std::endl;
+
+		notifyWatchdogCallback(chunksToLoad * chunkSizeBytes);
 	}
 
 	// Read out the results
@@ -137,5 +180,5 @@ void ClDeviceCoordinator::onProcessJob() {
 	}
 
 	currentJob->Items = results;
-	
+
 }

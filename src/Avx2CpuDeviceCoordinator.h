@@ -2,6 +2,8 @@
 #include "ProcessingConfig.h"
 #include "CpuDeviceCoordinator.h"
 
+#include <utility>
+
 /**
  * \brief Override for AVX2 capable CPU
  */
@@ -11,13 +13,15 @@ public:
 	Avx2CpuDeviceCoordinator(const CoordinatorType coordinatorType,
 	                         const ProcessingMode processingMode,
 	                         const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
+	                         const std::function<void(size_t)>& notifyWatchdogCallback,
 	                         const size_t chunkSizeBytes,
 	                         const size_t bytesPerAccumulator,
 	                         const size_t cpuBufferSizeBytes,
 	                         fs::path& distFilePath,
 	                         const size_t id)
 		: CpuDeviceCoordinator(
-			coordinatorType, processingMode, jobFinishedCallback, chunkSizeBytes, bytesPerAccumulator,
+			coordinatorType, processingMode, jobFinishedCallback, notifyWatchdogCallback, chunkSizeBytes,
+			bytesPerAccumulator,
 			cpuBufferSizeBytes, distFilePath, id) {
 	}
 

@@ -54,6 +54,6 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 		auto items = accumulator.asVectorOfScalars();
 		result.insert(result.end(), items.begin(), items.end());
 	}
-
+	notifyWatchdogCallback(currentJob->getSize(chunkSizeBytes));
 	currentJob->Items = result;
 }

@@ -59,6 +59,9 @@ public:
 					[this](auto&& ph1, auto&& ph2) {
 						jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
 					},
+					[this](auto&& ph1) {
+						notifyWatchdogCallback(std::forward<decltype(ph1)>(ph1));
+					},
 					chunkSizeBytes,
 					memoryConfig.BytesPerClAccumulator,
 					memoryConfig.MaxClHostBufferSizeBytes,
@@ -80,6 +83,9 @@ public:
 					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
 					                                           std::forward<decltype(ph2)>(ph2));
 				                       },
+				                       [this](auto&& ph1) {
+					                       notifyWatchdogCallback(std::forward<decltype(ph1)>(ph1));
+				                       },
 				                       chunkSizeBytes,
 				                       memoryConfig.BytesPerCpuAccumulator,
 				                       memoryConfig.MaxCpuBufferSizeBytes,
@@ -92,6 +98,9 @@ public:
 				                       [this](auto&& ph1, auto&& ph2) {
 					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
 					                                           std::forward<decltype(ph2)>(ph2));
+				                       },
+				                       [this](auto&& ph1) {
+					                       notifyWatchdogCallback(std::forward<decltype(ph1)>(ph1));
 				                       },
 				                       chunkSizeBytes,
 				                       memoryConfig.BytesPerCpuAccumulator,
@@ -158,11 +167,13 @@ public:
 
 	void jobFinishedCallback(std::unique_ptr<Job> job, const size_t coordinatorIdx) {
 		auto scopedLock = std::scoped_lock(coordinatorMutex);
-
-		// Write data to job aggregator
-		watchdog.updateCounter(job->getSize(fileChunkHandler->getChunkSizeBytes()));
 		addProcessedJob(std::move(job));
 		jobFinishedSemaphore.release();
+	}
+
+	void notifyWatchdogCallback(const size_t bytesProcessed) {
+		auto scopedLock = std::scoped_lock(coordinatorMutex);
+		watchdog.updateCounter(bytesProcessed);
 	}
 
 	void terminateDeviceCoordinators() const {
