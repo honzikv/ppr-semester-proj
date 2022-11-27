@@ -4,13 +4,13 @@
     <LocalDebuggerEnvironment>PATH=%PATH%;$(TBB_ROOT)\bin
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>../referencni_rozdeleni/noisygauss -d "Nvidia Geforce RTX 3060 Ti"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>../referencni_rozdeleni/noisygaussSmall -d "Nvidia Geforce RTX 3060 Ti"</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup>
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>../referencni_rozdeleni/exp ALL</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>../referencni_rozdeleni/noisygauss SMP</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

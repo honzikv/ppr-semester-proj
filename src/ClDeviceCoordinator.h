@@ -12,13 +12,20 @@
 
 namespace fs = std::filesystem;
 
-constexpr auto VIDEO_MEMORY_SCALE = .75;
+constexpr auto BUFFER_MAX_SIZE_SCALE = .75;
 constexpr auto KERNEL_NAME = "computeStats";
 // 80% of video memory is used for computation (or rather 90% of what OpenCL returns)
 
 constexpr auto DEFAULT_BUILD_FLAG = "-cl-std=CL2.0";
 
-constexpr auto N_CL_OUT_PARAMS = 6;
+constexpr auto N_CL_OUT_ITEMS = 6;
+// Indices in the array
+constexpr auto N_ITEMS_IDX = 0;
+constexpr auto M1_IDX = 1;
+constexpr auto M2_IDX = 2;
+constexpr auto M3_IDX = 3;
+constexpr auto M4_IDX = 4;
+constexpr auto INTEGER_ONLY_IDX = 5;
 
 /**
  * \brief Custom error for control flow
@@ -66,6 +73,7 @@ private:
 	cl::Program program; // Compiled program
 	size_t maxWorkGroupSize{}; // Max number of work items in a work group
 	size_t maxHostChunks;
+	size_t chunksPerAccumulator;
 	std::string deviceName;
 
 	/**
@@ -82,6 +90,12 @@ private:
 	 * \brief Sets up the device, throwing ClCompileErr if something goes wrong
 	 */
 	void setup();
+
+	inline void throwIfStatusUnsuccessful(const cl_int clStatus) const {
+		if (clStatus != CL_SUCCESS) {
+			throw std::runtime_error("Error during OpenCL buffer creation. Error: " + std::to_string(clStatus));
+		}
+	}
 
 protected:
 
