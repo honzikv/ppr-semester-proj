@@ -1,4 +1,4 @@
-﻿#include <oneapi/tbb.h>
+﻿#include <tbb/tbb.h>
 
 #include "DistributionClassification.h"
 #include "JobScheduler.h"
@@ -24,10 +24,10 @@ int main(int argc, char** argv) {
 	auto timer = Timer();
 
 	// Configure TBB if needed
-	auto tbbThreadControl = oneapi::tbb::global_control(oneapi::tbb::global_control::max_allowed_parallelism,
+	auto tbbThreadControl = tbb::global_control(tbb::global_control::max_allowed_parallelism,
 	                                                    processingConfig.ProcessingMode == SINGLE_THREAD
 		                                                    ? 1
-		                                                    : oneapi::tbb::this_task_arena::max_concurrency()
+		                                                    : tbb::this_task_arena::max_concurrency()
 	);
 
 	timer.start();

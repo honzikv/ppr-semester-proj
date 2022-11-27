@@ -12,7 +12,7 @@
 
 namespace fs = std::filesystem;
 
-constexpr auto VIDEO_MEMORY_SCALE = .9;
+constexpr auto VIDEO_MEMORY_SCALE = .75;
 constexpr auto KERNEL_NAME = "computeStats";
 // 80% of video memory is used for computation (or rather 90% of what OpenCL returns)
 

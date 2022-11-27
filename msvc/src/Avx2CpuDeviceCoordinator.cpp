@@ -1,4 +1,4 @@
-#include <oneapi/tbb.h>
+#include <tbb/tbb.h>
 
 #include "Avx2StatsAccumulator.h"
 #include "Avx2CpuDeviceCoordinator.h"
@@ -30,7 +30,7 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 		accumulators.push_back(accumulator);
 	}
 	else {
-		oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
+		tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
 		                          [&](const tbb::blocked_range<size_t> r) {
 			                          for (auto accumulatorId = r.begin(); accumulatorId < r.end(); accumulatorId += 1) {
 				                          const auto jobStart = accumulatorId * bytesPerAccumulator / 4;

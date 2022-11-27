@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ProcessingConfig.h"
-#include "../include/cxxopts.h"
+#include "include/cxxopts.h"
 
 constexpr auto DOUBLE_PRECISION_DEFAULT = "cl_khr_fp64";
 constexpr auto DOUBLE_PRECISION_AMD = "cl_amd_fp64";

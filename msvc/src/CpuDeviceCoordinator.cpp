@@ -1,4 +1,4 @@
-#include <oneapi/tbb.h>
+#include <tbb/tbb.h>
 
 #include "CpuDeviceCoordinator.h"
 #include "Logging.h"
@@ -29,7 +29,7 @@ void CpuDeviceCoordinator::onProcessJob() {
 		}
 	}
 	else {
-		oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
+		tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
 			[&](const tbb::blocked_range<size_t> r) {
 				for (auto accumulatorId = r.begin(); accumulatorId < r.end(); accumulatorId += 1) {
 					const auto jobStart = accumulatorId * bytesPerAccumulator;
