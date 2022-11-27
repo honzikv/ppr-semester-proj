@@ -101,12 +101,16 @@ void ClDeviceCoordinator::onProcessJob() {
 	// Ideally we would copy as much data as possible to the GPU / CL device but 
 
 	// Get total number of accumulators
-	const auto nAccumulators = currentJob->getNChunks() / chunksPerAccumulator;
+	auto nAccumulators = currentJob->getNChunks() / chunksPerAccumulator;
 
 	// Get total number of workgroup runs
-	const auto totalBytes = nAccumulators * bytesPerAccumulator;
-	const auto nWorkgroupRuns = static_cast<size_t>(std::ceil(static_cast<double>(totalBytes) /
-		static_cast<double>(maxHostChunks * chunkSizeBytes))); // NOLINT(clang-diagnostic-implicit-int-float-conversion)
+	auto totalBytes = nAccumulators * bytesPerAccumulator;
+	if (nAccumulators == 0 && currentJob->getSize(chunkSizeBytes) < chunksPerAccumulator) {
+		// Our file is smaller than chunksPerAccumulator - therefore we only run one work item in one workgroup
+		nAccumulators = 1;
+		totalBytes = currentJob->getSize(chunkSizeBytes);
+	}
+	
 
 	// Create buffer for results
 	auto clStatus = cl_int{};
@@ -117,7 +121,7 @@ void ClDeviceCoordinator::onProcessJob() {
 
 	// Write true values for isInteger only
 	auto accumulatorData = std::vector<double>(nAccumulators * 6, 0.0);
-	for (auto i = 0ULL; i < nAccumulators; ++i) {
+	for (auto i = 0ULL; i < nAccumulators; i += 1) {
 		accumulatorData[i * N_CL_OUT_ITEMS + INTEGER_ONLY_IDX] = static_cast<double>(true);
 	}
 

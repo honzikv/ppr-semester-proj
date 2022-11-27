@@ -45,13 +45,13 @@ int main(int argc, char** argv) {
 	const auto singleThreadComputation = SingleThreadStatsComputation(4096, processingConfig, 8, 256 * 1024 * 1024);
 	auto results = singleThreadComputation.run(256ULL * 256 * sizeof(double));
 
-	auto results2 = std::vector<StatsAccumulator>(results.size() / 2);
-	for (auto i = 0; i < results.size() / 2; i += 1) {
-		results2[i] = results[i*2] + results[i*2 + 1];
-	}
+	// auto results2 = std::vector<StatsAccumulator>(results.size() / 2);
+	// for (auto i = 0; i < results.size() / 2; i += 1) {
+	// 	results2[i] = results[i*2] + results[i*2 + 1];
+	// }
 
 	classifyDistribution(StatUtils::mergeLeftToRight(results));
-	classifyDistribution(StatUtils::mergeLeftToRight(results2));
+	// classifyDistribution(StatUtils::mergeLeftToRight(results2));
 	timer.stop();
 	timer.logResults();
 
