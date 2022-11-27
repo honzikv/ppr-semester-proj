@@ -7,7 +7,7 @@ constexpr auto DOUBLE_PRECISION_DEFAULT = "cl_khr_fp64";
 constexpr auto DOUBLE_PRECISION_AMD = "cl_amd_fp64";
 
 /**
- * \brief Simple class used to parse and validate arguments
+ * \brief Simple class to parse and validate arguments
  */
 class ArgumentParser {
 public:

@@ -7,9 +7,9 @@ namespace ConcurrencyUtils {
 	 * \brief Basic implementation of counting semaphore
 	 */
 	class Semaphore {
-		std::mutex mutex;
-		std::condition_variable conditionVariable;
-		size_t count;
+		std::mutex mutex; // Mutex for locking
+		std::condition_variable conditionVariable; // Condition variable for synchronization
+		size_t count; // Number of available resources
 
 	public:
 		auto acquire() {

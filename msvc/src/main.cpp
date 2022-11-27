@@ -6,7 +6,7 @@
 #include "SingleThreadStatsComputation.h"
 #include "StatUtils.h"
 #include "Timer.h"
-#include "ArgParser.h"
+#include "ArgumentParser.h"
 
 int main(int argc, char** argv) {
 	// Parse arguments
@@ -23,6 +23,7 @@ int main(int argc, char** argv) {
 	// Create timer to measure benchmark
 	auto timer = Timer();
 
+	// Configure TBB if needed
 	auto tbbThreadControl = oneapi::tbb::global_control(oneapi::tbb::global_control::max_allowed_parallelism,
 	                                                    processingConfig.ProcessingMode == SINGLE_THREAD
 		                                                    ? 1

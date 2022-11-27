@@ -1,4 +1,4 @@
-#include "ArgParser.h"
+#include "ArgumentParser.h"
 
 #include <iostream>
 
@@ -101,10 +101,20 @@ ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const 
 			cxxopts::value<size_t>()->default_value("1024"))
 		("b,benchmark", "Runs given mode as benchmark")
 		("benchmark_runs", "Number of benchmark runs", cxxopts::value<size_t>()->default_value("10"))
+		("o, output_file", "Path to the output file if any", cxxopts::value<std::filesystem::path>())
 		("h,help", "Print help");
 
 	options.parse_positional({"file", "mode", "devices"});
-	const auto result = options.parse(argc, argv);
+
+	cxxopts::ParseResult result;
+	try {
+		result = options.parse(argc, argv);
+	}
+	catch (const std::exception&) {
+		std::cout << options.help() << std::endl;
+		exit(1);
+	}
+	
 
 	if (result.count("help")) {
 		std::cout << options.help() << std::endl;
@@ -148,17 +158,17 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 	}
 
 	// Check processing mode
-	if (args.count("mode") < 1) {
+	if (args.count("mode") < 1 && args.count("devices") < 1) {
 		throw std::runtime_error("Processing mode not specified");
 	}
 
 	// Mode can actually be parsed as device as well
 	// Therefore, check if its lowercased version fits anything and if not treat it as device
-	const auto modeArg = args["mode"].as<std::string>();
+	const auto modeArg = args.count("mode") > 0 ? args["mode"].as<std::string>() : "opencl_devices";
 	const auto modePosArgIsADevice = processingModesLut.find(lowercase(modeArg)) == processingModesLut.end();
 	const auto processingMode = modePosArgIsADevice
 		                            ? ProcessingMode::OPENCL_DEVICES
-		                            : processingModesLut.at(modeArg);
+		                            : processingModesLut.at(lowercase(modeArg));
 
 	// Check memory limit
 	const auto memoryLimit = args.count("memory_limit") > 0
@@ -169,6 +179,10 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 	}
 	if (memoryLimit < DEFAULT_MEMORY_LIMIT) {
 		throw std::runtime_error("Memory limit too low, minimum of 1 GB is required");
+	}
+
+	if (memoryLimit != DEFAULT_MEMORY_LIMIT) {
+		log(INFO, "[JOBSCHEDULER] Memory limit is set to " + std::to_string(memoryLimit / 1024 / 1024) + " MB");
 	}
 
 	if (processingMode == ProcessingMode::SMP || processingMode == ProcessingMode::SINGLE_THREAD) {

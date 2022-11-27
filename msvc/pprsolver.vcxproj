@@ -28,7 +28,7 @@
     <ClCompile Include="src\StatsAccumulator.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\ArgParser.h" />
+    <ClInclude Include="src\ArgumentParser.h" />
     <ClInclude Include="src\Avx2CpuDeviceCoordinator.h" />
     <ClInclude Include="src\Benchmark.h" />
     <ClInclude Include="src\ClSources.h" />

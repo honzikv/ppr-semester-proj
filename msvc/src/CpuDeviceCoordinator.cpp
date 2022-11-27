@@ -14,7 +14,7 @@ CpuDeviceCoordinator::CpuDeviceCoordinator(const CoordinatorType coordinatorType
 }
 
 void CpuDeviceCoordinator::onProcessJob() {
-	log(INFO, "Processing job with id " + std::to_string(currentJob->Id) + " on CPU / SMP ");
+	log(INFO, "[SMP] Processing job with id " + std::to_string(currentJob->Id));
 	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
 
 	const auto nAccumulators = buffer.size() / bytesPerAccumulator;
@@ -46,6 +46,6 @@ void CpuDeviceCoordinator::onProcessJob() {
 		result.push_back(accumulator);
 	}
 
-	currentJob->Result = result;
+	currentJob->Items = result;
 	
 }

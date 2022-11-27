@@ -3,10 +3,11 @@
 namespace MemoryAllocation {
 
 	constexpr auto DEFAULT_APP_MEMORY_LIMIT = 1024 * 1024 * 1024; // 1GB
-	constexpr auto DEFAULT_APP_RUNTIME_RATIO = .2; // 20%
+	constexpr auto DEFAULT_CPU_RUNTIME_RATIO = .2; // 20%
+	constexpr auto DEFAULT_CL_RUNTIME_RATIO = .5; // 50%
 	constexpr auto DEFAULT_CPU_MEMORY_RATIO = .2; // CPU will use 20% of the buffer memory if OpenCL devices are used
-	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU = 128ULL * 1024 * sizeof(double);
-	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL = 128ULL * 1024 * sizeof(double);
+	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU = 4ULL * 1024 * 1024 * sizeof(double);
+	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL = 4ULL * 1024 * 1024 * sizeof(double);
 
 	/**
 	 * \brief Contains data for memory configuration for all devices
@@ -55,17 +56,22 @@ namespace MemoryAllocation {
 	}
 
 	inline MemoryConfig buildMemoryConfig(const ProcessingConfig& processingConfig,
+	                                      const size_t appMemoryLimit = DEFAULT_APP_MEMORY_LIMIT,
 	                                      const size_t bytesProcessedPerAccumulatorCpu =
 		                                      DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU,
 	                                      const size_t bytesProcessedPerAccumulatorCl =
-		                                      DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL,
-	                                      const size_t appMemoryLimit = DEFAULT_APP_MEMORY_LIMIT,
-	                                      const double appRuntimeSize = DEFAULT_APP_RUNTIME_RATIO
+		                                      DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL
+
 	) {
 		const auto processingMode = processingConfig.ProcessingMode;
 
+		const auto appRuntimeRatio = (processingMode == ProcessingMode::OPENCL_DEVICES || processingMode ==
+			                             ProcessingMode::ALL)
+			                             ? DEFAULT_CL_RUNTIME_RATIO
+			                             : DEFAULT_CPU_RUNTIME_RATIO;
+
 		// Max amount of memory for all buffers (both CPU and CL)
-		const auto bufferMemoryLimit = static_cast<size_t>(static_cast<double>(appMemoryLimit) * (1 - appRuntimeSize));
+		const auto bufferMemoryLimit = static_cast<size_t>(static_cast<double>(appMemoryLimit) * (1 - appRuntimeRatio));
 
 		// If we are using SMP or single threaded we only allocate memory to the CPU
 		if (processingMode == ProcessingMode::SMP || processingMode == ProcessingMode::SINGLE_THREAD) {
@@ -81,7 +87,7 @@ namespace MemoryAllocation {
 		// Otherwise our mode is either OpenCL devices or ALL
 		size_t maxCpuBufferBytes = 0;
 		size_t clDevicesMemory;
-		const auto nClDevices = processingConfig.Devices.size();
+		const auto nClDevices = processingConfig.ClDevices.size();
 		if (processingMode == ProcessingMode::ALL) {
 			// There is a special case when we use ALL and do not actually have any CL device.
 			// This would use only % of the available memory and slow down the computation.

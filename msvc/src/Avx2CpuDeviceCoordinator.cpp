@@ -7,7 +7,7 @@
 
 
 void Avx2CpuDeviceCoordinator::onProcessJob() {
-	log(INFO, "Processing job with id " + std::to_string(currentJob->Id) + " on CPU / SMP ");
+	log(INFO, "[SMP] Processing job with id " + std::to_string(currentJob->Id));
 	// Load data into the vector
 	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
 
@@ -19,7 +19,7 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 		// The job is too small to be processed in parallel
 		// Therefore do it in a single thread
 		auto accumulator = Avx2StatsAccumulator();
-		for (auto i = 0ULL; i < buffer.size() / 4; i += 4) {
+		for (auto i = 0ULL; i < buffer.size() / 4; i += 1) {
 			accumulator.pushWithFiltering({
 				buffer[i * 4],
 				buffer[i * 4 + 1],
@@ -55,5 +55,5 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 		result.insert(result.end(), items.begin(), items.end());
 	}
 
-	currentJob->Result = result;
+	currentJob->Items = result;
 }

@@ -40,7 +40,7 @@ void ClDeviceCoordinator::setup() {
 }
 
 void ClDeviceCoordinator::onProcessJob() {
-	log(INFO, "Processing job with id " + std::to_string(currentJob->Id) + " on OpenCL (" + deviceName + ") ");
+	log(INFO, "[OpenCL] Processing job with id " + std::to_string(currentJob->Id) + " on device \"" + deviceName + "\"");
 	// Create data loader
 	auto dataLoader = DataLoader(filePath, chunkSizeBytes);
 
@@ -54,7 +54,7 @@ void ClDeviceCoordinator::onProcessJob() {
 	if (nWorkItems == 0) {
 		if (nChunksLoaded == 0) {
 			// If no chunks were loaded then there is nothing to process, return
-			currentJob->Result = {};
+			currentJob->Items = {};
 			return;
 		}
 		// The work is too small so we will just compute it in one work item
@@ -90,6 +90,6 @@ void ClDeviceCoordinator::onProcessJob() {
 		};
 	}
 
-	// currentJob->Result = {StatUtils::mergePairwise(results)};
-	currentJob->Result = results;
+	// currentJob->Items = {StatUtils::mergePairwise(results)};
+	currentJob->Items = results;
 }

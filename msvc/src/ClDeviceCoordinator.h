@@ -62,7 +62,7 @@ public:
 private:
 	cl::Device device; // The actual device
 	cl::Context context; // Cl context
-	cl::CommandQueue commandQueue; // Command queue
+	cl::CommandQueue commandQueue;
 	cl::Program program; // Compiled program
 	size_t maxWorkGroupSize{}; // Max number of work items in a work group
 	size_t maxHostChunks;

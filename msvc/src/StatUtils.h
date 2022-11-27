@@ -29,12 +29,32 @@ namespace StatUtils {
 		return fpClassification == FP_ZERO || fpClassification == FP_NORMAL;
 	}
 
-	static auto mergePairwise(std::vector<StatsAccumulator>& results, const bool filterInvalid = true) {
-		auto itemsToProcess = results.size();
+	/**
+	 * \brief Merges results in the passed vector in pairs
+	 *		  E.g. for array [1, 2, 3, 4, 5] -> [(1, 2), (3, 4), (5)] -> [(1, 2, 3, 4), (5)] -> (1, 2, 3, 4, 5)
+	 * \param items reference to the vector with items. This array is always modified
+	 * \param filterInvalid whether to throw away invalid items
+	 * \return Copy of the first item in the vector
+	 */
+	static auto mergePairwise(const std::vector<StatsAccumulator>& items, const bool filterInvalid = true) {
+		auto filtered = std::vector<StatsAccumulator>();
+		if (filterInvalid) {
+			for (const auto& item : items) {
+				if (item.valid()) {
+					filtered.push_back(item);
+				}
+			}
+		}
+		else {
+			filtered = items;
+		}
+
+		// NOLINT(clang-diagnostic-unused-function)
+		auto itemsToProcess = filtered.size();
 		while (true) {
 			const auto nPairs = itemsToProcess / 2 + itemsToProcess % 2;
 			for (auto i = 0ULL; i < nPairs; i += 1) {
-				results[i] = i * 2 + 1 < itemsToProcess ? results[i * 2] + results[i * 2 + 1] : results[i * 2];
+				filtered[i] = i * 2 + 1 < itemsToProcess ? filtered[i * 2] + filtered[i * 2 + 1] : filtered[i * 2];
 			}
 
 			if (nPairs == itemsToProcess) {
@@ -44,18 +64,31 @@ namespace StatUtils {
 			itemsToProcess = nPairs;
 		}
 
-		return results[0];
+		return filtered[0];
 	}
 
-	static auto mergeLeftToRight(std::vector<StatsAccumulator>& results, const bool filterInvalid = true) {
+	static auto mergeLeftToRight(const std::vector<StatsAccumulator>& items, const bool filterInvalid = true) {
 		auto filtered = std::vector<StatsAccumulator>();
 		if (filterInvalid) {
-			
+			for (const auto& item : items) {
+				if (item.valid()) {
+					filtered.push_back(item);
+				}
+			}
+		}
+		else {
+			filtered = items;
 		}
 
-		auto& result = results[0];
-		for (auto i = 0ULL; i < results.size(); i += 1) {
-			result += results[i];
+		// If all items are corrupted we return the first one
+		// The classifier checks whether the result is valid and informs the user if it is not
+		if (filtered.empty()) {
+			return items[0];
+		}
+
+		auto& result = filtered[0];
+		for (auto i = 1ULL; i < filtered.size(); i += 1) {
+			result += filtered[i];
 		}
 
 		return result;

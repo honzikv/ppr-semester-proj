@@ -130,7 +130,7 @@
     <ClInclude Include="src\Timer.h">
       <Filter>Header Files\Benchmark</Filter>
     </ClInclude>
-    <ClInclude Include="src\ArgParser.h">
+    <ClInclude Include="src\ArgumentParser.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\ProcessingConfig.h">

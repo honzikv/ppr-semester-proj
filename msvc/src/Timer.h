@@ -42,7 +42,7 @@ public:
 	auto logResults(LogSeverity logSeverity = INFO) {
 		const auto elapsedTime = getElapsedTimeNanoSecs();
 		// Print time in ns, ms and seconds
-		log(logSeverity, "Elapsed time: " + std::to_string(elapsedTime) + " ns = "
+		log(logSeverity, "[TIMER] Elapsed time: " + std::to_string(elapsedTime) + " ns = "
 		    + std::to_string(elapsedTime / 1000000) + " ms = " + std::to_string(
 			    elapsedTime / 1000000000)
 		    + " s)");

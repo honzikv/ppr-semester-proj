@@ -82,7 +82,9 @@ public:
 	                                 const cl::CommandQueue& commandQueue,
 	                                 const cl::Context& context) {
 		const auto [nChunks, _, address] = computeJobMetadata(job);
-		auto hostBuffer = std::vector<double>(maxHostChunks * ChunkSizeBytes / sizeof(double));
+
+		const auto initialSize = nChunks < maxHostChunks ? nChunks * ChunkSizeBytes / sizeof(double) : maxHostChunks * ChunkSizeBytes / sizeof(double);
+		auto hostBuffer = std::vector<double>(initialSize);
 		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, nChunks * ChunkSizeBytes);
 
 		// Move to correct address in the file

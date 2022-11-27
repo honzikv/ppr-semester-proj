@@ -1,5 +1,4 @@
 #pragma once
-#include "ArgParser.h"
 #include "CpuDeviceCoordinator.h"
 #include "Avx2CpuDeviceCoordinator.h"
 #include "ClDeviceCoordinator.h"
@@ -49,10 +48,10 @@ public:
 		fileChunkHandler = std::make_unique<FileChunkHandler>(processingConfig.DistFilePath, chunkSizeBytes);
 
 		// Create memory configuration
-		auto memoryConfig = MemoryAllocation::buildMemoryConfig(processingConfig);
+		auto memoryConfig = MemoryAllocation::buildMemoryConfig(processingConfig, processingConfig.MemoryLimit);
 
 		// Add CL devices
-		for (const auto& device : processingConfig.Devices) {
+		for (const auto& device : processingConfig.ClDevices) {
 			clDeviceCoordinators.push_back(std::make_shared<ClDeviceCoordinator>(
 					CoordinatorType::OPEN_CL,
 					processingConfig.ProcessingMode,
@@ -149,18 +148,20 @@ public:
 			       : std::dynamic_pointer_cast<DeviceCoordinator>(cpuDeviceCoordinator);
 	}
 
-	void addProcessedJob(const std::unique_ptr<Job> job, const size_t coordinatorIdx) {
-		for (const auto& statsAcc : job->Result) {
-			accumulators.push_back(statsAcc);
+	void addProcessedJob(const std::unique_ptr<Job> job) {
+		for (const auto& accumulator : job->Items) {
+			accumulators.push_back(accumulator);
 		}
+
+		log(INFO, "[JOBSCHEDULER] Job " + std::to_string(job->Id) + " was successfully processed");
 	}
 
 	void jobFinishedCallback(std::unique_ptr<Job> job, const size_t coordinatorIdx) {
 		auto scopedLock = std::scoped_lock(coordinatorMutex);
 
 		// Write data to job aggregator
-		addProcessedJob(std::move(job), coordinatorIdx);
-		watchdog.updateCounter(1);
+		watchdog.updateCounter(job->getSize(fileChunkHandler->getChunkSizeBytes()));
+		addProcessedJob(std::move(job));
 		jobFinishedSemaphore.release();
 	}
 
@@ -188,6 +189,8 @@ public:
 	 * \brief Runs the job scheduler.
 	 */
 	inline auto run() {
+		// Start the watchdog - by this time all device coordinators are waiting for jobs
+		watchdog.start();
 		while (true) {
 			// Check if there is a job available
 			if (!jobRemaining()) {

@@ -19,8 +19,38 @@ enum ProcessingMode {
 };
 
 struct ProcessingConfig {
+	/**
+	 * \brief Processing mode of the application
+	 */
 	ProcessingMode ProcessingMode;
+
+	/**
+	 * \brief Filesystem path to the processed path
+	 */
 	fs::path DistFilePath;
-	std::vector<cl::Device> Devices;
+
+	/**
+	 * \brief List of all OpenCL devices
+	 */
+	std::vector<cl::Device> ClDevices;
+
+	/**
+	 * \brief Application memory limit - the app does not allocate more memory than this for reasonable file sizes
+	 */
 	size_t MemoryLimit = DEFAULT_MEMORY_LIMIT;
+
+	/**
+	 * \brief Whether to run the application in benchmark mode
+	 */
+	bool IsBenchmark;
+
+	/**
+	 * \brief Number of runs per benchmark
+	 */
+	size_t NBenchmarkRuns;
+
+	/**
+	 * \brief Filesystem path to the output file to write the results
+	 */
+	fs::path OutputPath;
 };
