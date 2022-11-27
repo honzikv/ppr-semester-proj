@@ -45,16 +45,17 @@ class ClDeviceCoordinator final : public DeviceCoordinator {
 
 public:
 	ClDeviceCoordinator(
-		const CoordinatorType coordinatorType,
-		const ProcessingMode processingMode,
+		CoordinatorType coordinatorType,
+		ProcessingMode processingMode,
 		const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
-		std::function<void(size_t)> notifyWatchdogCallback,
-		const size_t chunkSizeBytes,
-		const size_t bytesPerAccumulator,
-		const size_t clHostBufferSizeBytes,
+		const std::function<void(size_t)>& notifyWatchdogCallback,
+		const std::function<void(CoordinatorErr)>& errCallback,
+		size_t chunkSizeBytes,
+		size_t bytesPerAccumulator,
+		size_t clHostBufferSizeBytes,
 		fs::path& distFilePath,
-		const size_t id,
-		const cl::Device& device);
+		size_t id,
+		cl::Device& device);
 
 private:
 	cl::Device device; // The actual device

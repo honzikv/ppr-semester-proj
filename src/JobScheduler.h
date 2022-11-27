@@ -36,6 +36,11 @@ class JobScheduler {
 
 	std::vector<StatsAccumulator> accumulators;
 
+	/**
+	 * \brief Last execution error, this is read during every job assignment
+	 */
+	std::unique_ptr<CoordinatorErr> lastErr = nullptr;
+
 public:
 	explicit JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeBytes = DEFAULT_CHUNK_SIZE) {
 		auto coordinatorId = 0;
@@ -55,12 +60,15 @@ public:
 			clDeviceCoordinators.push_back(std::make_shared<ClDeviceCoordinator>(
 					CoordinatorType::OPEN_CL,
 					processingConfig.ProcessingMode,
-					// Call member function of this
+					// Use dark magic to pass member function as a callback
 					[this](auto&& ph1, auto&& ph2) {
 						jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
 					},
 					[this](auto&& ph1) {
 						notifyWatchdogCallback(std::forward<decltype(ph1)>(ph1));
+					},
+					[this](auto&& ph1) {
+						notifyErrOccurred(std::forward<decltype(ph1)>(ph1));
 					},
 					chunkSizeBytes,
 					memoryConfig.BytesPerClAccumulator,
@@ -79,12 +87,16 @@ public:
 			                       ? std::make_shared<Avx2CpuDeviceCoordinator>(
 				                       CoordinatorType::TBB,
 				                       processingConfig.ProcessingMode,
+				                       // Use dark magic to pass member function as a callback
 				                       [this](auto&& ph1, auto&& ph2) {
 					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
 					                                           std::forward<decltype(ph2)>(ph2));
 				                       },
 				                       [this](auto&& ph1) {
 					                       notifyWatchdogCallback(std::forward<decltype(ph1)>(ph1));
+				                       },
+				                       [this](auto&& ph1) {
+					                       notifyErrOccurred(std::forward<decltype(ph1)>(ph1));
 				                       },
 				                       chunkSizeBytes,
 				                       memoryConfig.BytesPerCpuAccumulator,
@@ -95,12 +107,16 @@ public:
 			                       : std::make_shared<CpuDeviceCoordinator>(
 				                       CoordinatorType::TBB,
 				                       processingConfig.ProcessingMode,
+				                       // Use dark magic to pass member function as a callback
 				                       [this](auto&& ph1, auto&& ph2) {
 					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
 					                                           std::forward<decltype(ph2)>(ph2));
 				                       },
 				                       [this](auto&& ph1) {
 					                       notifyWatchdogCallback(std::forward<decltype(ph1)>(ph1));
+				                       },
+				                       [this](auto&& ph1) {
+					                       notifyErrOccurred(std::forward<decltype(ph1)>(ph1));
 				                       },
 				                       chunkSizeBytes,
 				                       memoryConfig.BytesPerCpuAccumulator,
@@ -174,6 +190,11 @@ public:
 	void notifyWatchdogCallback(const size_t bytesProcessed) {
 		auto scopedLock = std::scoped_lock(coordinatorMutex);
 		watchdog.updateCounter(bytesProcessed);
+	}
+
+	void notifyErrOccurred(std::unique_ptr<CoordinatorErr> err) {
+		auto scopedLock = std::scoped_lock(coordinatorMutex);
+		lastErr = std::move(err);
 	}
 
 	void terminateDeviceCoordinators() const {

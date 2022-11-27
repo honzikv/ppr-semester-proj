@@ -10,15 +10,16 @@ namespace fs = std::filesystem;
 
 class CpuDeviceCoordinator : public DeviceCoordinator {
 public:
-	CpuDeviceCoordinator(const CoordinatorType coordinatorType,
-	                     const ProcessingMode processingMode,
+	CpuDeviceCoordinator(CoordinatorType coordinatorType,
+	                     ProcessingMode processingMode,
 	                     const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
-		std::function<void(size_t)> notifyWatchdogCallback,
-	                     const size_t chunkSizeBytes,
-	                     const size_t bytesPerAccumulator,
-	                     const size_t cpuBufferSizeBytes,
+	                     const std::function<void(size_t)>& notifyWatchdogCallback,
+	                     const std::function<void(CoordinatorErr)>& errCallback,
+	                     size_t chunkSizeBytes,
+	                     size_t bytesPerAccumulator,
+	                     size_t cpuBufferSizeBytes,
 	                     fs::path& distFilePath,
-	                     const size_t id
+	                     size_t id
 	);
 
 protected:

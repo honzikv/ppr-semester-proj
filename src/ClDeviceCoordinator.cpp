@@ -14,25 +14,28 @@ auto ClDeviceCoordinator::compile(const std::string& source, const std::string& 
 	return program;
 }
 
-ClDeviceCoordinator::ClDeviceCoordinator(const CoordinatorType coordinatorType,
-                                         const ProcessingMode processingMode,
+ClDeviceCoordinator::ClDeviceCoordinator(CoordinatorType coordinatorType,
+                                         ProcessingMode processingMode,
                                          const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
-                                         std::function<void(size_t)> notifyWatchdogCallback,
-                                         const size_t chunkSizeBytes,
-                                         const size_t bytesPerAccumulator,
-                                         const size_t clHostBufferSizeBytes,
+                                         const std::function<void(size_t)>& notifyWatchdogCallback,
+                                         const std::function<void(CoordinatorErr)>& errCallback,
+                                         size_t chunkSizeBytes,
+                                         size_t bytesPerAccumulator,
+                                         size_t clHostBufferSizeBytes,
                                          fs::path& distFilePath,
-                                         const size_t id,
-                                         const cl::Device& device
-): DeviceCoordinator(
-	   coordinatorType, processingMode,
-	   jobFinishedCallback,
-	   notifyWatchdogCallback,
-	   chunkSizeBytes,
-	   bytesPerAccumulator, distFilePath, id),
-   device(device),
-   maxHostChunks(
-	   clHostBufferSizeBytes / chunkSizeBytes) {
+                                         size_t id,
+                                         cl::Device& device):
+	DeviceCoordinator(
+		coordinatorType,
+		processingMode,
+		jobFinishedCallback,
+		notifyWatchdogCallback,
+		errCallback,
+		chunkSizeBytes,
+		bytesPerAccumulator, distFilePath, id),
+	device(device),
+	maxHostChunks(
+		clHostBufferSizeBytes / chunkSizeBytes) {
 	// Setup the device
 	setup();
 
@@ -110,7 +113,7 @@ void ClDeviceCoordinator::onProcessJob() {
 		nAccumulators = 1;
 		totalBytes = currentJob->getSize(chunkSizeBytes);
 	}
-	
+
 
 	// Create buffer for results
 	auto clStatus = cl_int{};

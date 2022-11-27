@@ -16,6 +16,20 @@ const auto COORDINATOR_TYPE_LUT = std::vector<std::string>{"SMP", "OPEN_CL", "SI
 namespace fs = std::filesystem;
 
 /**
+ * \brief Coordinator error that occurs during execution - i.e. Kernel fails to compile
+ */
+struct CoordinatorErr {
+
+	size_t JobId;
+	std::string What;
+	bool Fatal;
+
+	CoordinatorErr(const size_t jobId, std::string what, const bool fatal = true): JobId(jobId), What(std::move(what)),
+		Fatal(fatal) {
+	}
+};
+
+/**
  * \brief This abstract class is responsible for coordinating work on specified device - i.e. a GPU or SMP
  */
 class DeviceCoordinator {
@@ -31,6 +45,11 @@ protected:
 	 * \brief Callback function for notifying Watchdog
 	 */
 	std::function<void(size_t)> notifyWatchdogCallback;
+
+	/**
+	 * \brief Callback for error handling
+	 */
+	std::function<void(CoordinatorErr)> errCallback;
 
 	bool isEnabled = true; // Whether this coordinator is actually used (e.g. CPU is not used in OPENCL only mode)
 	std::atomic<bool> isAvailable = true; // Whether the worker is available
@@ -79,6 +98,7 @@ protected:
 
 	DataLoader dataLoader;
 
+
 public:
 	virtual ~DeviceCoordinator();
 
@@ -88,6 +108,7 @@ public:
 	 * \param processingMode processing mode
 	 * \param jobFinishedCallback callback after job is finished
 	 * \param notifyWatchdogCallback callback for notifying watchdog
+	 * \param errCallback error callback for error handling
 	 * \param chunkSizeBytes chunk size in bytes
 	 * \param bytesPerAccumulator number of bytes processed by each StatsAccumulator
 	 * \param distFilePath path to the file that is being processed
@@ -97,12 +118,14 @@ public:
 	                  const ProcessingMode processingMode,
 	                  std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
 	                  std::function<void(size_t)> notifyWatchdogCallback,
+	                  std::function<void(CoordinatorErr)> errCallback,
 	                  const size_t chunkSizeBytes,
 	                  const size_t bytesPerAccumulator,
 	                  fs::path& distFilePath,
 	                  const size_t id):
 		jobFinishedCallback(std::move(jobFinishedCallback)),
 		notifyWatchdogCallback(std::move(notifyWatchdogCallback)),
+		errCallback(std::move(errCallback)),
 		chunkSizeBytes(chunkSizeBytes),
 		bytesPerAccumulator(bytesPerAccumulator),
 		filePath(distFilePath),
@@ -186,7 +209,12 @@ private:
 				continue;
 			}
 
-			processJob();
+			try {
+				processJob();
+			}
+			catch (const std::runtime_error& err) {
+
+			}
 		}
 
 	}
