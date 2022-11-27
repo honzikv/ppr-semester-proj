@@ -87,7 +87,8 @@ public:
 			                         ? nChunks * ChunkSizeBytes / sizeof(double)
 			                         : maxHostChunks * ChunkSizeBytes / sizeof(double);
 		auto hostBuffer = std::vector<double>(initialSize);
-		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, nChunks * ChunkSizeBytes);
+		const auto deviceBufferSizeBytes = nChunks * ChunkSizeBytes;
+		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, deviceBufferSizeBytes);
 
 		// Move to correct address in the file
 		file.seekg(static_cast<int64_t>(address), std::ios::beg);

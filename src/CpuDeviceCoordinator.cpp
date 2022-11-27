@@ -5,10 +5,12 @@
 
 
 CpuDeviceCoordinator::CpuDeviceCoordinator(const CoordinatorType coordinatorType, const ProcessingMode processingMode,
-                                           const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback, const size_t chunkSizeBytes,
-                                           const size_t bytesPerAccumulator, const size_t cpuBufferSizeBytes, fs::path& distFilePath, const size_t id): DeviceCoordinator(
-		                      coordinatorType, processingMode, jobFinishedCallback, 
-		                      chunkSizeBytes, bytesPerAccumulator, distFilePath, id) {
+                                           const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
+                                           const size_t chunkSizeBytes,
+                                           const size_t bytesPerAccumulator, const size_t cpuBufferSizeBytes,
+                                           fs::path& distFilePath, const size_t id): DeviceCoordinator(
+	coordinatorType, processingMode, jobFinishedCallback,
+	chunkSizeBytes, bytesPerAccumulator, distFilePath, id) {
 	maxNumberOfChunksPerJob = cpuBufferSizeBytes / chunkSizeBytes;
 	startCoordinatorThread();
 }
@@ -30,15 +32,15 @@ void CpuDeviceCoordinator::onProcessJob() {
 	}
 	else {
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
-			[&](const tbb::blocked_range<size_t> r) {
-				for (auto accumulatorId = r.begin(); accumulatorId < r.end(); accumulatorId += 1) {
-					const auto jobStart = accumulatorId * bytesPerAccumulator;
-					const auto jobEnd = (accumulatorId + 1) * bytesPerAccumulator;
-					for (auto i = jobStart; i < jobEnd; i += 1) {
-						accumulators[accumulatorId].push(buffer[i]);
-					}
-				}
-			});
+		                  [&](const tbb::blocked_range<size_t> r) {
+			                  for (auto accumulatorId = r.begin(); accumulatorId < r.end(); accumulatorId += 1) {
+				                  const auto jobStart = accumulatorId * bytesPerAccumulator;
+				                  const auto jobEnd = (accumulatorId + 1) * bytesPerAccumulator;
+				                  for (auto i = jobStart; i < jobEnd; i += 1) {
+					                  accumulators[accumulatorId].push(buffer[i]);
+				                  }
+			                  }
+		                  });
 	}
 
 	auto result = std::vector<StatsAccumulator>();
@@ -47,5 +49,5 @@ void CpuDeviceCoordinator::onProcessJob() {
 	}
 
 	currentJob->Items = result;
-	
+
 }

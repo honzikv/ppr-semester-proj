@@ -25,9 +25,9 @@ int main(int argc, char** argv) {
 
 	// Configure TBB if needed
 	auto tbbThreadControl = tbb::global_control(tbb::global_control::max_allowed_parallelism,
-	                                                    processingConfig.ProcessingMode == SINGLE_THREAD
-		                                                    ? 1
-		                                                    : tbb::this_task_arena::max_concurrency()
+	                                            processingConfig.ProcessingMode == SINGLE_THREAD
+		                                            ? 1
+		                                            : tbb::this_task_arena::max_concurrency()
 	);
 
 	timer.start();

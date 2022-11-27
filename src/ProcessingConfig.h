@@ -8,14 +8,16 @@ constexpr auto DEFAULT_MEMORY_LIMIT = 1024ULL * 1024 * 1024;
 
 // This is very naive, but we expect that the system actually gives us 4 GB
 constexpr auto MAX_MEMORY_LIMIT = 4ULL * 1024 * 1024 * 1024;
+
 enum ProcessingMode {
-	SINGLE_THREAD,
 	// == basic implementation with one thread
-	SMP,
+	SINGLE_THREAD,
 	// multiple threads via OneTBB
-	OPENCL_DEVICES,
+	SMP,
 	// One or multiple OpenCL deviceNames specified in vector / list
-	ALL // All available deviceNames
+	OPENCL_DEVICES,
+	// All available deviceNames
+	ALL,
 };
 
 struct ProcessingConfig {
