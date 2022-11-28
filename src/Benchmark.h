@@ -25,7 +25,7 @@ inline auto performBenchmarkRun(ProcessingConfig& processingConfig) {
 		                                            ? 1
 		                                            : tbb::this_task_arena::max_concurrency()
 	);
-	
+
 	auto jobScheduler = JobScheduler(processingConfig);
 
 	// Perform the run - note that only the actual computing time is measured
@@ -40,6 +40,13 @@ inline auto performBenchmarkRun(ProcessingConfig& processingConfig) {
 	return timer.getElapsedTimeMillis();
 }
 
+/**
+ * \brief Logs stat to the console and file (if provided)
+ * \param statName name of the statistic
+ * \param durationMillis duration in milliseconds
+ * \param file file to write the results to
+ * \param logToFile whether to log to the file
+ */
 inline void logStat(const std::string& statName,
                     const std::chrono::duration<int64_t, std::milli> durationMillis,
                     std::ofstream& file,
@@ -102,14 +109,15 @@ inline void runBenchmark(ProcessingConfig& config) {
 	for (const auto& [key, value] : PROCESSING_MODES_LUT) {
 		inverseProcessingModeLutTable[value] = key;
 	}
-	log(INFO, "Benchmark will run in processing mode: " + inverseProcessingModeLutTable[config.ProcessingMode]);
+	log(INFO, "[BENCHMARK] Benchmark will run in processing mode: " + inverseProcessingModeLutTable[config.
+		    ProcessingMode]);
 
 	// Run the benchmark
-	log(INFO, "Starting the benchmark\n");
+	log(INFO, "[BENCHMARK] Starting the benchmark\n");
 	auto runDurations = std::vector<std::chrono::duration<long long, std::milli>>();
 	try {
 		for (auto i = 1ULL; i <= nRuns; i += 1) {
-			log(INFO, "Starting run #" + std::to_string(i));
+			log(INFO, "[BENCHMARK] Starting run #" + std::to_string(i));
 			runDurations.push_back(performBenchmarkRun(config));
 		}
 	}
@@ -129,15 +137,23 @@ inline void runBenchmark(ProcessingConfig& config) {
 	std::ofstream file;
 	if (logToFile) {
 		file.open(config.OutputPath);
+		if (!file) {
+			log(WARNING,
+			    "Cannot open output file " + config.OutputPath.string() +
+			    ", the results will only be logged into stdout");
+		}
 	}
 
 	// Log the results
-	log(INFO, "\nBenchmark results");
+	std::cout << "\n[BENCHMARK] Benchmark results:\n";
+	if (file) {
+		file << "\n[BENCHMARK] Benchmark results:\n";
+	}
 
 	for (auto i = 1ULL; i <= runDurations.size(); i += 1) {
-		logStat(std::to_string(i) + ".", runDurations[i-1], file, logToFile);
+		logStat(std::to_string(i) + ".", runDurations[i - 1], file, logToFile);
 	}
-	
+
 	std::cout << "\n";
 	// Log the average, best, and worst run time
 	logStat("Average", averageRunTime, file, logToFile);
