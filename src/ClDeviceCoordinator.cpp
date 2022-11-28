@@ -186,6 +186,7 @@ void ClDeviceCoordinator::onProcessJob() {
 		};
 	}
 
+	commandQueue.finish();
 	currentJob->Items = results;
 
 }

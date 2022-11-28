@@ -1,7 +1,7 @@
 #include "JobScheduler.h"
 
-JobScheduler::JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeBytes):
-	watchdog(std::chrono::milliseconds{processingConfig.WatchdogTimeoutMs}) {
+JobScheduler::JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeBytes) {
+	watchdog = std::make_unique<Watchdog>(std::chrono::milliseconds{processingConfig.WatchdogTimeoutMs});
 	if (const auto fileSize = fs::file_size(processingConfig.DistFilePath);
 		fileSize < chunkSizeBytes || fileSize < SMALL_SIZE_LIMIT) {
 		chunkSizeBytes = 1; // Set chunk size to 1 - this way all bytes are processed
@@ -81,31 +81,58 @@ JobScheduler::JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeB
 			                       processingConfig.DistFilePath,
 			                       coordinatorId);
 
+	// Allocate coordinator availability array
+	coordinatorAvailability.resize(coordinatorId + 1, true);
+}
+
+JobScheduler::~JobScheduler() {
+	// Stop watchdog
+	if (watchdog) {
+		watchdog->join();
+	}
+
+	for (const auto& coordinator : clDeviceCoordinators) {
+		if (coordinator) {
+			coordinator->join();
+		}
+	}
+
+	cpuDeviceCoordinator->join();
+
+	// Stop all coordinators
+	// terminateDeviceCoordinators();
 }
 
 bool JobScheduler::anyCoordinatorAvailable() {
 	auto scopedLock = std::scoped_lock(coordinatorMutex);
-	return std::any_of(clDeviceCoordinators.begin(), clDeviceCoordinators.end(), [](const auto& coordinator) {
-		return coordinator->available() && coordinator->enabled();
-	}) || cpuDeviceCoordinator->available() && cpuDeviceCoordinator->enabled();
+	return std::any_of(coordinatorAvailability.begin(), coordinatorAvailability.end(),
+	                   [](const auto& available) { return available; });
 }
 
 bool JobScheduler::allCoordinatorsAvailable() {
 	auto scopedLock = std::scoped_lock(coordinatorMutex);
-	return std::all_of(clDeviceCoordinators.begin(), clDeviceCoordinators.end(), [](const auto& coordinator) {
-		return coordinator->available();
-	}) && cpuDeviceCoordinator->available();
+	return std::all_of(coordinatorAvailability.begin(), coordinatorAvailability.end(), [](const auto& available) {
+		return available;
+	});
 }
 
-std::shared_ptr<DeviceCoordinator> JobScheduler::getNextAvailableDeviceCoordinator() {
+std::pair<size_t, std::shared_ptr<DeviceCoordinator>> JobScheduler::getNextAvailableDeviceCoordinator() {
 	// We prioritize CL devices over SMP
-	const auto clDevice = std::find_if(clDeviceCoordinators.begin(), clDeviceCoordinators.end(),
-	                                   [](const auto& coordinator) {
-		                                   return coordinator->enabled() && coordinator->available();
-	                                   });
-	return clDevice != clDeviceCoordinators.end()
-		       ? std::dynamic_pointer_cast<DeviceCoordinator>(*clDevice)
-		       : std::dynamic_pointer_cast<DeviceCoordinator>(cpuDeviceCoordinator);
+	for (auto coordinatorId = 0ULL; coordinatorId < coordinatorAvailability.size(); coordinatorId += 1) {
+		if (!coordinatorAvailability[coordinatorId]) {
+			continue;
+		}
+
+		if (coordinatorId < clDeviceCoordinators.size()) {
+			return {coordinatorId, std::dynamic_pointer_cast<DeviceCoordinator>(clDeviceCoordinators[coordinatorId])};
+		}
+
+		return {coordinatorId, std::dynamic_pointer_cast<DeviceCoordinator>(cpuDeviceCoordinator)};
+	}
+
+	// This cannot happen during normal execution
+	return {0, nullptr};
+
 }
 
 void JobScheduler::addProcessedJob(const std::unique_ptr<Job> job) {
@@ -118,17 +145,19 @@ void JobScheduler::addProcessedJob(const std::unique_ptr<Job> job) {
 
 void JobScheduler::jobFinishedCallback(std::unique_ptr<Job> job, const size_t coordinatorIdx) {
 	auto scopedLock = std::scoped_lock(coordinatorMutex);
+	coordinatorAvailability[coordinatorIdx] = true;
 	addProcessedJob(std::move(job));
 	jobFinishedSemaphore.release();
 }
 
 void JobScheduler::notifyWatchdogCallback(const size_t bytesProcessed) {
 	auto scopedLock = std::scoped_lock(coordinatorMutex);
-	watchdog.updateCounter(bytesProcessed);
+	watchdog->updateCounter(bytesProcessed);
 }
 
 void JobScheduler::notifyErrOccurred(const CoordinatorErr& err) {
 	auto scopedLock = std::scoped_lock(coordinatorMutex);
+	jobFinishedSemaphore.release();
 	if (!lastErr) {
 		// If there is no last erorr we can set this
 		lastErr = std::make_unique<CoordinatorErr>(err);
@@ -162,7 +191,8 @@ void JobScheduler::assignJob() {
 	auto scopedLock = std::scoped_lock(coordinatorMutex);
 
 	// Get the coordinator
-	const auto coordinator = getNextAvailableDeviceCoordinator();
+	const auto [coordinatorId, coordinator] = getNextAvailableDeviceCoordinator();
+	coordinatorAvailability[coordinatorId] = false;
 
 	// Build and assign new job for them
 	const auto chunkRange = fileChunkHandler->getNextNChunks(coordinator->getMaxNumberOfChunks());
@@ -191,7 +221,7 @@ void JobScheduler::checkForErrors() const {
 
 std::vector<StatsAccumulator> JobScheduler::run() {
 	// Start the watchdog - by this time all device coordinators are waiting for jobs
-	watchdog.start();
+	watchdog->start();
 	while (true) {
 		checkForErrors();
 
@@ -218,13 +248,13 @@ std::vector<StatsAccumulator> JobScheduler::run() {
 	{
 		auto scopedLock = std::scoped_lock(coordinatorMutex);
 		// Terminate watchdog
-		watchdog.terminate();
+		watchdog->terminate();
 
 		// Terminate all coordinators
 		terminateDeviceCoordinators();
+		log(INFO, "[JOBSCHEDULER] All coordinators terminated");
 	}
 
-	
 
 	return accumulators;
 }

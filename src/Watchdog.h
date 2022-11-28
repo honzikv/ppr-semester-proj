@@ -25,7 +25,6 @@ public:
 		log(INFO, "[WATCHDOG] Watchdog created, timeout set to: " + std::to_string(sleepMs.count()) + " ms");
 		// Start the thread
 		watchdogThread = std::thread(&Watchdog::watchdogMain, this);
-		watchdogThread.detach();
 	}
 
 	/**
@@ -34,6 +33,15 @@ public:
 	 */
 	void updateCounter(const size_t xBytes) {
 		counter += xBytes;
+	}
+
+	void join() {
+		keepRunning = false;
+		startSemaphore.release();
+
+		if (watchdogThread.joinable()) {
+			watchdogThread.join();
+		}
 	}
 
 	/**
@@ -71,6 +79,5 @@ private:
 				    std::to_string(mbsProcessed) + " MB) since the last update.");
 			}
 		}
-		
 	}
 };

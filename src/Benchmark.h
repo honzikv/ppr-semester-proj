@@ -1,9 +1,13 @@
 #pragma once
 #include <filesystem>
-
+#include <tbb/tbb.h>
 #include "Logging.h"
 #include "ProcessingConfig.h"
 #include "FilesystemUtils.h"
+#include "DistributionClassification.h"
+#include "JobScheduler.h"
+#include "Timer.h"
+#include "StatUtils.h"
 
 constexpr auto MAX_RUNS = 1024; // More would be somewhat pointless
 constexpr auto DEFAULT_RUNS = 16;
@@ -31,6 +35,7 @@ inline auto performBenchmarkRun(ProcessingConfig& processingConfig) {
 	timer.stop();
 	classifyDistribution(StatUtils::mergeLeftToRight(result));
 	timer.printResults();
+	std::cout << "\n";
 
 	return timer.getElapsedTimeMillis();
 }
@@ -97,10 +102,10 @@ inline void runBenchmark(ProcessingConfig& config) {
 	for (const auto& [key, value] : PROCESSING_MODES_LUT) {
 		inverseProcessingModeLutTable[value] = key;
 	}
-	log(INFO, "Benchmark will run in mode: " + inverseProcessingModeLutTable[config.ProcessingMode]);
+	log(INFO, "Benchmark will run in processing mode: " + inverseProcessingModeLutTable[config.ProcessingMode]);
 
 	// Run the benchmark
-	log(INFO, "Starting the benchmark\n----------------------");
+	log(INFO, "Starting the benchmark\n");
 	auto runDurations = std::vector<std::chrono::duration<long long, std::milli>>();
 	try {
 		for (auto i = 1ULL; i <= nRuns; i += 1) {
@@ -127,13 +132,13 @@ inline void runBenchmark(ProcessingConfig& config) {
 	}
 
 	// Log the results
-	log(INFO, "\nBenchmark results\n-----------------");
+	log(INFO, "\nBenchmark results");
 
 	for (auto i = 1ULL; i <= runDurations.size(); i += 1) {
-		logStat(std::to_string(i) + ". ", runDurations[i], file, logToFile);
+		logStat(std::to_string(i) + ".", runDurations[i-1], file, logToFile);
 	}
 	
-
+	std::cout << "\n";
 	// Log the average, best, and worst run time
 	logStat("Average", averageRunTime, file, logToFile);
 	logStat("Best", minRunTime, file, logToFile);

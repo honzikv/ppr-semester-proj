@@ -63,7 +63,6 @@ protected:
 	std::function<void(CoordinatorErr)> errCallback;
 
 	bool isEnabled = true; // Whether this coordinator is actually used (e.g. CPU is not used in OPENCL only mode)
-	std::atomic<bool> isAvailable = true; // Whether the worker is available
 	std::unique_ptr<Job> currentJob = nullptr; // Reference to the current job
 
 	std::mutex jobMutex; // Mutex for assigning job
@@ -159,17 +158,15 @@ public:
 		return std::string{COORDINATOR_TYPE_LUT.at(coordinatorType)} + " Coordinator with id " + std::to_string(id);
 	}
 
-	void startCoordinatorThread() {
-		this->coordinatorThread = std::thread(&DeviceCoordinator::threadMain, this);
-		coordinatorThread.detach();
+	void join() {
+		if (coordinatorThread.joinable()) {
+			coordinatorThread.join();
+		}
 	}
 
-	/**
-	 * \brief Returns true whether this coordinator is available - i.e. whether it is not processing any job
-	 * \return true if the coordinator is available, false otherwise
-	 */
-	[[nodiscard]] bool available() const {
-		return isAvailable.load();
+	void startCoordinatorThread() {
+		coordinatorThread = std::thread(&DeviceCoordinator::threadMain, this);
+		// coordinatorThread.detach();
 	}
 
 	/**
@@ -185,8 +182,6 @@ public:
 	 * \param job job to be assigned
 	 */
 	void assignJob(Job job) {
-		auto scopedLock = std::scoped_lock(jobMutex);
-		isAvailable = false;
 		currentJob = std::make_unique<Job>(std::move(job));
 		semaphore->release();
 	}
@@ -234,9 +229,7 @@ private:
 	 */
 	void processJob() {
 		onProcessJob();
-		auto scopedLock = std::scoped_lock(jobMutex);
 		jobFinishedCallback(std::move(currentJob), id);
-		isAvailable = true;
 	}
 
 protected:

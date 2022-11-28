@@ -20,6 +20,11 @@ class JobScheduler {
 	std::vector<std::shared_ptr<ClDeviceCoordinator>> clDeviceCoordinators;
 
 	/**
+	 * \brief This vector stores availability of each device coordinator
+	 */
+	std::vector<bool> coordinatorAvailability;
+
+	/**
 	 * \brief Coordinator for CPU (SMP). This is shared_ptr to allow for polymorphism
 	 */
 	std::shared_ptr<CpuDeviceCoordinator> cpuDeviceCoordinator = nullptr;
@@ -43,7 +48,7 @@ class JobScheduler {
 	/**
 	 * \brief Instance of watch dog
 	 */
-	Watchdog watchdog;
+	std::unique_ptr<Watchdog> watchdog;
 
 	/**
 	 * \brief Id of the "current" job - i.e. job we are currently assigning 
@@ -63,11 +68,7 @@ class JobScheduler {
 public:
 	explicit JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeBytes = DEFAULT_CHUNK_SIZE);
 
-	~JobScheduler() {
-		// Stop watchdog
-		watchdog.terminate();
-		terminateDeviceCoordinators();
-	}
+	~JobScheduler();
 
 	/**
 	 * \brief Returns whether there is any job remaining
@@ -94,7 +95,7 @@ public:
 	 * \brief Gets next best available coordinator. Caller must ensure that there is at least one coordinator available
 	 * \return shared pointer to given coordinator - this is cast to DeviceCoordinator
 	 */
-	std::shared_ptr<DeviceCoordinator> getNextAvailableDeviceCoordinator();
+	std::pair<size_t, std::shared_ptr<DeviceCoordinator>> getNextAvailableDeviceCoordinator();
 
 	/**
 	 * \brief Adds processed job to the accumulated results
