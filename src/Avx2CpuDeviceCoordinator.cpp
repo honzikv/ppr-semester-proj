@@ -12,7 +12,7 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
 
 	// Create vector for results
-	const auto nAccumulators = buffer.size() / bytesPerAccumulator;
+	const auto nAccumulators = buffer.size() * sizeof(double) / bytesPerAccumulator;
 	auto accumulators = std::vector<Avx2StatsAccumulator>(nAccumulators);
 
 	if (nAccumulators <= 1) {
@@ -33,9 +33,9 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
 		                          [&](const tbb::blocked_range<size_t> r) {
 			                          for (auto accumulatorId = r.begin(); accumulatorId < r.end(); accumulatorId += 1) {
-				                          const auto jobStart = accumulatorId * bytesPerAccumulator / 4;
-				                          const auto jobEnd = (accumulatorId + 1) * bytesPerAccumulator / 4;
-				                          for (auto i = jobStart; i < jobEnd; i += 1) {
+				                          const auto jobStart = accumulatorId * (bytesPerAccumulator / sizeof(double)) / 4;
+				                          const auto jobEnd = (accumulatorId + 1) * (bytesPerAccumulator / sizeof(double)) / 4;
+				                          for (auto i = jobStart; i < jobEnd / 4; i += 1) {
 					                          accumulators[accumulatorId].pushWithFiltering({
 						                          buffer[i * 4],
 						                          buffer[i * 4 + 1],
