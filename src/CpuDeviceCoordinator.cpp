@@ -26,6 +26,10 @@ CpuDeviceCoordinator::CpuDeviceCoordinator(const CoordinatorType coordinatorType
 		distFilePath,
 		id) {
 	maxNumberOfChunksPerJob = cpuBufferSizeBytes / chunkSizeBytes;
+	if (processingMode == ProcessingMode::OPENCL_DEVICES) {
+		return;
+	}
+
 	startCoordinatorThread();
 }
 
