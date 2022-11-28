@@ -76,4 +76,9 @@ struct ProcessingConfig {
 	 *		  CPU that supports it and is set to true
 	 */
 	bool UseAvx2Instructions;
+
+	/**
+	 * \brief Timeout for watchdog in milliseconds
+	 */
+	size_t WatchdogTimeoutMs;
 };

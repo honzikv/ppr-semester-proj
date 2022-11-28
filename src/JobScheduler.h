@@ -42,7 +42,8 @@ class JobScheduler {
 	std::unique_ptr<CoordinatorErr> lastErr = nullptr;
 
 public:
-	explicit JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeBytes = DEFAULT_CHUNK_SIZE) {
+	explicit JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeBytes = DEFAULT_CHUNK_SIZE) :
+		watchdog(std::chrono::milliseconds{processingConfig.WatchdogTimeoutMs}) {
 		if (const auto fileSize = fs::file_size(processingConfig.DistFilePath);
 			fileSize < chunkSizeBytes || fileSize < SMALL_SIZE_LIMIT) {
 			chunkSizeBytes = 1; // Set chunk size to 1 - this way all bytes are processed

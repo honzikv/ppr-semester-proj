@@ -23,6 +23,7 @@ public:
 	 * \param sleepMs amount of MS to sleep between checks
 	 */
 	explicit Watchdog(const std::chrono::milliseconds sleepMs = DEFAULT_SLEEP_MS): sleepMs(sleepMs) {
+		log(INFO, "[WATCHDOG] Watchdog created, timeout set to: " + std::to_string(sleepMs.count()) + " ms");
 		// Start the thread
 		watchdogThread = std::thread(&Watchdog::watchdogMain, this);
 		watchdogThread.detach();
@@ -53,13 +54,13 @@ public:
 private:
 	void watchdogMain() {
 		startSemaphore.acquire(); // Try to acquire start semaphore
-		log(INFO, "[WATCHDOG] Watchdog is running");
+		log(INFO, "[WATCHDOG] Watchdog is ready and running ...");
 		while (keepRunning) {
 			std::this_thread::sleep_for(sleepMs);
 			// Null the counter and take out the previous value for comparison
 			const auto counterVal = counter.exchange(0);
 			if (counterVal <= 0 && keepRunning) {
-				log(CRITICAL, "[WATCHDOG] No progress in the last " + std::to_string(sleepMs.count()) + " ms");
+				log(WARNING, "[WATCHDOG] No progress detected in the last " + std::to_string(sleepMs.count()) + " ms");
 				continue;
 			}
 
@@ -67,7 +68,7 @@ private:
 			if (keepRunning) {
 				const auto kbsProcessed = counterVal / 1024;
 				const auto mbsProcessed = kbsProcessed / 1024;
-				log(INFO, "[WATCHDOG] Processed " + std::to_string(kbsProcessed) + " kBs (" + std::to_string(mbsProcessed) + " MBs) since the last update.");
+				log(INFO, "[WATCHDOG] Processed " + std::to_string(kbsProcessed) + " kB (" + std::to_string(mbsProcessed) + " MB) since the last update.");
 			}
 		}
 	}

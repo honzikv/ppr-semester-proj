@@ -5,6 +5,7 @@
 
 constexpr auto DOUBLE_PRECISION_DEFAULT = "cl_khr_fp64";
 constexpr auto DOUBLE_PRECISION_AMD = "cl_amd_fp64";
+constexpr auto DEFAULT_WATCHDOG_TIMEOUT = 5000; // 5 seconds
 
 /**
  * \brief Simple class to parse and validate arguments

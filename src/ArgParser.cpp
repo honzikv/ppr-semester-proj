@@ -82,7 +82,7 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 
 ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const {
 	// For argument parsing we use cxxopts
-	auto options = cxxopts::Options("PPR Distribution Estimator");
+	auto options = cxxopts::Options("PPR Distribution Estimator", "Possible modes: [single_thread, smp, opencl_devices, all]");
 	options.add_options()
 		("f,file", "Path to the file with distribution (either absolute or relative)",
 		 cxxopts::value<std::filesystem::path>())
@@ -95,6 +95,7 @@ ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const 
 		("benchmark_runs", "Number of benchmark runs", cxxopts::value<size_t>()->default_value("10"))
 		("o, output_file", "Path to the output file if any", cxxopts::value<std::filesystem::path>())
 		("disable_avx2", "Disables AVX2 vectorized instructions")
+		("t,watchdog_timeout", "Timeout for watchdog in seconds", cxxopts::value<size_t>()->default_value("5"))
 		("h,help", "Print help");
 
 	options.parse_positional({"file", "mode", "devices"});
@@ -192,6 +193,14 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 		                     ? !args["disable_avx2"].as<bool>()
 		                     : static_cast<bool>(__ISA_AVAILABLE_AVX2);
 
+	const auto watchdogTimeout = args.count("watchdog_timeout") > 0
+		? args["watchdog_timeout"].as<size_t>() * 1000
+		: DEFAULT_WATCHDOG_TIMEOUT;
+
+	if (watchdogTimeout > 60000) {
+		log(WARNING, "Detected watchdog timeout over 60s: " + std::to_string(watchdogTimeout / 1000) + "s");
+	}
+
 	if (processingMode == ProcessingMode::SMP || processingMode == ProcessingMode::SINGLE_THREAD) {
 		return {
 			processingMode,
@@ -202,6 +211,7 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 			nBenchmarkRuns,
 			outputPath,
 			useAvx2,
+			watchdogTimeout,
 		};
 	}
 
@@ -217,6 +227,7 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 			nBenchmarkRuns,
 			outputPath,
 			useAvx2,
+			watchdogTimeout,
 		};
 	}
 
@@ -249,5 +260,6 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 		nBenchmarkRuns,
 		outputPath,
 		useAvx2,
+		watchdogTimeout,
 	};
 }
