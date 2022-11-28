@@ -10,6 +10,19 @@ namespace fs = std::filesystem;
 
 class CpuDeviceCoordinator : public DeviceCoordinator {
 public:
+	/**
+	 * \brief Creates new CPU device coordinator instance
+	 * \param coordinatorType  type of the coordinator
+	 * \param processingMode mode of processing
+	 * \param jobFinishedCallback callback after job is finished
+	 * \param notifyWatchdogCallback callback for notifying watchdog
+	 * \param errCallback callback for error handling
+	 * \param chunkSizeBytes size of the chunk in bytes
+	 * \param bytesPerAccumulator number of bytes processed by each StatsAccumulator
+	 * \param cpuBufferSizeBytes buffer size in bytes
+	 * \param distFilePath path to the file that is being processed
+	 * \param id id of this coordinator
+	 */
 	CpuDeviceCoordinator(CoordinatorType coordinatorType,
 	                     ProcessingMode processingMode,
 	                     const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
@@ -23,6 +36,5 @@ public:
 	);
 
 protected:
-	size_t nCores{};
 	void onProcessJob() override;
 };

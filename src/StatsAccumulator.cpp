@@ -91,7 +91,5 @@ StatsAccumulator StatsAccumulator::operator+(const StatsAccumulator& other) cons
 		
 	result.isIntegerDistribution = isIntegerDistribution && other.isIntegerDistribution;
 
-	// debugPrint();
-
 	return result;
 }

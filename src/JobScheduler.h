@@ -37,24 +37,21 @@ class JobScheduler {
 	std::vector<StatsAccumulator> accumulators;
 
 	/**
-	 * \brief Last execution error, this is read during every job assignment
+	 * \brief Last execution error, coordinators set this up via notifyErrOccurred callback
 	 */
 	std::unique_ptr<CoordinatorErr> lastErr = nullptr;
 
 public:
 	explicit JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeBytes = DEFAULT_CHUNK_SIZE) {
-		auto coordinatorId = 0;
-
-		const auto fileSize = fs::file_size(processingConfig.DistFilePath);
-		if (fileSize < chunkSizeBytes || fileSize < SMALL_SIZE_LIMIT) {
+		if (const auto fileSize = fs::file_size(processingConfig.DistFilePath);
+			fileSize < chunkSizeBytes || fileSize < SMALL_SIZE_LIMIT) {
 			chunkSizeBytes = 1; // Set chunk size to 1 - this way all bytes are processed
 		}
-
 		fileChunkHandler = std::make_unique<FileChunkHandler>(processingConfig.DistFilePath, chunkSizeBytes);
 
 		// Create memory configuration
 		auto memoryConfig = MemoryAllocation::buildMemoryConfig(processingConfig, processingConfig.MemoryLimit);
-
+		auto coordinatorId = 0;
 		// Add CL devices
 		for (const auto& device : processingConfig.ClDevices) {
 			clDeviceCoordinators.push_back(std::make_shared<ClDeviceCoordinator>(
@@ -123,6 +120,7 @@ public:
 				                       memoryConfig.MaxCpuBufferSizeBytes,
 				                       processingConfig.DistFilePath,
 				                       coordinatorId);
+
 	}
 
 	/**
@@ -161,13 +159,11 @@ public:
 	 * \return shared pointer to given coordinator - this is cast to DeviceCoordinator
 	 */
 	auto getNextAvailableDeviceCoordinator() {
-		// CL devices are ordered from best (0) to worst (n)
 		// We prioritize CL devices over SMP
 		const auto clDevice = std::find_if(clDeviceCoordinators.begin(), clDeviceCoordinators.end(),
 		                                   [](const auto& coordinator) {
 			                                   return coordinator->enabled() && coordinator->available();
 		                                   });
-
 		return clDevice != clDeviceCoordinators.end()
 			       ? std::dynamic_pointer_cast<DeviceCoordinator>(*clDevice)
 			       : std::dynamic_pointer_cast<DeviceCoordinator>(cpuDeviceCoordinator);
@@ -192,9 +188,23 @@ public:
 		watchdog.updateCounter(bytesProcessed);
 	}
 
-	void notifyErrOccurred(std::unique_ptr<CoordinatorErr> err) {
+	void notifyErrOccurred(CoordinatorErr err) {
 		auto scopedLock = std::scoped_lock(coordinatorMutex);
-		lastErr = std::move(err);
+		if (!lastErr) {
+			// If there is no last erorr we can set this
+			lastErr = std::make_unique<CoordinatorErr>(err);
+			return;
+		}
+
+		// Otherwise we need to check whether the last error was fatal - if not we can log it
+		if (lastErr->IsFatal) {
+			return;
+		}
+
+		log(WARNING,
+		    "[JOBSCHEDULER] Coordinator " + std::to_string(lastErr->CoordinatorId) + " encountered an error: " +
+		    lastErr->What);
+		lastErr = std::make_unique<CoordinatorErr>(err);
 	}
 
 	void terminateDeviceCoordinators() const {
@@ -217,13 +227,34 @@ public:
 		currentJobId += 1;
 	}
 
+	void checkForErrors() const {
+		if (!lastErr) {
+			return;
+		}
+
+		if (lastErr->IsFatal) {
+			log(CRITICAL,
+			    "[JOBSCHEDULER] Coordinator " + std::to_string(lastErr->CoordinatorId) + " encountered an error: " +
+			    lastErr->What);
+			terminateDeviceCoordinators();
+			throw std::runtime_error("Error occurred during computation, the program cannot continue");
+		}
+
+		// Otherwise log it as a warning=
+		log(WARNING,
+		    "[JOBSCHEDULER] Coordinator " + std::to_string(lastErr->CoordinatorId) + " encountered an error: " +
+		    lastErr->What);
+	}
+
 	/**
 	 * \brief Runs the job scheduler.
 	 */
-	inline auto run() {
+	auto run() {
 		// Start the watchdog - by this time all device coordinators are waiting for jobs
 		watchdog.start();
 		while (true) {
+			checkForErrors();
+
 			// Check if there is a job available
 			if (!jobRemaining()) {
 				// If there is not check if all coordinators have finished (i.e. are available)

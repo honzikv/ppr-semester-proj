@@ -4,7 +4,7 @@
 #include "Logging.h"
 
 auto ClDeviceCoordinator::compile(const std::string& source, const std::string& programName,
-                                  const cl::Context& deviceContext) {
+                                  const cl::Context& deviceContext) const {
 	const auto program = cl::Program(deviceContext, source);
 	if (const auto result = program.build(DEFAULT_BUILD_FLAG); result != CL_BUILD_SUCCESS) {
 		throw ClCompileErr(
@@ -14,17 +14,17 @@ auto ClDeviceCoordinator::compile(const std::string& source, const std::string& 
 	return program;
 }
 
-ClDeviceCoordinator::ClDeviceCoordinator(CoordinatorType coordinatorType,
-                                         ProcessingMode processingMode,
+ClDeviceCoordinator::ClDeviceCoordinator(const CoordinatorType coordinatorType,
+                                         const ProcessingMode processingMode,
                                          const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
                                          const std::function<void(size_t)>& notifyWatchdogCallback,
                                          const std::function<void(CoordinatorErr)>& errCallback,
-                                         size_t chunkSizeBytes,
-                                         size_t bytesPerAccumulator,
-                                         size_t clHostBufferSizeBytes,
+                                         const size_t chunkSizeBytes,
+                                         const size_t bytesPerAccumulator,
+                                         const size_t clHostBufferSizeBytes,
                                          fs::path& distFilePath,
-                                         size_t id,
-                                         cl::Device& device):
+                                         const size_t id,
+                                         const cl::Device& device):
 	DeviceCoordinator(
 		coordinatorType,
 		processingMode,

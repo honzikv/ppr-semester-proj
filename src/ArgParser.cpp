@@ -14,14 +14,6 @@ auto lowercase(const std::basic_string<T>& s) {
 	return s2;
 }
 
-// LUT for processing modes so we don't have to do 20 if statements
-const auto processingModesLut = std::unordered_map<std::string, ProcessingMode>{
-	{"single_thread", ProcessingMode::SINGLE_THREAD},
-	{"smp", ProcessingMode::SMP},
-	{"opencl_devices", ProcessingMode::OPENCL_DEVICES},
-	{"all", ProcessingMode::ALL},
-};
-
 
 inline auto queryClDevices(const std::vector<std::string>& devices) {
 	auto deviceNamesFilter = std::unordered_set<std::string>();
@@ -102,6 +94,7 @@ ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const 
 		("b,benchmark", "Runs given mode as benchmark")
 		("benchmark_runs", "Number of benchmark runs", cxxopts::value<size_t>()->default_value("10"))
 		("o, output_file", "Path to the output file if any", cxxopts::value<std::filesystem::path>())
+		("use_avx2", "Use AVX2 instructions if the CPU supports it")
 		("h,help", "Print help");
 
 	options.parse_positional({"file", "mode", "devices"});
@@ -165,10 +158,10 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 	// Mode can actually be parsed as device as well
 	// Therefore, check if its lowercased version fits anything and if not treat it as device
 	const auto modeArg = args.count("mode") > 0 ? args["mode"].as<std::string>() : "opencl_devices";
-	const auto modePosArgIsADevice = processingModesLut.find(lowercase(modeArg)) == processingModesLut.end();
+	const auto modePosArgIsADevice = PROCESSING_MODES_LUT.find(lowercase(modeArg)) == PROCESSING_MODES_LUT.end();
 	const auto processingMode = modePosArgIsADevice
 		                            ? ProcessingMode::OPENCL_DEVICES
-		                            : processingModesLut.at(lowercase(modeArg));
+		                            : PROCESSING_MODES_LUT.at(lowercase(modeArg));
 
 	// Check memory limit
 	const auto memoryLimit = args.count("memory_limit") > 0

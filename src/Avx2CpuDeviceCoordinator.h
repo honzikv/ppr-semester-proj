@@ -28,7 +28,9 @@ public:
 			errCallback,
 			chunkSizeBytes,
 			bytesPerAccumulator,
-			cpuBufferSizeBytes, distFilePath, id) {
+			cpuBufferSizeBytes,
+			distFilePath,
+			id) {
 	}
 
 protected:

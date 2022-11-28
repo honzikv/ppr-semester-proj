@@ -21,11 +21,22 @@ namespace fs = std::filesystem;
 struct CoordinatorErr {
 
 	size_t JobId;
+	size_t CoordinatorId;
 	std::string What;
-	bool Fatal;
+	bool IsFatal;
 
-	CoordinatorErr(const size_t jobId, std::string what, const bool fatal = true): JobId(jobId), What(std::move(what)),
-		Fatal(fatal) {
+	/**
+	 * \brief Default constructor for CoordinatorErr
+	 * \param jobId id of the job where the error occurred
+	 * \param what what caused the error
+	 * \param coordinatorId index of the coordinator processing the job
+	 * \param fatal whether it is fatal - i.e. requires termination of the program
+	 */
+	CoordinatorErr(const size_t jobId, std::string what, const size_t coordinatorId, const bool fatal = true):
+		JobId(jobId),
+		CoordinatorId(coordinatorId),
+		What(std::move(what)),
+		IsFatal(fatal) {
 	}
 };
 
@@ -213,7 +224,7 @@ private:
 				processJob();
 			}
 			catch (const std::runtime_error& err) {
-
+				errCallback({currentJob->Id, err.what(), id});
 			}
 		}
 

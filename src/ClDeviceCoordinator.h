@@ -55,7 +55,7 @@ public:
 		size_t clHostBufferSizeBytes,
 		fs::path& distFilePath,
 		size_t id,
-		cl::Device& device);
+		const cl::Device& device);
 
 private:
 	cl::Device device; // The actual device
@@ -64,7 +64,7 @@ private:
 	cl::Program program; // Compiled program
 	size_t maxWorkGroupSize{}; // Max number of work items in a work group
 	size_t maxHostChunks;
-	size_t chunksPerAccumulator;
+	size_t chunksPerAccumulator{};
 	std::string deviceName;
 
 	/**
@@ -75,7 +75,7 @@ private:
 	 * \param device device to compile for
 	 * \return cl::Program instance or throws ClCompileErr if the program cannot be compiled
 	 */
-	static auto compile(const std::string& source, const std::string& programName, const cl::Context& deviceContext);
+	auto compile(const std::string& source, const std::string& programName, const cl::Context& deviceContext) const;
 
 	/**
 	 * \brief Sets up the device, throwing ClCompileErr if something goes wrong
@@ -90,7 +90,6 @@ private:
 
 	/**
 	 * \brief Estimates workgroup size
-	 * \return None
 	 */
 	void estimateWorkgroupSize();
 

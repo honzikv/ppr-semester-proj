@@ -137,6 +137,7 @@ public:
 	}
 
 	auto operator+(const Avx2StatsAccumulator& other) const {
+		// ReSharper disable once CppInitializedValueIsAlwaysRewritten
 		auto result = Avx2StatsAccumulator();
 
 		// result.n = n + other.n

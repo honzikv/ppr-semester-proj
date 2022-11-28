@@ -20,7 +20,7 @@ struct Job {
 		return (ChunkIdxRange.second - ChunkIdxRange.first) * chunkSizeBytes;
 	}
 
-	[[nodiscard]] auto getNChunks() {
+	[[nodiscard]] auto getNChunks() const {
 		return ChunkIdxRange.second - ChunkIdxRange.first;
 	}
 };
