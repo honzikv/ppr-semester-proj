@@ -7,9 +7,6 @@
     <Filter Include="Header Files">
       <UniqueIdentifier>{3572ccb2-5dc5-44d7-81f9-e057508549a5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Utils">
-      <UniqueIdentifier>{07a03ad2-5b7b-4886-81e2-8597e9ca41c8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Core">
       <UniqueIdentifier>{e89958c4-cac4-49c7-916b-b6d9173b5163}</UniqueIdentifier>
     </Filter>
@@ -28,6 +25,12 @@
     <Filter Include="Source Files\Coordinator">
       <UniqueIdentifier>{31c529b7-5ece-4f5c-bd80-e290eb4f608e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Benchmark">
+      <UniqueIdentifier>{7b48db87-ce6e-4fc9-9ba0-9514d3ba9a0f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Accumulator">
+      <UniqueIdentifier>{6b6c17ee-7be1-4a5d-a2c8-da76a7444b68}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\ArgParser.cpp">
@@ -39,9 +42,6 @@
     <ClCompile Include="..\src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\StatsAccumulator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\CpuDeviceCoordinator.cpp">
       <Filter>Source Files\Coordinator</Filter>
     </ClCompile>
@@ -51,11 +51,20 @@
     <ClCompile Include="..\src\Avx2CpuDeviceCoordinator.cpp">
       <Filter>Source Files\Coordinator</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\StatsAccumulator.cpp">
+      <Filter>Source Files\Accumulator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Avx2StatsAccumulator.cpp">
+      <Filter>Source Files\Accumulator</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\JobScheduler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\DeviceCoordinator.cpp">
+      <Filter>Source Files\Coordinator</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\ArgumentParser.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\DeviceCoordinator.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
@@ -73,9 +82,6 @@
     </ClInclude>
     <ClInclude Include="..\src\ClDeviceCoordinator.h">
       <Filter>Header Files\CL</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\Benchmark.h">
-      <Filter>Header Files\Utils</Filter>
     </ClInclude>
     <ClInclude Include="..\src\Avx2CpuDeviceCoordinator.h">
       <Filter>Header Files\SMP</Filter>
@@ -95,18 +101,6 @@
     <ClInclude Include="..\src\DataLoader.h">
       <Filter>Header Files\IO</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\ConcurrencyUtils.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\DistributionClassification.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\OpenClTest.h">
-      <Filter>Header Files\CL</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\SingleThreadStatsComputation.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\ProcessingConfig.h">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
@@ -116,14 +110,32 @@
     <ClInclude Include="..\src\StatUtils.h">
       <Filter>Header Files\Stats</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Timer.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\VectorizationUtils.h">
-      <Filter>Header Files\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\Watchdog.h">
       <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ArgumentParser.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Benchmark.h">
+      <Filter>Header Files\Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Timer.h">
+      <Filter>Header Files\Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\VectorizationUtils.h">
+      <Filter>Header Files\SMP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\ConcurrencyUtils.h">
+      <Filter>Header Files\SMP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\SingleThreadStatsComputation.h">
+      <Filter>Header Files\SMP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\DistributionClassification.h">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\FilesystemUtils.h">
+      <Filter>Header Files\IO</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
