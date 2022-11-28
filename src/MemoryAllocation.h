@@ -3,10 +3,10 @@
 namespace MemoryAllocation {
 
 	constexpr auto DEFAULT_APP_MEMORY_LIMIT = 1024 * 1024 * 1024; // 1GB
-	constexpr auto DEFAULT_CPU_RUNTIME_RATIO = .2; // 20%
-	constexpr auto DEFAULT_CL_RUNTIME_RATIO = .3; // 50%
+	constexpr auto DEFAULT_CPU_RUNTIME_RATIO = .3; // 30%
+	constexpr auto DEFAULT_CL_RUNTIME_RATIO = .5; // 50%
 	constexpr auto DEFAULT_CPU_MEMORY_RATIO = .2; // CPU will use 20% of the buffer memory if OpenCL devices are used
-	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU = 4ULL * 1024 * 1024 * sizeof(double);
+	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU = 512 * 1024 * sizeof(double);
 	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL = 4ULL * 1024 * 1024 * sizeof(double);
 
 	/**
@@ -55,6 +55,14 @@ namespace MemoryAllocation {
 		BytesPerClAccumulator(bytesProcessedPerAccumulatorCl) {
 	}
 
+	/**
+	 * \brief Builds memory config for the application
+	 * \param processingConfig processing config
+	 * \param appMemoryLimit total memory limit for the application - e.g. 1 GB
+	 * \param bytesProcessedPerAccumulatorCpu amount of bytes processed by a single StatsAccumulator on CPU
+	 * \param bytesProcessedPerAccumulatorCl amount of bytes processed by a single StatsAccumulator on CL device
+	 * \return configured instance of MemoryConfig
+	 */
 	inline MemoryConfig buildMemoryConfig(const ProcessingConfig& processingConfig,
 	                                      const size_t appMemoryLimit = DEFAULT_APP_MEMORY_LIMIT,
 	                                      const size_t bytesProcessedPerAccumulatorCpu =
@@ -110,7 +118,7 @@ namespace MemoryAllocation {
 		}
 
 		// Calculate how much memory we can allocate for each CL device
-		const auto maxClHostBufferSizeBytes = clDevicesMemory / nClDevices;
+		const auto maxClHostBufferSizeBytes = clDevicesMemory / nClDevices / 2;
 
 		return {
 			maxCpuBufferBytes,

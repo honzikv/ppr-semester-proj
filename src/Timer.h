@@ -13,39 +13,43 @@ class Timer {
 
 
 public:
-	Timer() = default;
-	~Timer() = default;
+	Timer();
+	~Timer();
 
 	/**
 	 * \brief Starts the timer
 	 */
 	void start() {
-		startTimePoint = std::chrono::high_resolution_clock::now();
+		startTimePoint = std::chrono::steady_clock::now();
 	}
 
 	/**
 	 * \brief Stops the timer
 	 */
 	void stop() {
-		endTimePoint = std::chrono::high_resolution_clock::now();
+		endTimePoint = std::chrono::steady_clock::now();
 	}
-
 
 	/**
 	 * \brief Returns the elapsed time in milliseconds
 	 * \return Elapsed time in milliseconds
 	 */
-	auto getElapsedTimeNanoSecs() {
-		return std::chrono::duration_cast<std::chrono::nanoseconds>(endTimePoint - startTimePoint).count();
+	[[nodiscard]] auto getElapsedTimeMillis() const {
+		return std::chrono::duration_cast<std::chrono::milliseconds>(endTimePoint - startTimePoint);
 	}
 
-	auto logResults(LogSeverity logSeverity = INFO) {
-		const auto elapsedTime = getElapsedTimeNanoSecs();
+	auto printResults() const {
+		const auto elapsedTime = getElapsedTimeMillis().count();
+
 		// Print time in ns, ms and seconds
-		log(logSeverity, "[TIMER] Elapsed time: " + std::to_string(elapsedTime) + " ns = "
-		    + std::to_string(elapsedTime / 1000000) + " ms = " + std::to_string(
-			    elapsedTime / 1000000000)
-		    + " s)");
+		std::cout << "Execution took " << StatUtils::doubleToStr(
+			static_cast<double>(elapsedTime) / 1000.0, 5) << " s (" << std::to_string(elapsedTime) << " ms)" << std::endl;
 	}
 
 };
+
+inline Timer::Timer() {
+}
+
+inline Timer::~Timer() {
+}

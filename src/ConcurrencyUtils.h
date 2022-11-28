@@ -12,7 +12,11 @@ namespace ConcurrencyUtils {
 		size_t count; // Number of available resources
 
 	public:
-		auto acquire() {
+
+		/**
+		 * \brief Acquire operation is blocking if the count is <= 0
+		 */
+		void acquire() {
 			auto lock = std::unique_lock(mutex);
 			while (count == 0) {
 				conditionVariable.wait(lock);
@@ -21,7 +25,11 @@ namespace ConcurrencyUtils {
 			count -= 1;
 		}
 
-		auto release() {
+		/**
+		 * \brief Release operation is always nonblocking and increments count by one.
+		 *		  If there is a thread waiting on the semaphore, it will be woken up
+		 */
+		void release() {
 			auto lock = std::scoped_lock(mutex);
 			count += 1;
 			conditionVariable.notify_one();

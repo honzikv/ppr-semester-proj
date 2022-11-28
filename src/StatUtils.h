@@ -1,7 +1,10 @@
 #pragma once
 
 #include <cmath>
+#include <string>
 #include <vector>
+#include <sstream>
+
 #include "StatsAccumulator.h"
 
 /**
@@ -36,7 +39,7 @@ namespace StatUtils {
 	 * \param filterInvalid whether to throw away invalid items
 	 * \return Copy of the first item in the vector
 	 */
-	static auto mergePairwise(const std::vector<StatsAccumulator>& items, const bool filterInvalid = true) {
+	inline auto mergePairwise(const std::vector<StatsAccumulator>& items, const bool filterInvalid = true) {
 		auto filtered = std::vector<StatsAccumulator>();
 		if (filterInvalid) {
 			for (const auto& item : items) {
@@ -67,7 +70,7 @@ namespace StatUtils {
 		return filtered[0];
 	}
 
-	static auto mergeLeftToRight(const std::vector<StatsAccumulator>& items, const bool filterInvalid = true) {
+	inline auto mergeLeftToRight(const std::vector<StatsAccumulator>& items, const bool filterInvalid = true) {
 		auto filtered = std::vector<StatsAccumulator>();
 		if (filterInvalid) {
 			for (const auto& item : items) {
@@ -92,5 +95,22 @@ namespace StatUtils {
 		}
 
 		return result;
+	}
+
+	/**
+	 * \brief Converts double to string with precision up to "precision" decimal places
+	 * \param value value to be converted
+	 * \param precision number of decimal places
+	 * \return formatted string
+	 */
+	inline auto doubleToStr(const double value, const int64_t precision = 3) {
+		if (precision <= 0) {
+			return std::to_string(static_cast<int64_t>(value));
+		}
+
+		auto stringStream = std::stringstream();
+		stringStream.precision(precision);
+		stringStream << value;
+		return stringStream.str();
 	}
 }

@@ -14,14 +14,6 @@ auto lowercase(const std::basic_string<T>& s) {
 	return s2;
 }
 
-// LUT for processing modes so we don't have to do 20 if statements
-const auto processingModesLut = std::unordered_map<std::string, ProcessingMode>{
-	{"single_thread", ProcessingMode::SINGLE_THREAD},
-	{"smp", ProcessingMode::SMP},
-	{"opencl_devices", ProcessingMode::OPENCL_DEVICES},
-	{"all", ProcessingMode::ALL},
-};
-
 
 inline auto queryClDevices(const std::vector<std::string>& devices) {
 	auto deviceNamesFilter = std::unordered_set<std::string>();
@@ -90,7 +82,7 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 
 ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const {
 	// For argument parsing we use cxxopts
-	auto options = cxxopts::Options("PPR Distribution Estimator");
+	auto options = cxxopts::Options("PPR Distribution Estimator", "Possible modes: [single_thread, smp, opencl_devices, all]");
 	options.add_options()
 		("f,file", "Path to the file with distribution (either absolute or relative)",
 		 cxxopts::value<std::filesystem::path>())
@@ -98,10 +90,12 @@ ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const 
 		("d,devices", "List of devices to use", cxxopts::value<std::vector<std::string>>())
 		("l,list_cl_devices", "List all available OpenCL devices")
 		("x,memory_limit", "Max amount of application memory in MB (1GB to 4GB, 1024MB is exactly 1GB)",
-			cxxopts::value<size_t>()->default_value("1024"))
+		 cxxopts::value<size_t>()->default_value("1024"))
 		("b,benchmark", "Runs given mode as benchmark")
 		("benchmark_runs", "Number of benchmark runs", cxxopts::value<size_t>()->default_value("10"))
 		("o, output_file", "Path to the output file if any", cxxopts::value<std::filesystem::path>())
+		("disable_avx2", "Disables AVX2 vectorized instructions")
+		("t,watchdog_timeout", "Timeout for watchdog in seconds", cxxopts::value<size_t>()->default_value("5"))
 		("h,help", "Print help");
 
 	options.parse_positional({"file", "mode", "devices"});
@@ -112,13 +106,13 @@ ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const 
 	}
 	catch (const std::exception&) {
 		std::cout << options.help() << std::endl;
-		exit(1);
+		exit(1); // NOLINT(concurrency-mt-unsafe)
 	}
-	
+
 
 	if (result.count("help")) {
 		std::cout << options.help() << std::endl;
-		exit(0);
+		exit(0); // NOLINT(concurrency-mt-unsafe)
 	}
 
 	if (result.count("list_cl_devices")) {
@@ -126,13 +120,14 @@ ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const 
 		const auto clDevices = queryClDevices({});
 		for (const auto& clDevice : clDevices) {
 			std::cout << "  -\t" << "\"" << clDevice.getInfo<CL_DEVICE_NAME>() << "\"" << std::endl;
+
 		}
-		exit(0);
+		exit(0); // NOLINT(concurrency-mt-unsafe)
 	}
 
 	if (argc < 3) {
 		std::cout << options.help();
-		exit(1);
+		exit(1); // NOLINT(concurrency-mt-unsafe)
 	}
 
 	return validateArgs(result);
@@ -165,10 +160,10 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 	// Mode can actually be parsed as device as well
 	// Therefore, check if its lowercased version fits anything and if not treat it as device
 	const auto modeArg = args.count("mode") > 0 ? args["mode"].as<std::string>() : "opencl_devices";
-	const auto modePosArgIsADevice = processingModesLut.find(lowercase(modeArg)) == processingModesLut.end();
+	const auto modePosArgIsADevice = PROCESSING_MODES_LUT.find(lowercase(modeArg)) == PROCESSING_MODES_LUT.end();
 	const auto processingMode = modePosArgIsADevice
 		                            ? ProcessingMode::OPENCL_DEVICES
-		                            : processingModesLut.at(lowercase(modeArg));
+		                            : PROCESSING_MODES_LUT.at(lowercase(modeArg));
 
 	// Check memory limit
 	const auto memoryLimit = args.count("memory_limit") > 0
@@ -185,14 +180,55 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 		log(INFO, "[JOBSCHEDULER] Memory limit is set to " + std::to_string(memoryLimit / 1024 / 1024) + " MB");
 	}
 
+
+	// Benchmark config
+	const auto runBenchmark = args.count("benchmark") > 0 ? args["benchmark"].as<bool>() : false;
+	const auto nBenchmarkRuns = args.count("benchmark_runs") > 0 ? args["benchmark_runs"].as<size_t>() : 0;
+
+	// Output path
+	const auto outputPath = args.count("output_file") > 0 ? args["output_file"].as<std::filesystem::path>() : "";
+
+	// Use AVX2 instructions
+	const auto useAvx2 = args.count("disable_avx2") > 0
+		                     ? !args["disable_avx2"].as<bool>()
+		                     : static_cast<bool>(__ISA_AVAILABLE_AVX2);
+
+	const auto watchdogTimeout = args.count("watchdog_timeout") > 0
+		? args["watchdog_timeout"].as<size_t>() * 1000
+		: DEFAULT_WATCHDOG_TIMEOUT;
+
+	if (watchdogTimeout > 60000) {
+		log(WARNING, "Detected watchdog timeout over 60s: " + std::to_string(watchdogTimeout / 1000) + "s");
+	}
+
 	if (processingMode == ProcessingMode::SMP || processingMode == ProcessingMode::SINGLE_THREAD) {
-		return {processingMode, filePath, {}, memoryLimit};
+		return {
+			processingMode,
+			filePath,
+			{},
+			memoryLimit,
+			runBenchmark,
+			nBenchmarkRuns,
+			outputPath,
+			useAvx2,
+			watchdogTimeout,
+		};
 	}
 
 	// Otherwise we have OpenCL devices or ALL mode
 	// Query all OpenCL devices and filter them if necessary
 	if (processingMode == ProcessingMode::ALL) {
-		return {processingMode, filePath, queryClDevices({}), memoryLimit};
+		return {
+			processingMode,
+			filePath,
+			queryClDevices({}),
+			memoryLimit,
+			runBenchmark,
+			nBenchmarkRuns,
+			outputPath,
+			useAvx2,
+			watchdogTimeout,
+		};
 	}
 
 	// Otherwise we have OpenCL devices mode
@@ -215,5 +251,15 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 		throw std::runtime_error("No OpenCL devices found");
 	}
 
-	return {processingMode, filePath, clDevices, memoryLimit};
+	return {
+		processingMode,
+		filePath,
+		clDevices,
+		memoryLimit,
+		runBenchmark,
+		nBenchmarkRuns,
+		outputPath,
+		useAvx2,
+		watchdogTimeout,
+	};
 }

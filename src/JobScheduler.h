@@ -9,12 +9,20 @@
 constexpr auto DEFAULT_CHUNK_SIZE = 4096;
 constexpr auto SMALL_SIZE_LIMIT = 1024 * 1024; // 1 MB
 
+/**
+ * \brief This class acts as a load balancer and job manager. It schedules job among available coordinators and accumulates results
+ */
 class JobScheduler {
 
 	/**
 	 * \brief List of all device coordinators
 	 */
 	std::vector<std::shared_ptr<ClDeviceCoordinator>> clDeviceCoordinators;
+
+	/**
+	 * \brief This vector stores availability of each device coordinator
+	 */
+	std::vector<bool> coordinatorAvailability;
 
 	/**
 	 * \brief Coordinator for CPU (SMP). This is shared_ptr to allow for polymorphism
@@ -26,85 +34,47 @@ class JobScheduler {
 	 * finishing a job
 	 */
 	ConcurrencyUtils::Semaphore jobFinishedSemaphore = ConcurrencyUtils::Semaphore(0);
+
+	/**
+	 * \brief Synchronization mutex for coordinators
+	 */
 	std::mutex coordinatorMutex;
 
+	/**
+	 * \brief File chunk handler instance - this is initialized later in the constructor, therefore it is wrapped in unique_ptr
+	 */
 	std::unique_ptr<FileChunkHandler> fileChunkHandler;
 
-	Watchdog watchdog;
+	/**
+	 * \brief Instance of watch dog
+	 */
+	std::unique_ptr<Watchdog> watchdog;
 
+	/**
+	 * \brief Id of the "current" job - i.e. job we are currently assigning 
+	 */
 	size_t currentJobId = 0;
 
+	/**
+	 * \brief Accumulated results from the coordinators
+	 */
 	std::vector<StatsAccumulator> accumulators;
 
+	/**
+	 * \brief Last execution error, coordinators set this up via notifyErrOccurred callback
+	 */
+	std::unique_ptr<CoordinatorErr> lastErr = nullptr;
+
 public:
-	explicit JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeBytes = DEFAULT_CHUNK_SIZE) {
-		auto coordinatorId = 0;
+	explicit JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeBytes = DEFAULT_CHUNK_SIZE);
 
-		const auto fileSize = fs::file_size(processingConfig.DistFilePath);
-		if (fileSize < chunkSizeBytes || fileSize < SMALL_SIZE_LIMIT) {
-			chunkSizeBytes = 1; // Set chunk size to 1 - this way all bytes are processed
-		}
-
-		fileChunkHandler = std::make_unique<FileChunkHandler>(processingConfig.DistFilePath, chunkSizeBytes);
-
-		// Create memory configuration
-		auto memoryConfig = MemoryAllocation::buildMemoryConfig(processingConfig, processingConfig.MemoryLimit);
-
-		// Add CL devices
-		for (const auto& device : processingConfig.ClDevices) {
-			clDeviceCoordinators.push_back(std::make_shared<ClDeviceCoordinator>(
-					CoordinatorType::OPEN_CL,
-					processingConfig.ProcessingMode,
-					// Call member function of this
-					[this](auto&& ph1, auto&& ph2) {
-						jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
-					},
-					chunkSizeBytes,
-					memoryConfig.BytesPerClAccumulator,
-					memoryConfig.MaxClHostBufferSizeBytes,
-					processingConfig.DistFilePath,
-					coordinatorId,
-					device
-				)
-			);
-			coordinatorId += 1;
-		}
-
-		// Add CPU device coordinator - this will be set to inactive state if OPENCL_DEVICES mode is used
-		// If CPU supports AVX2 then use AVX2 capable coordinator
-		cpuDeviceCoordinator = __ISA_AVAILABLE_AVX2
-			                       ? std::make_shared<Avx2CpuDeviceCoordinator>(
-				                       CoordinatorType::TBB,
-				                       processingConfig.ProcessingMode,
-				                       [this](auto&& ph1, auto&& ph2) {
-					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
-					                                           std::forward<decltype(ph2)>(ph2));
-				                       },
-				                       chunkSizeBytes,
-				                       memoryConfig.BytesPerCpuAccumulator,
-				                       memoryConfig.MaxCpuBufferSizeBytes,
-				                       processingConfig.DistFilePath,
-				                       coordinatorId
-			                       )
-			                       : std::make_shared<CpuDeviceCoordinator>(
-				                       CoordinatorType::TBB,
-				                       processingConfig.ProcessingMode,
-				                       [this](auto&& ph1, auto&& ph2) {
-					                       jobFinishedCallback(std::forward<decltype(ph1)>(ph1),
-					                                           std::forward<decltype(ph2)>(ph2));
-				                       },
-				                       chunkSizeBytes,
-				                       memoryConfig.BytesPerCpuAccumulator,
-				                       memoryConfig.MaxCpuBufferSizeBytes,
-				                       processingConfig.DistFilePath,
-				                       coordinatorId);
-	}
+	~JobScheduler();
 
 	/**
 	 * \brief Returns whether there is any job remaining
 	 * \return true if there is any job remaining, false otherwise
 	 */
-	[[nodiscard]] auto jobRemaining() const {
+	[[nodiscard]] bool jobRemaining() const {
 		// Job is available when there are still some chunks left to process
 		return !fileChunkHandler->allChunksProcessed();
 	}
@@ -113,112 +83,62 @@ public:
 	 * \brief Returns if there is any coordinator available
 	 * \return true if there is any coordinator available, false otherwise
 	 */
-	bool anyCoordinatorAvailable() {
-		auto scopedLock = std::scoped_lock(coordinatorMutex);
-		return std::any_of(clDeviceCoordinators.begin(), clDeviceCoordinators.end(), [](const auto& coordinator) {
-			return coordinator->available() && coordinator->enabled();
-		}) || cpuDeviceCoordinator->available() && cpuDeviceCoordinator->enabled();
-	}
+	bool anyCoordinatorAvailable();
 
 	/**
 	 * \brief Returns if there is any coordinator processing job
 	 * \return true if all coordinators are available, false otherwise
 	 */
-	bool allCoordinatorsAvailable() {
-		auto scopedLock = std::scoped_lock(coordinatorMutex);
-		return std::all_of(clDeviceCoordinators.begin(), clDeviceCoordinators.end(), [](const auto& coordinator) {
-			return coordinator->available();
-		}) && cpuDeviceCoordinator->available();
-	}
+	bool allCoordinatorsAvailable();
 
 	/**
 	 * \brief Gets next best available coordinator. Caller must ensure that there is at least one coordinator available
 	 * \return shared pointer to given coordinator - this is cast to DeviceCoordinator
 	 */
-	auto getNextAvailableDeviceCoordinator() {
-		// CL devices are ordered from best (0) to worst (n)
-		// We prioritize CL devices over SMP
-		const auto clDevice = std::find_if(clDeviceCoordinators.begin(), clDeviceCoordinators.end(),
-		                                   [](const auto& coordinator) {
-			                                   return coordinator->enabled() && coordinator->available();
-		                                   });
+	std::pair<size_t, std::shared_ptr<DeviceCoordinator>> getNextAvailableDeviceCoordinator();
 
-		return clDevice != clDeviceCoordinators.end()
-			       ? std::dynamic_pointer_cast<DeviceCoordinator>(*clDevice)
-			       : std::dynamic_pointer_cast<DeviceCoordinator>(cpuDeviceCoordinator);
-	}
+	/**
+	 * \brief Adds processed job to the accumulated results
+	 * \param job unique pointer to the job
+	 */
+	void addProcessedJob(std::unique_ptr<Job> job);
 
-	void addProcessedJob(const std::unique_ptr<Job> job) {
-		for (const auto& accumulator : job->Items) {
-			accumulators.push_back(accumulator);
-		}
+	/**
+	 * \brief Callback for DeviceCoordinator to notify that job is finished
+	 * \param job processed job
+	 * \param coordinatorIdx index of the coordinator
+	 */
+	void jobFinishedCallback(std::unique_ptr<Job> job, size_t coordinatorIdx);
 
-		log(INFO, "[JOBSCHEDULER] Job " + std::to_string(job->Id) + " was successfully processed");
-	}
+	/**
+	 * \brief Callback for device coordinator to kick the watchdog
+	 * \param bytesProcessed number of bytes processed by the coordinator
+	 */
+	void notifyWatchdogCallback(size_t bytesProcessed);
 
-	void jobFinishedCallback(std::unique_ptr<Job> job, const size_t coordinatorIdx) {
-		auto scopedLock = std::scoped_lock(coordinatorMutex);
+	/**
+	 * \brief Callback for device coordinator to notify that error occurred
+	 * \param err error that occurred
+	 */
+	void notifyErrOccurred(const CoordinatorErr& err);
 
-		// Write data to job aggregator
-		watchdog.updateCounter(job->getSize(fileChunkHandler->getChunkSizeBytes()));
-		addProcessedJob(std::move(job));
-		jobFinishedSemaphore.release();
-	}
+	/**
+	 * \brief Terminates all device coordinator - sets flag to exit the thread loop which will eventually terminate
+	 */
+	void terminateDeviceCoordinators() const;
 
-	void terminateDeviceCoordinators() const {
-		for (const auto& clCoordinator : clDeviceCoordinators) {
-			clCoordinator->terminate();
-		}
+	/**
+	 * \brief Assigns job to available coordinator
+	 */
+	void assignJob();
 
-		cpuDeviceCoordinator->terminate();
-	}
-
-	void assignJob() {
-		auto scopedLock = std::scoped_lock(coordinatorMutex);
-
-		// Get the coordinator
-		const auto coordinator = getNextAvailableDeviceCoordinator();
-
-		// Build and assign new job for them
-		const auto chunkRange = fileChunkHandler->getNextNChunks(coordinator->getMaxNumberOfChunks());
-		coordinator->assignJob(Job(chunkRange, currentJobId));
-		currentJobId += 1;
-	}
+	/**
+	 * \brief Checks for errors and throws an instance of std::runtime_error if any exception (that was fatal) occurred 
+	 */
+	void checkForErrors() const;
 
 	/**
 	 * \brief Runs the job scheduler.
 	 */
-	inline auto run() {
-		// Start the watchdog - by this time all device coordinators are waiting for jobs
-		watchdog.start();
-		while (true) {
-			// Check if there is a job available
-			if (!jobRemaining()) {
-				// If there is not check if all coordinators have finished (i.e. are available)
-				if (allCoordinatorsAvailable()) {
-					break; // All coordinators are done - break the loop
-				}
-
-				// Wait for coordinators to finish
-				jobFinishedSemaphore.acquire();
-				continue;
-			}
-
-			// Else there is job available
-			// Select best device available (prioritize GPU over CPU)
-			if (!anyCoordinatorAvailable()) {
-				jobFinishedSemaphore.acquire();
-			}
-
-			assignJob();
-		}
-
-		// Terminate watchdog
-		watchdog.terminate();
-
-		// Terminate all coordinators
-		terminateDeviceCoordinators();
-
-		return accumulators;
-	}
+	std::vector<StatsAccumulator> run();
 };

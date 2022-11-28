@@ -19,4 +19,8 @@ struct Job {
 	[[nodiscard]] auto getSize(const size_t chunkSizeBytes) const {
 		return (ChunkIdxRange.second - ChunkIdxRange.first) * chunkSizeBytes;
 	}
+
+	[[nodiscard]] auto getNChunks() const {
+		return ChunkIdxRange.second - ChunkIdxRange.first;
+	}
 };

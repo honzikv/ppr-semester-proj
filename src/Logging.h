@@ -5,11 +5,9 @@
 #include <vector>
 #include <ctime>
 #include <array>
+#include <sstream>
 
 // This simple "module" is used for console logging
-
-// Mutex for synchronization - this should not be manipulated with from outside
-inline auto LoggerMutex = std::mutex{};
 
 /**
  * \brief Log severity - basically just maps to a string (Info), (Debug), etc...
@@ -38,12 +36,15 @@ inline auto getCurrentTimeAsStr() {
 }
 
 /**
- * \brief Logs message to the console, message must be of type std::string
+ * \brief Logs message to the console, message must be of type std::string.
+ *		  This must NEVER be called if other mutex is locked
  * \param logSeverity severity of the log
  * \param message const ref to message
  */
 inline void log(const LogSeverity logSeverity, const std::string& message) {
-	const auto lock = std::scoped_lock(LoggerMutex);
-	std::cout << "[" << getCurrentTimeAsStr() << "] " << LOG_TYPE_LUT[logSeverity] << " " << message << std::endl;
+	// For reasonable compiler << is threadsafe for cout
+	auto stringStream = std::stringstream();
+	stringStream << "[" << getCurrentTimeAsStr() << "] " << LOG_TYPE_LUT[logSeverity] << " " << message << std::endl;
+	std::cout << stringStream.str();
 }
 

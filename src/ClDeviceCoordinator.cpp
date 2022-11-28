@@ -4,7 +4,7 @@
 #include "Logging.h"
 
 auto ClDeviceCoordinator::compile(const std::string& source, const std::string& programName,
-	const cl::Context& deviceContext) {
+                                  const cl::Context& deviceContext) const {
 	const auto program = cl::Program(deviceContext, source);
 	if (const auto result = program.build(DEFAULT_BUILD_FLAG); result != CL_BUILD_SUCCESS) {
 		throw ClCompileErr(
@@ -14,82 +14,179 @@ auto ClDeviceCoordinator::compile(const std::string& source, const std::string& 
 	return program;
 }
 
+ClDeviceCoordinator::ClDeviceCoordinator(const CoordinatorType coordinatorType,
+                                         const ProcessingMode processingMode,
+                                         const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
+                                         const std::function<void(size_t)>& notifyWatchdogCallback,
+                                         const std::function<void(CoordinatorErr)>& errCallback,
+                                         const size_t chunkSizeBytes,
+                                         const size_t bytesPerAccumulator,
+                                         const size_t clHostBufferSizeBytes,
+                                         fs::path& distFilePath,
+                                         const size_t id,
+                                         const cl::Device& device):
+	DeviceCoordinator(
+		coordinatorType,
+		processingMode,
+		jobFinishedCallback,
+		notifyWatchdogCallback,
+		errCallback,
+		chunkSizeBytes,
+		bytesPerAccumulator, distFilePath, id),
+	device(device),
+	maxHostChunks(
+		clHostBufferSizeBytes / chunkSizeBytes) {
+	// Setup the device
+	setup();
+
+	// After we have set everything up start the thread
+	startCoordinatorThread();
+}
+
 void ClDeviceCoordinator::setup() {
-	maxWorkGroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
-	const auto maxDeviceBufferSize = static_cast<size_t>(static_cast<double>(device.getInfo<
-			CL_DEVICE_MAX_MEM_ALLOC_SIZE>())
-		* VIDEO_MEMORY_SCALE);
-
-	// This is (ideally) divisible without remainder
-	const auto chunksPerAccumulator = static_cast<size_t>(std::ceil(
-		static_cast<double>(bytesPerAccumulator) / static_cast<double>(chunkSizeBytes)));
-
-	// Compute how many accumulators can a single workgroup process
-	const auto accumulatorsPerJob = maxDeviceBufferSize / bytesPerAccumulator > maxWorkGroupSize
-		                                ? maxWorkGroupSize
-		                                : maxDeviceBufferSize / bytesPerAccumulator;
-
-	// Total chunks we manage to process is accumulatorsPerJob * chunksPerAccumulator
-	maxNumberOfChunksPerJob = accumulatorsPerJob * chunksPerAccumulator;
-
 	// OpenCL boilerplate
 	context = cl::Context(device);
 	commandQueue = cl::CommandQueue(context, device);
 	program = compile(CL_PROGRAM, "program", context);
 	deviceName = device.getInfo<CL_DEVICE_NAME>();
+	estimateWorkgroupSize();
+
+	maxWorkGroupSize = 128;
+	const auto maxDeviceBufferSize = static_cast<size_t>(static_cast<double>(device.getInfo<
+			CL_DEVICE_MAX_MEM_ALLOC_SIZE>())
+		* BUFFER_MAX_SIZE_SCALE);
+
+	// This is (ideally) divisible without remainder
+	chunksPerAccumulator = static_cast<size_t>(std::floor(
+		static_cast<double>(bytesPerAccumulator) / static_cast<double>(chunkSizeBytes)));
+
+	// Total chunks we manage to process is accumulatorsPerJob * chunksPerAccumulator
+	maxNumberOfChunksPerJob = maxWorkGroupSize * chunksPerAccumulator;
+
+	// If we get more host memory than device memory align host memory to device memory
+	maxHostChunks = maxHostChunks * chunkSizeBytes > maxDeviceBufferSize
+		                ? static_cast<size_t>(std::floor(
+			                static_cast<double>(maxDeviceBufferSize) / static_cast<double>(chunkSizeBytes)))
+		                : maxHostChunks;
 }
 
-void ClDeviceCoordinator::onProcessJob() {
-	log(INFO, "[OpenCL] Processing job with id " + std::to_string(currentJob->Id) + " on device \"" + deviceName + "\"");
-	// Create data loader
-	auto dataLoader = DataLoader(filePath, chunkSizeBytes);
+void ClDeviceCoordinator::estimateWorkgroupSize() {
+	const auto kernel = cl::Kernel(program, KERNEL_NAME);
+	const auto clRecommendedWorkgroupSize = kernel.getWorkGroupInfo<
+		CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(device);
 
-	const auto [deviceBuffer, nChunksLoaded] = dataLoader.loadJobDataIntoDeviceBuffer(
-		*currentJob, maxHostChunks, commandQueue, context);
+	// The same could be done for AMD Radeon GPUs
+	const auto vendorName = device.getInfo<CL_DEVICE_VENDOR>();
+	const auto deviceName = device.getInfo<CL_DEVICE_NAME>();
+	if (vendorName.find("NVIDIA") != std::string::npos && (deviceName.find("GTX") != std::string::npos ||
+		deviceName.find("RTX") != std::string::npos)) {
+		// Any modern
+		const auto nvidiaWorkgroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() / 8;
 
-	// Compute number of work items
-	auto nWorkItems = nChunksLoaded * chunkSizeBytes / bytesPerAccumulator / sizeof(double);
-	auto itemsPerWorker = bytesPerAccumulator / sizeof(double);
-
-	if (nWorkItems == 0) {
-		if (nChunksLoaded == 0) {
-			// If no chunks were loaded then there is nothing to process, return
-			currentJob->Items = {};
+		if (nvidiaWorkgroupSize < clRecommendedWorkgroupSize) {
+			maxWorkGroupSize = nvidiaWorkgroupSize;
 			return;
 		}
-		// The work is too small so we will just compute it in one work item
-		nWorkItems = 1;
-		itemsPerWorker = nChunksLoaded * chunkSizeBytes / sizeof(double);
+
+		maxWorkGroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() / 8;
+
+		return;
 	}
 
-	// Get the kernel
+	maxWorkGroupSize = clRecommendedWorkgroupSize;
+}
+
+
+void ClDeviceCoordinator::onProcessJob() {
+	log(INFO, "[OpenCL] Processing job with id " + std::to_string(currentJob->Id) + " on device \"" + deviceName +
+	    "\"");
+
+	// Ideally we would copy as much data as possible to the GPU / CL device but 
+
+	// Get total number of accumulators
+	auto nAccumulators = currentJob->getNChunks() / chunksPerAccumulator;
+
+	// Get total number of workgroup runs
+	auto totalBytes = nAccumulators * bytesPerAccumulator;
+	if (nAccumulators == 0 && currentJob->getSize(chunkSizeBytes) < chunksPerAccumulator) {
+		// Our file is smaller than chunksPerAccumulator - therefore we only run one work item in one workgroup
+		nAccumulators = 1;
+		totalBytes = currentJob->getSize(chunkSizeBytes);
+	}
+
+
+	// Create buffer for results
+	auto clStatus = cl_int{};
+	const auto accumulatorsBuffer = cl::Buffer(context, CL_MEM_READ_WRITE,
+	                                           nAccumulators * N_CL_OUT_ITEMS * sizeof(double), nullptr,
+	                                           &clStatus);
+	throwIfStatusUnsuccessful(clStatus);
+
+	// Write true values for isInteger only
+	auto accumulatorData = std::vector<double>(nAccumulators * 6, 0.0);
+	for (auto i = 0ULL; i < nAccumulators; i += 1) {
+		accumulatorData[i * N_CL_OUT_ITEMS + INTEGER_ONLY_IDX] = static_cast<double>(true);
+	}
+
+	clStatus = commandQueue.enqueueWriteBuffer(accumulatorsBuffer, CL_TRUE, 0, accumulatorData.size() * sizeof(double),
+	                                           accumulatorData.data());
+	throwIfStatusUnsuccessful(clStatus);
+
+	// Create buffer for data
+	auto dataBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, maxHostChunks * chunkSizeBytes, nullptr, &clStatus);
+	throwIfStatusUnsuccessful(clStatus);
+
+	// Load the kernel
 	auto kernel = cl::Kernel(program, KERNEL_NAME);
 
-	// Pass the params
-	kernel.setArg(0, deviceBuffer);
-	// kernel.setArg(1, outputBuffer);
-	kernel.setArg(1, static_cast<size_t>(itemsPerWorker));
+	// Run the computations
+	auto bytesRemaining = totalBytes;
+	const auto [startIdx, endIdx] = currentJob->ChunkIdxRange;
+	auto currentIdx = startIdx;
+	while (currentIdx < endIdx && bytesRemaining > 0) {
+		// Now keep loading data into the buffer
+		const auto chunksToLoad = bytesRemaining > maxHostChunks * chunkSizeBytes
+			                          ? maxHostChunks
+			                          : bytesRemaining / chunkSizeBytes;
+		dataLoader.loadChunksIntoDeviceBuffer(currentIdx, currentIdx + chunksToLoad, dataBuffer, commandQueue);
 
-	// Run the kernel
-	int res = commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, nWorkItems);
+		const auto itemsToProcess = (chunksToLoad * chunkSizeBytes) / nAccumulators / sizeof(double);
 
-	// Read back to host
-	auto output = std::vector<double>(nWorkItems * N_CL_OUT_PARAMS);
-	commandQueue.enqueueReadBuffer(deviceBuffer, CL_TRUE, 0, output.size() * sizeof(double), output.data());
+		kernel.setArg(0, dataBuffer);
+		kernel.setArg(1, accumulatorsBuffer);
+		kernel.setArg(2, itemsToProcess);
+
+		// Run the kernel
+		clStatus = commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(nAccumulators),
+		                                             cl::NDRange(nAccumulators));
+		throwIfStatusUnsuccessful(clStatus);
+
+		currentIdx = currentIdx + chunksToLoad;
+		bytesRemaining -= chunksToLoad * chunkSizeBytes;
+
+		notifyWatchdogCallback(chunksToLoad * chunkSizeBytes);
+	}
 
 	// Read out the results
-	auto results = std::vector<StatsAccumulator>(nWorkItems);
-	for (auto workerId = 0ULL; workerId < nWorkItems; workerId += 1) {
+	clStatus = commandQueue.enqueueReadBuffer(accumulatorsBuffer, CL_TRUE, 0, accumulatorData.size() * sizeof(double),
+	                                          accumulatorData.data());
+	throwIfStatusUnsuccessful(clStatus);
+
+	// Map the results
+	auto results = std::vector<StatsAccumulator>(nAccumulators);
+	for (auto workerId = 0ULL; workerId < nAccumulators; workerId += 1) {
+		const auto offset = workerId * N_CL_OUT_ITEMS;
 		results[workerId] = {
-			static_cast<size_t>(output[workerId * 6]),
-			output[workerId * 6 + 1],
-			output[workerId * 6 + 2],
-			output[workerId * 6 + 3],
-			output[workerId * 6 + 4],
-			static_cast<bool>(output[workerId * 6 + 5]),
+			static_cast<size_t>(accumulatorData[offset]),
+			accumulatorData[offset + M1_IDX],
+			accumulatorData[offset + M2_IDX],
+			accumulatorData[offset + M3_IDX],
+			accumulatorData[offset + M4_IDX],
+			static_cast<bool>(accumulatorData[offset + INTEGER_ONLY_IDX])
 		};
 	}
 
-	// currentJob->Items = {StatUtils::mergePairwise(results)};
+	commandQueue.finish();
 	currentJob->Items = results;
+
 }

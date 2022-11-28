@@ -12,13 +12,20 @@
 
 namespace fs = std::filesystem;
 
-constexpr auto VIDEO_MEMORY_SCALE = .75;
+constexpr auto BUFFER_MAX_SIZE_SCALE = .9;
 constexpr auto KERNEL_NAME = "computeStats";
 // 80% of video memory is used for computation (or rather 90% of what OpenCL returns)
 
 constexpr auto DEFAULT_BUILD_FLAG = "-cl-std=CL2.0";
 
-constexpr auto N_CL_OUT_PARAMS = 6;
+constexpr auto N_CL_OUT_ITEMS = 6;
+// Indices in the array
+constexpr auto N_ITEMS_IDX = 0;
+constexpr auto M1_IDX = 1;
+constexpr auto M2_IDX = 2;
+constexpr auto M3_IDX = 3;
+constexpr auto M4_IDX = 4;
+constexpr auto INTEGER_ONLY_IDX = 5;
 
 /**
  * \brief Custom error for control flow
@@ -38,26 +45,17 @@ class ClDeviceCoordinator final : public DeviceCoordinator {
 
 public:
 	ClDeviceCoordinator(
-		const CoordinatorType coordinatorType,
-		const ProcessingMode processingMode,
+		CoordinatorType coordinatorType,
+		ProcessingMode processingMode,
 		const std::function<void(std::unique_ptr<Job>, size_t)>& jobFinishedCallback,
-		const size_t chunkSizeBytes,
-		const size_t bytesPerAccumulator,
-		const size_t clHostBufferSizeBytes,
+		const std::function<void(size_t)>& notifyWatchdogCallback,
+		const std::function<void(CoordinatorErr)>& errCallback,
+		size_t chunkSizeBytes,
+		size_t bytesPerAccumulator,
+		size_t clHostBufferSizeBytes,
 		fs::path& distFilePath,
-		const size_t id,
-		const cl::Device& device)
-		: DeviceCoordinator(
-			  coordinatorType, processingMode, jobFinishedCallback, chunkSizeBytes,
-			  bytesPerAccumulator, distFilePath, id),
-		  device(device),
-		  maxHostChunks(clHostBufferSizeBytes / chunkSizeBytes) {
-		// Setup the device
-		setup();
-
-		// After we have set everything up start the thread
-		startCoordinatorThread();
-	}
+		size_t id,
+		const cl::Device& device);
 
 private:
 	cl::Device device; // The actual device
@@ -66,6 +64,7 @@ private:
 	cl::Program program; // Compiled program
 	size_t maxWorkGroupSize{}; // Max number of work items in a work group
 	size_t maxHostChunks;
+	size_t chunksPerAccumulator{};
 	std::string deviceName;
 
 	/**
@@ -73,20 +72,31 @@ private:
 	 * \param source string containing source code to be compiled
 	 * \param programName name of the program
 	 * \param deviceContext device context
-	 * \param device device to compile for
 	 * \return cl::Program instance or throws ClCompileErr if the program cannot be compiled
 	 */
-	static auto compile(const std::string& source, const std::string& programName, const cl::Context& deviceContext);
+	auto compile(const std::string& source, const std::string& programName, const cl::Context& deviceContext) const;
 
 	/**
 	 * \brief Sets up the device, throwing ClCompileErr if something goes wrong
 	 */
 	void setup();
 
-protected:
+	void throwIfStatusUnsuccessful(const cl_int clStatus) const {
+		if (clStatus != CL_SUCCESS) {
+			throw std::runtime_error("Error during OpenCL buffer creation. Error: " + std::to_string(clStatus));
+		}
+	}
 
+	/**
+	 * \brief Estimates workgroup size
+	 */
+	void estimateWorkgroupSize();
+
+protected:
 	/**
 	 * \brief Function override to perform computation on OpenCL device
 	 */
 	void onProcessJob() override;
+
+
 };

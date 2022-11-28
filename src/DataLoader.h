@@ -22,27 +22,16 @@ public:
 	 * \param filePath path to the file
 	 * \param chunkSizeBytes size of one chunk, must be a multiple of sizeof(double)
 	 */
-	explicit DataLoader(const fs::path& filePath, const size_t chunkSizeBytes) : ChunkSizeBytes(chunkSizeBytes) {
-		file.open(filePath, std::ios::in | std::ios::binary);
-		if (!file.is_open()) {
-			throw std::runtime_error("Unable to open file: " + filePath.string());
-		}
-	}
+	explicit DataLoader(const fs::path& filePath, const size_t chunkSizeBytes);
 
 private:
 	/**
 	 * \brief Computes metadata for given job
-	 * \param job job to compute metadata for
+	 * \param startIdx start index (inclusive)
+	 * \param endIdx end index (exclusive)
 	 * \return triplet of number of chunks, number of bytes to read, and starting address
 	 */
-	[[nodiscard]] auto computeJobMetadata(const Job& job) const {
-		const auto [startIdx, endIdx] = job.ChunkIdxRange;
-		const auto nChunks = endIdx - startIdx;
-		const auto bytesToRead = nChunks * ChunkSizeBytes;
-		const auto address = startIdx * ChunkSizeBytes;
-
-		return std::make_tuple(nChunks, bytesToRead, address);
-	}
+	[[nodiscard]] std::tuple<size_t, size_t, size_t> computeChunkMetadata(const size_t startIdx, const size_t endIdx) const;
 
 public:
 	/**
@@ -50,73 +39,17 @@ public:
 	 * \param job job
 	 * \return vector of doubles containing all loaded job data
 	 */
-	auto loadJobDataIntoVector(const Job& job) {
-		const auto [nChunks, bytesToRead, address] = computeJobMetadata(job);
+	std::vector<double> loadJobDataIntoVector(const Job& job);
 
-		// Create memory buffer, note that we assume that chunkSizeBytes is a multiple of sizeof(double)
-		auto buffer = std::vector<double>(bytesToRead / sizeof(double));
-		if (buffer.empty()) {
-			return buffer;
-		}
-
-		// Move to correct address in the file
-		file.seekg(static_cast<int64_t>(address), std::ios::beg);
-
-		// Read data into the buffer
-		file.read(reinterpret_cast<char*>(buffer.data()), static_cast<int64_t>(bytesToRead));
-
-		// Return the buffer
-		return buffer;
-	}
 
 	/**
-	 * \brief Loads job data into device buffer and returns the number of chunks in the device buffer
-	 * \param job job to load
-	 * \param maxHostChunks max number of chunks that can be loaded into host memory at a time
-	 * \param commandQueue command queue for the given device - to write to the device buffer
-	 * \param context device context
-	 * \return number of chunks in the device buffer
+	 * \brief Loads chunks into OpenCL device's buffer
+	 * \param startIdx start index of the chunk in file
+	 * \param endIdx end index of the chunk in file
+	 * \param buffer buffer to write the data to
+	 * \param commandQueue command queue to execute enqueueWriteBuffer on
 	 */
-	auto loadJobDataIntoDeviceBuffer(const Job& job,
-	                                 const size_t maxHostChunks,
-	                                 const cl::CommandQueue& commandQueue,
-	                                 const cl::Context& context) {
-		const auto [nChunks, _, address] = computeJobMetadata(job);
+	void loadChunksIntoDeviceBuffer(size_t startIdx, size_t endIdx, const cl::Buffer& buffer,
+	                                const cl::CommandQueue& commandQueue);
 
-		const auto initialSize = nChunks < maxHostChunks
-			                         ? nChunks * ChunkSizeBytes / sizeof(double)
-			                         : maxHostChunks * ChunkSizeBytes / sizeof(double);
-		auto hostBuffer = std::vector<double>(initialSize);
-		const auto deviceBufferSizeBytes = nChunks * ChunkSizeBytes;
-		const auto deviceBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, deviceBufferSizeBytes);
-
-		// Move to correct address in the file
-		file.seekg(static_cast<int64_t>(address), std::ios::beg);
-
-		auto chunksRemaining = nChunks;
-		auto currentChunk = 0ULL;
-		while (chunksRemaining > 0) {
-			const auto chunksToRead = chunksRemaining < maxHostChunks ? chunksRemaining : maxHostChunks;
-			const auto bytesToRead = chunksToRead * ChunkSizeBytes;
-
-			// Read data into the buffer
-			file.read(reinterpret_cast<char*>(hostBuffer.data()), static_cast<int64_t>(bytesToRead));
-
-			// Copy host buffer to the device buffer
-			const auto returnValue = commandQueue.enqueueWriteBuffer(deviceBuffer, CL_TRUE, currentChunk * ChunkSizeBytes,
-			                                                 chunksToRead * ChunkSizeBytes,
-			                                                 hostBuffer.data());
-			if (returnValue != 0) {
-				throw std::runtime_error("Could not allocate memory on the device, the program cannot continue!");
-			}
-
-			// Update
-			currentChunk += chunksToRead;
-			chunksRemaining -= chunksToRead;
-		}
-
-		// Return actual number of chunks
-		return std::make_pair(deviceBuffer, nChunks);
-	}
-	
 };

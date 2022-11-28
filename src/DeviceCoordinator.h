@@ -1,6 +1,6 @@
 #pragma once
-#include <condition_variable>
 #include <functional>
+#include "ProcessingConfig.h"
 #include "Job.h"
 #include "ConcurrencyUtils.h"
 #include "DataLoader.h"
@@ -16,6 +16,31 @@ const auto COORDINATOR_TYPE_LUT = std::vector<std::string>{"SMP", "OPEN_CL", "SI
 namespace fs = std::filesystem;
 
 /**
+ * \brief Coordinator error that occurs during execution - i.e. Kernel fails to compile
+ */
+struct CoordinatorErr {
+
+	size_t JobId;
+	size_t CoordinatorId;
+	std::string What;
+	bool IsFatal;
+
+	/**
+	 * \brief Default constructor for CoordinatorErr
+	 * \param jobId id of the job where the error occurred
+	 * \param what what caused the error
+	 * \param coordinatorId index of the coordinator processing the job
+	 * \param fatal whether it is fatal - i.e. requires termination of the program
+	 */
+	CoordinatorErr(const size_t jobId, std::string what, const size_t coordinatorId, const bool fatal = true):
+		JobId(jobId),
+		CoordinatorId(coordinatorId),
+		What(std::move(what)),
+		IsFatal(fatal) {
+	}
+};
+
+/**
  * \brief This abstract class is responsible for coordinating work on specified device - i.e. a GPU or SMP
  */
 class DeviceCoordinator {
@@ -27,8 +52,17 @@ protected:
 	 */
 	std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback;
 
+	/**
+	 * \brief Callback function for notifying Watchdog
+	 */
+	std::function<void(size_t)> notifyWatchdogCallback;
+
+	/**
+	 * \brief Callback for error handling
+	 */
+	std::function<void(CoordinatorErr)> errCallback;
+
 	bool isEnabled = true; // Whether this coordinator is actually used (e.g. CPU is not used in OPENCL only mode)
-	std::atomic<bool> isAvailable = true; // Whether the worker is available
 	std::unique_ptr<Job> currentJob = nullptr; // Reference to the current job
 
 	std::mutex jobMutex; // Mutex for assigning job
@@ -74,6 +108,7 @@ protected:
 
 	DataLoader dataLoader;
 
+
 public:
 	virtual ~DeviceCoordinator();
 
@@ -82,6 +117,8 @@ public:
 	 * \param coordinatorType type of the coordinator
 	 * \param processingMode processing mode
 	 * \param jobFinishedCallback callback after job is finished
+	 * \param notifyWatchdogCallback callback for notifying watchdog
+	 * \param errCallback error callback for error handling
 	 * \param chunkSizeBytes chunk size in bytes
 	 * \param bytesPerAccumulator number of bytes processed by each StatsAccumulator
 	 * \param distFilePath path to the file that is being processed
@@ -90,11 +127,15 @@ public:
 	DeviceCoordinator(const CoordinatorType coordinatorType,
 	                  const ProcessingMode processingMode,
 	                  std::function<void(std::unique_ptr<Job>, size_t)> jobFinishedCallback,
+	                  std::function<void(size_t)> notifyWatchdogCallback,
+	                  std::function<void(CoordinatorErr)> errCallback,
 	                  const size_t chunkSizeBytes,
 	                  const size_t bytesPerAccumulator,
 	                  fs::path& distFilePath,
 	                  const size_t id):
 		jobFinishedCallback(std::move(jobFinishedCallback)),
+		notifyWatchdogCallback(std::move(notifyWatchdogCallback)),
+		errCallback(std::move(errCallback)),
 		chunkSizeBytes(chunkSizeBytes),
 		bytesPerAccumulator(bytesPerAccumulator),
 		filePath(distFilePath),
@@ -113,39 +154,34 @@ public:
 		}
 	}
 
-	auto getInfo() const {
+	std::string getInfo() const {
 		return std::string{COORDINATOR_TYPE_LUT.at(coordinatorType)} + " Coordinator with id " + std::to_string(id);
 	}
 
-	void startCoordinatorThread() {
-		this->coordinatorThread = std::thread(&DeviceCoordinator::threadMain, this);
-		coordinatorThread.detach();
+	void join() {
+		if (coordinatorThread.joinable()) {
+			coordinatorThread.join();
+		}
 	}
 
-	/**
-	 * \brief Returns true whether this coordinator is available - i.e. whether it is not processing any job
-	 * \return true if the coordinator is available, false otherwise
-	 */
-	[[nodiscard]] auto available() const {
-		return isAvailable.load();
+	void startCoordinatorThread() {
+		coordinatorThread = std::thread(&DeviceCoordinator::threadMain, this);
+		// coordinatorThread.detach();
 	}
 
 	/**
 	 * \brief Returns whether this coordinator is active - i.e. whether it is usable for processing
 	 * \return true if the coordinator is active, false otherwise
 	 */
-	[[nodiscard]] auto enabled() const {
+	[[nodiscard]] bool enabled() const {
 		return isEnabled;
 	}
 
 	/**
 	 * \brief Assigns job to the coordinator
 	 * \param job job to be assigned
-	 * \return void
 	 */
-	auto assignJob(Job job) {
-		auto scopedLock = std::scoped_lock(jobMutex);
-		isAvailable = false;
+	void assignJob(Job job) {
 		currentJob = std::make_unique<Job>(std::move(job));
 		semaphore->release();
 	}
@@ -178,7 +214,12 @@ private:
 				continue;
 			}
 
-			processJob();
+			try {
+				processJob();
+			}
+			catch (const std::runtime_error& err) {
+				errCallback({currentJob->Id, err.what(), id});
+			}
 		}
 
 	}
@@ -188,9 +229,7 @@ private:
 	 */
 	void processJob() {
 		onProcessJob();
-		auto scopedLock = std::scoped_lock(jobMutex);
 		jobFinishedCallback(std::move(currentJob), id);
-		isAvailable = true;
 	}
 
 protected:
