@@ -1,8 +1,26 @@
 #include "StatsAccumulator.h"
 #include "StatUtils.h"
 
+StatsAccumulator::StatsAccumulator() = default;
+
+double StatsAccumulator::getStandardDeviation() const {
+	return std::sqrt(getVariance());
+}
+
+double StatsAccumulator::getSkewness() const {
+	return std::sqrt(static_cast<double>(n)) * m3 / std::pow(m2, 1.5);
+}
+
+double StatsAccumulator::getKurtosis() const {
+	return static_cast<double>(n) * m4 / (m2 * m2) - 3.0;
+}
+
+bool StatsAccumulator::integerDistribution() const {
+	return isIntegerDistribution;
+}
+
 StatsAccumulator::StatsAccumulator(const size_t n, const double m1, const double m2, const double m3, const double m4,
-	const bool isIntegerDistribution):
+                                   const bool isIntegerDistribution):
 	n(n), m1(m1), m2(m2), m3(m3), m4(m4), isIntegerDistribution(isIntegerDistribution) {}
 
 void StatsAccumulator::push(const double x) {
@@ -34,6 +52,10 @@ double StatsAccumulator::getMean() const {
 	return m1;
 }
 
+double StatsAccumulator::getVariance() const {
+	return m2 / (n - 1.0);
+}
+
 bool StatsAccumulator::valid() const {
 	return StatUtils::valueNormalOrZero(m1) && StatUtils::valueNormalOrZero(m2) && StatUtils::valueNormalOrZero(m3)
 		&& StatUtils::valueNormalOrZero(m4);
@@ -61,14 +83,12 @@ StatsAccumulator& StatsAccumulator::operator+=(const StatsAccumulator& rhs) {
 
 StatsAccumulator StatsAccumulator::operator+(const StatsAccumulator& other) const {
 	if (other.n == 0 || !other.valid()) {
-	// if (other.n == 0) {
-		std::cout << "discarded other" << std::endl;
+		// std::cout << "discarded right side" << std::endl;
 		return *this;
 	}
 
 	if (n == 0 || !this->valid()) {
-	// if (n == 0) {
-		std::cout << "discarded this" << std::endl;
+		// std::cout << "discarded left side" << std::endl;
 		return other;
 	}
 

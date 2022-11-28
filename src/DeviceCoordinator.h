@@ -1,6 +1,6 @@
 #pragma once
-#include <condition_variable>
 #include <functional>
+#include "ProcessingConfig.h"
 #include "Job.h"
 #include "ConcurrencyUtils.h"
 #include "DataLoader.h"
@@ -155,7 +155,7 @@ public:
 		}
 	}
 
-	auto getInfo() const {
+	std::string getInfo() const {
 		return std::string{COORDINATOR_TYPE_LUT.at(coordinatorType)} + " Coordinator with id " + std::to_string(id);
 	}
 
@@ -168,7 +168,7 @@ public:
 	 * \brief Returns true whether this coordinator is available - i.e. whether it is not processing any job
 	 * \return true if the coordinator is available, false otherwise
 	 */
-	[[nodiscard]] auto available() const {
+	[[nodiscard]] bool available() const {
 		return isAvailable.load();
 	}
 
@@ -176,16 +176,15 @@ public:
 	 * \brief Returns whether this coordinator is active - i.e. whether it is usable for processing
 	 * \return true if the coordinator is active, false otherwise
 	 */
-	[[nodiscard]] auto enabled() const {
+	[[nodiscard]] bool enabled() const {
 		return isEnabled;
 	}
 
 	/**
 	 * \brief Assigns job to the coordinator
 	 * \param job job to be assigned
-	 * \return void
 	 */
-	auto assignJob(Job job) {
+	void assignJob(Job job) {
 		auto scopedLock = std::scoped_lock(jobMutex);
 		isAvailable = false;
 		currentJob = std::make_unique<Job>(std::move(job));

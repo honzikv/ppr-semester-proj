@@ -1,6 +1,5 @@
 #pragma once
 #include <filesystem>
-#include <cmath>
 
 #include "ProcessingConfig.h"
 #include "DeviceCoordinator.h"
@@ -8,6 +7,10 @@
 
 namespace fs = std::filesystem;
 
+/**
+ * \brief This class is a base implementation for processing data on SMP - it does not support AVX2 and uses tbb threads
+ *        to compute the data
+ */
 class CpuDeviceCoordinator : public DeviceCoordinator {
 public:
 	/**
@@ -36,5 +39,8 @@ public:
 	);
 
 protected:
+	/**
+	 * \brief Override for CPU device without AVX2
+	 */
 	void onProcessJob() override;
 };

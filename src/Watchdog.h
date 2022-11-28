@@ -17,7 +17,6 @@ class Watchdog {
 	std::chrono::milliseconds sleepMs{};
 
 public:
-
 	/**
 	 * \brief Creates new Watchdog instance
 	 * \param sleepMs amount of MS to sleep between checks
@@ -68,8 +67,10 @@ private:
 			if (keepRunning) {
 				const auto kbsProcessed = counterVal / 1024;
 				const auto mbsProcessed = kbsProcessed / 1024;
-				log(INFO, "[WATCHDOG] Processed " + std::to_string(kbsProcessed) + " kB (" + std::to_string(mbsProcessed) + " MB) since the last update.");
+				log(INFO, "[WATCHDOG] Processed " + std::to_string(kbsProcessed) + " kB (" +
+				    std::to_string(mbsProcessed) + " MB) since the last update.");
 			}
 		}
+		
 	}
 };

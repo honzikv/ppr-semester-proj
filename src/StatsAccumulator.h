@@ -23,7 +23,7 @@ class StatsAccumulator {
 	bool isIntegerDistribution = true;
 
 public:
-	StatsAccumulator() = default;
+	StatsAccumulator();
 
 	/**
 	 * \brief Creates new StatsAccumulator instance with predefined values
@@ -59,33 +59,25 @@ public:
 	 * \brief Returns variance of the distribution
 	 * \return Variance of the distribution
 	 */
-	[[nodiscard]] double getVariance() const {
-		return m2 / (n - 1.0);
-	}
+	[[nodiscard]] double getVariance() const;
 
 	/**
 	 * \brief Returns standard deviation of the distribution
 	 * \return Standard deviation of the distribution
 	 */
-	[[nodiscard]] double getStandardDeviation() const {
-		return std::sqrt(getVariance());
-	}
+	[[nodiscard]] double getStandardDeviation() const;
 
 	/**
 	 * \brief Returns skewness of the distribution
 	 * \return Skewness of the distribution
 	 */
-	[[nodiscard]] double getSkewness() const {
-		return std::sqrt(static_cast<double>(n)) * m3 / std::pow(m2, 1.5);
-	}
+	[[nodiscard]] double getSkewness() const;
 
 	/**
 	 * \brief Returns kurtosis of the distribution
 	 * \return Kurtosis of the distribution
 	 */
-	[[nodiscard]] double getKurtosis() const {
-		return static_cast<double>(n) * m4 / (m2 * m2) - 3.0;
-	}
+	[[nodiscard]] double getKurtosis() const;
 
 	/**
 	 * \brief Adds another accumulator to this one
@@ -105,9 +97,7 @@ public:
 	 * \brief Returns whether the distribution comprises only integer values
 	 * \return true if the distribution comprises only integer values, false otherwise
 	 */
-	[[nodiscard]] bool integerDistribution() const {
-		return isIntegerDistribution;
-	}
+	[[nodiscard]] bool integerDistribution() const;
 
 	/**
 	 * \brief Returns whether the distribution is valid - i.e. no underflow or overflow occurred during the computation

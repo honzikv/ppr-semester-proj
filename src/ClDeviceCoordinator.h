@@ -72,7 +72,6 @@ private:
 	 * \param source string containing source code to be compiled
 	 * \param programName name of the program
 	 * \param deviceContext device context
-	 * \param device device to compile for
 	 * \return cl::Program instance or throws ClCompileErr if the program cannot be compiled
 	 */
 	auto compile(const std::string& source, const std::string& programName, const cl::Context& deviceContext) const;
@@ -82,7 +81,7 @@ private:
 	 */
 	void setup();
 
-	inline void throwIfStatusUnsuccessful(const cl_int clStatus) const {
+	void throwIfStatusUnsuccessful(const cl_int clStatus) const {
 		if (clStatus != CL_SUCCESS) {
 			throw std::runtime_error("Error during OpenCL buffer creation. Error: " + std::to_string(clStatus));
 		}

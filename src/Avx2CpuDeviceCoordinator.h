@@ -2,8 +2,6 @@
 #include "ProcessingConfig.h"
 #include "CpuDeviceCoordinator.h"
 
-#include <utility>
-
 /**
  * \brief Override for AVX2 capable CPU
  */

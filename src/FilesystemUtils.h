@@ -7,6 +7,7 @@ namespace FilesystemUtils {
 
 	/**
 	 * \brief Creates directories for given file path, does nothing if such directories already exist
+	 * \param filePath path to the file
 	 */
 	void makeDirs(const fs::path& filePath) {
 		const auto dirPath = filePath.parent_path();

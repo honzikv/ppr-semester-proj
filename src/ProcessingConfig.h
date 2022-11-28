@@ -64,7 +64,7 @@ struct ProcessingConfig {
 	/**
 	 * \brief Number of runs per benchmark
 	 */
-	size_t NBenchmarkRuns;
+	size_t NBenchmarkRuns{};
 
 	/**
 	 * \brief Filesystem path to the output file to write the results
@@ -80,5 +80,6 @@ struct ProcessingConfig {
 	/**
 	 * \brief Timeout for watchdog in milliseconds
 	 */
-	size_t WatchdogTimeoutMs;
+	size_t WatchdogTimeoutMs{};
+	
 };

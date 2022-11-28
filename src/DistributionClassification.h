@@ -16,12 +16,23 @@ static constexpr Point2D UNIFORM_DISTRIBUTION = std::make_pair(.0, -5.0 / 6.0);
 static const auto DISTRIBUTIONS = std::vector{GAUSSIAN_DISTRIBUTION, EXPONENTIAL_DISTRIBUTION, UNIFORM_DISTRIBUTION};
 static const auto DISTRIBUTION_STR_LUT = std::vector{"Gaussian", "Exponential", "Uniform"};
 
-inline auto euclideanDistance(std::pair<double, double> a, std::pair<double, double> b) {
+/**
+ * \brief Compute euclidean distance between two 2D points
+ * \param a point A - x,y coordinates
+ * \param b point B - x,y coordinates
+ * \return euclidean distance between two points
+ */
+inline auto euclideanDistance2d(std::pair<double, double> a, std::pair<double, double> b) {
 	const auto [x1, y1] = a;
 	const auto [x2, y2] = b;
 	return std::hypot(x1 - x2, y1 - y2);
 }
 
+/**
+ * \brief Prints statistics of StatsAccumulator to the given output stream
+ * \param statsAccumulator stats accumulator to print stats for
+ * \param output output stream
+ */
 inline void printStats(const StatsAccumulator& statsAccumulator, std::ostream& output) {
 	output << "Mean: " << statsAccumulator.getMean() << "\n";
 	output << "Variance: " << statsAccumulator.getVariance() << "\n";
@@ -38,7 +49,7 @@ inline void printStats(const StatsAccumulator& statsAccumulator, std::ostream& o
 inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::ostream& output = std::cout) {
 	const auto estimatedPt = std::make_pair(statsAccumulator.getSkewness(), statsAccumulator.getKurtosis());
 
-	output << "Results" << "\n";
+	output << "\nResults" << "\n";
 	output << "-------" << "\n";
 
 	if (!statsAccumulator.valid()) {
@@ -58,7 +69,7 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::
 	// 0 - gaussian / poisson, 1 - exp, 2- uniform
 	auto distances = std::vector<double>();
 	for (const auto& distribution : DISTRIBUTIONS) {
-		distances.push_back(euclideanDistance(distribution, estimatedPt));
+		distances.push_back(euclideanDistance2d(distribution, estimatedPt));
 	}
 
 	// Get index of the smallest distance

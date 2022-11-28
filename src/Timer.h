@@ -13,8 +13,8 @@ class Timer {
 
 
 public:
-	Timer() = default;
-	~Timer() = default;
+	Timer();
+	~Timer();
 
 	/**
 	 * \brief Starts the timer
@@ -43,7 +43,13 @@ public:
 
 		// Print time in ns, ms and seconds
 		std::cout << "Execution took " << StatUtils::doubleToStr(
-			static_cast<double>(elapsedTime) / 1000.0, 5) << " s (" << std::to_string(elapsedTime) << " ms)";
+			static_cast<double>(elapsedTime) / 1000.0, 5) << " s (" << std::to_string(elapsedTime) << " ms)" << std::endl;
 	}
 
 };
+
+inline Timer::Timer() {
+}
+
+inline Timer::~Timer() {
+}

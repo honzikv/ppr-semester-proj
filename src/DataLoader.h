@@ -41,7 +41,15 @@ public:
 	 */
 	std::vector<double> loadJobDataIntoVector(const Job& job);
 
-	void loadChunksIntoDeviceBuffer(const size_t startIdx, const size_t endIdx, const cl::Buffer& buffer,
+
+	/**
+	 * \brief Loads chunks into OpenCL device's buffer
+	 * \param startIdx start index of the chunk in file
+	 * \param endIdx end index of the chunk in file
+	 * \param buffer buffer to write the data to
+	 * \param commandQueue command queue to execute enqueueWriteBuffer on
+	 */
+	void loadChunksIntoDeviceBuffer(size_t startIdx, size_t endIdx, const cl::Buffer& buffer,
 	                                const cl::CommandQueue& commandQueue);
 
 };

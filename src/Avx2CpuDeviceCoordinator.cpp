@@ -7,7 +7,7 @@
 
 
 void Avx2CpuDeviceCoordinator::onProcessJob() {
-	log(INFO, "[SMP] Processing job with id " + std::to_string(currentJob->Id));
+	log(INFO, "[SMP (AVX2)] Processing job with id " + std::to_string(currentJob->Id));
 	// Load data into the vector
 	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
 
@@ -54,6 +54,7 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 		auto items = accumulator.asVectorOfScalars();
 		result.insert(result.end(), items.begin(), items.end());
 	}
+
 	notifyWatchdogCallback(currentJob->getSize(chunkSizeBytes));
 	currentJob->Items = result;
 }

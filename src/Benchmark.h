@@ -1,7 +1,6 @@
 #pragma once
 #include <filesystem>
 
-#include "ClassificationRun.h"
 #include "Logging.h"
 #include "ProcessingConfig.h"
 #include "FilesystemUtils.h"
@@ -42,22 +41,10 @@ inline void logStat(const std::string& statName,
                     const bool logToFile) {
 	const auto millis = durationMillis.count();
 	const auto secs = static_cast<double>(millis) / 1000.0;
-
-	// This code is really disgusting but it is easier than doing some string manipulations and streams
-	if (statName.empty()) {
-		std::cout << "Run durationMillis: " << StatUtils::doubleToStr(secs, 5) << "s (" <<
-			millis << "ms)" << std::endl;
-		if (logToFile) {
-			file << "Run durationMillis: " << StatUtils::doubleToStr(secs, 5) << "s (" <<
-				millis << "ms)" << std::endl;
-		}
-		return;
-	}
-
-	std::cout << statName << " run durationMillis: " << StatUtils::doubleToStr(secs, 5) << "s (" <<
+	std::cout << statName << " run: duration " << StatUtils::doubleToStr(secs, 5) << "s (" <<
 		millis << "ms)" << std::endl;
 	if (logToFile) {
-		file << statName << " run durationMillis: " << StatUtils::doubleToStr(secs, 5) << "s (" <<
+		file << statName << " run: duration " << StatUtils::doubleToStr(secs, 5) << "s (" <<
 			millis << "ms)" << std::endl;
 	}
 }
@@ -88,7 +75,7 @@ inline auto getNRuns(const ProcessingConfig& config) {
 	}
 	else if (nRuns == 0) {
 		log(WARNING, "No benchmark runs specified, defaulting to " + std::to_string(DEFAULT_RUNS));
-		nRuns = MAX_RUNS;
+		nRuns = DEFAULT_RUNS;
 	}
 	else {
 		log(INFO, "Running benchmark with " + std::to_string(nRuns) + " runs");
@@ -140,11 +127,12 @@ inline void runBenchmark(ProcessingConfig& config) {
 	}
 
 	// Log the results
-	log(INFO, "Benchmark results\n-----------------");
-	for (const auto& runDuration : runDurations) {
-		// Most reasonable time for measurements is a resolution of milliseconds
-		logStat("", runDuration, file, logToFile);
+	log(INFO, "\nBenchmark results\n-----------------");
+
+	for (auto i = 1ULL; i <= runDurations.size(); i += 1) {
+		logStat(std::to_string(i) + ". ", runDurations[i], file, logToFile);
 	}
+	
 
 	// Log the average, best, and worst run time
 	logStat("Average", averageRunTime, file, logToFile);
