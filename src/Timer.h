@@ -38,7 +38,7 @@ public:
 		return std::chrono::duration_cast<std::chrono::milliseconds>(endTimePoint - startTimePoint);
 	}
 
-	auto printResults(const LogSeverity logSeverity = INFO) const {
+	auto printResults() const {
 		const auto elapsedTime = getElapsedTimeMillis().count();
 
 		// Print time in ns, ms and seconds

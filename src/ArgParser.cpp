@@ -90,11 +90,11 @@ ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const 
 		("d,devices", "List of devices to use", cxxopts::value<std::vector<std::string>>())
 		("l,list_cl_devices", "List all available OpenCL devices")
 		("x,memory_limit", "Max amount of application memory in MB (1GB to 4GB, 1024MB is exactly 1GB)",
-			cxxopts::value<size_t>()->default_value("1024"))
+		 cxxopts::value<size_t>()->default_value("1024"))
 		("b,benchmark", "Runs given mode as benchmark")
 		("benchmark_runs", "Number of benchmark runs", cxxopts::value<size_t>()->default_value("10"))
 		("o, output_file", "Path to the output file if any", cxxopts::value<std::filesystem::path>())
-		("use_avx2", "Use AVX2 instructions if the CPU supports it")
+		("disable_avx2", "Disables AVX2 vectorized instructions")
 		("h,help", "Print help");
 
 	options.parse_positional({"file", "mode", "devices"});
@@ -105,13 +105,13 @@ ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const 
 	}
 	catch (const std::exception&) {
 		std::cout << options.help() << std::endl;
-		exit(1);
+		exit(1); // NOLINT(concurrency-mt-unsafe)
 	}
-	
+
 
 	if (result.count("help")) {
 		std::cout << options.help() << std::endl;
-		exit(0);
+		exit(0); // NOLINT(concurrency-mt-unsafe)
 	}
 
 	if (result.count("list_cl_devices")) {
@@ -119,13 +119,14 @@ ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const 
 		const auto clDevices = queryClDevices({});
 		for (const auto& clDevice : clDevices) {
 			std::cout << "  -\t" << "\"" << clDevice.getInfo<CL_DEVICE_NAME>() << "\"" << std::endl;
+
 		}
-		exit(0);
+		exit(0); // NOLINT(concurrency-mt-unsafe)
 	}
 
 	if (argc < 3) {
 		std::cout << options.help();
-		exit(1);
+		exit(1); // NOLINT(concurrency-mt-unsafe)
 	}
 
 	return validateArgs(result);
@@ -178,14 +179,45 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 		log(INFO, "[JOBSCHEDULER] Memory limit is set to " + std::to_string(memoryLimit / 1024 / 1024) + " MB");
 	}
 
+
+	// Benchmark config
+	const auto runBenchmark = args.count("benchmark") > 0 ? args["benchmark"].as<bool>() : false;
+	const auto nBenchmarkRuns = args.count("benchmark_runs") > 0 ? args["benchmark_runs"].as<size_t>() : 0;
+
+	// Output path
+	const auto outputPath = args.count("output_file") > 0 ? args["output_file"].as<std::filesystem::path>() : "";
+
+	// Use AVX2 instructions
+	const auto useAvx2 = args.count("disable_avx2") > 0
+		                     ? !args["disable_avx2"].as<bool>()
+		                     : static_cast<bool>(__ISA_AVAILABLE_AVX2);
+
 	if (processingMode == ProcessingMode::SMP || processingMode == ProcessingMode::SINGLE_THREAD) {
-		return {processingMode, filePath, {}, memoryLimit};
+		return {
+			processingMode,
+			filePath,
+			{},
+			memoryLimit,
+			runBenchmark,
+			nBenchmarkRuns,
+			outputPath,
+			useAvx2,
+		};
 	}
 
 	// Otherwise we have OpenCL devices or ALL mode
 	// Query all OpenCL devices and filter them if necessary
 	if (processingMode == ProcessingMode::ALL) {
-		return {processingMode, filePath, queryClDevices({}), memoryLimit};
+		return {
+			processingMode,
+			filePath,
+			queryClDevices({}),
+			memoryLimit,
+			runBenchmark,
+			nBenchmarkRuns,
+			outputPath,
+			useAvx2,
+		};
 	}
 
 	// Otherwise we have OpenCL devices mode
@@ -208,5 +240,14 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 		throw std::runtime_error("No OpenCL devices found");
 	}
 
-	return {processingMode, filePath, clDevices, memoryLimit};
+	return {
+		processingMode,
+		filePath,
+		clDevices,
+		memoryLimit,
+		runBenchmark,
+		nBenchmarkRuns,
+		outputPath,
+		useAvx2,
+	};
 }

@@ -40,7 +40,10 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::
 
 	output << "Results" << "\n";
 	output << "-------" << "\n";
-	output << "N items: " << statsAccumulator.getN() << "\n"; // TODO remove
+
+	if (!statsAccumulator.valid()) {
+		output << "Some values of the distributions have invalid values - the classification may be imprecise!" << std::endl;
+	}
 
 	if (statsAccumulator.integerDistribution()) {
 		// If running stats has only integers we know that the distribution is Poisson

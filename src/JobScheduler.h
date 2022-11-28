@@ -80,7 +80,8 @@ public:
 
 		// Add CPU device coordinator - this will be set to inactive state if OPENCL_DEVICES mode is used
 		// If CPU supports AVX2 then use AVX2 capable coordinator
-		cpuDeviceCoordinator = __ISA_AVAILABLE_AVX2
+		// ReSharper disable once CppRedundantBooleanExpressionArgument
+		cpuDeviceCoordinator = static_cast<bool>(__ISA_AVAILABLE_AVX2) && processingConfig.UseAvx2Instructions
 			                       ? std::make_shared<Avx2CpuDeviceCoordinator>(
 				                       CoordinatorType::TBB,
 				                       processingConfig.ProcessingMode,

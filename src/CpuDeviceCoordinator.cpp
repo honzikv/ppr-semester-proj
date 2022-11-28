@@ -35,7 +35,6 @@ void CpuDeviceCoordinator::onProcessJob() {
 
 	const auto nAccumulators = buffer.size() / bytesPerAccumulator;
 	auto accumulators = std::vector<StatsAccumulator>(nAccumulators);
-
 	if (nAccumulators <= 1) {
 		// The job is too small to be processed in parallel
 		// Therefore do it in a single thread
@@ -43,6 +42,7 @@ void CpuDeviceCoordinator::onProcessJob() {
 		for (auto i = 0ULL; i < buffer.size(); i += 1) {
 			accumulator.push(buffer[i]);
 		}
+		accumulators.push_back(accumulator);
 	}
 	else {
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
@@ -56,13 +56,8 @@ void CpuDeviceCoordinator::onProcessJob() {
 			                  }
 		                  });
 	}
-
-	auto result = std::vector<StatsAccumulator>();
-	for (const auto& accumulator : accumulators) {
-		result.push_back(accumulator);
-	}
-
+	
 	notifyWatchdogCallback(currentJob->getSize(chunkSizeBytes));
-	currentJob->Items = result;
+	currentJob->Items = accumulators;
 
 }
