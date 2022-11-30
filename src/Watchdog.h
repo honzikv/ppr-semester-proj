@@ -15,6 +15,8 @@ class Watchdog {
 
 	std::atomic<bool> keepRunning = true;
 	std::chrono::milliseconds sleepMs{};
+	std::mutex mutex;
+	std::condition_variable sleepCondition;
 
 public:
 	/**
@@ -37,7 +39,7 @@ public:
 
 	void join() {
 		keepRunning = false;
-		startSemaphore.release();
+		sleepCondition.notify_one();
 
 		if (watchdogThread.joinable()) {
 			watchdogThread.join();
@@ -49,6 +51,7 @@ public:
 	 */
 	void terminate() {
 		keepRunning = false;
+		sleepCondition.notify_one();
 	}
 
 	/**
@@ -63,7 +66,10 @@ private:
 		startSemaphore.acquire(); // Try to acquire start semaphore
 		log(INFO, "[WATCHDOG] Watchdog is ready and running ...");
 		while (keepRunning) {
-			std::this_thread::sleep_for(sleepMs);
+			{
+				auto uniqueLock = std::unique_lock(mutex);
+				sleepCondition.wait_for(uniqueLock, sleepMs);
+			}
 			// Null the counter and take out the previous value for comparison
 			const auto counterVal = counter.exchange(0);
 			if (counterVal <= 0 && keepRunning) {

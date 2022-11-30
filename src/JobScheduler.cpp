@@ -82,11 +82,16 @@ JobScheduler::JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeB
 			                       coordinatorId);
 
 	// Allocate coordinator availability array
-	coordinatorAvailability.resize(coordinatorId + 1, true);
+	if (processingConfig.ProcessingMode == ProcessingMode::OPENCL_DEVICES) {
+		coordinatorAvailability.resize(clDeviceCoordinators.size(), true);
+	}
+	else {
+		coordinatorAvailability.resize(clDeviceCoordinators.size() + 1, true);
+	}
 }
 
 JobScheduler::~JobScheduler() {
-	// Stop watchdog
+	// Once JobScheduler is destroyed join all threads allocated by it
 	if (watchdog) {
 		watchdog->join();
 	}
@@ -98,9 +103,6 @@ JobScheduler::~JobScheduler() {
 	}
 
 	cpuDeviceCoordinator->join();
-
-	// Stop all coordinators
-	// terminateDeviceCoordinators();
 }
 
 bool JobScheduler::anyCoordinatorAvailable() {
@@ -245,16 +247,12 @@ std::vector<StatsAccumulator> JobScheduler::run() {
 
 		assignJob();
 	}
-	{
-		auto scopedLock = std::scoped_lock(coordinatorMutex);
-		// Terminate watchdog
-		watchdog->terminate();
+	auto scopedLock = std::scoped_lock(coordinatorMutex);
+	// Terminate watchdog
+	watchdog->terminate();
 
-		// Terminate all coordinators
-		terminateDeviceCoordinators();
-		log(INFO, "[JOBSCHEDULER] All coordinators terminated");
-	}
-
+	// Terminate all coordinators
+	terminateDeviceCoordinators();
 
 	return accumulators;
 }
