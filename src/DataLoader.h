@@ -1,7 +1,7 @@
 #pragma once
 #include <fstream>
 #include <filesystem>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
 
 #include "Job.h"
 

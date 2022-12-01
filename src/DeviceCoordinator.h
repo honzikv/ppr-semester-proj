@@ -4,6 +4,7 @@
 #include "Job.h"
 #include "ConcurrencyUtils.h"
 #include "DataLoader.h"
+#include <CL/opencl.hpp>
 
 enum CoordinatorType {
 	TBB = 0,
@@ -62,7 +63,7 @@ protected:
 	 */
 	std::function<void(CoordinatorErr)> errCallback;
 
-	bool isEnabled = true; // Whether this coordinator is actually used (e.g. CPU is not used in OPENCL only mode)
+	bool isEnabled = true;
 	std::unique_ptr<Job> currentJob = nullptr; // Reference to the current job
 
 	std::mutex jobMutex; // Mutex for assigning job

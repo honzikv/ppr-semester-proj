@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <unordered_map>
 #include <vector>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
 
 namespace fs = std::filesystem;
 constexpr auto DEFAULT_MEMORY_LIMIT = 1024ULL * 1024 * 1024;
