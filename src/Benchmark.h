@@ -10,7 +10,7 @@
 #include "StatUtils.h"
 
 constexpr auto MAX_RUNS = 1024; // More would be somewhat pointless
-constexpr auto DEFAULT_RUNS = 16;
+constexpr auto DEFAULT_RUNS = 10;
 
 /**
  * \brief Performs one benchmark run of the classification for given processing config
@@ -19,13 +19,6 @@ constexpr auto DEFAULT_RUNS = 16;
  * \return computation time
  */
 inline auto performBenchmarkRun(ProcessingConfig& processingConfig) {
-	// Configure TBB if needed
-	auto tbbThreadControl = tbb::global_control(tbb::global_control::max_allowed_parallelism,
-	                                            processingConfig.ProcessingMode == SINGLE_THREAD
-		                                            ? 1
-		                                            : tbb::this_task_arena::max_concurrency()
-	);
-
 	auto jobScheduler = JobScheduler(processingConfig);
 
 	// Perform the run - note that only the actual computing time is measured
@@ -103,6 +96,15 @@ inline auto getNRuns(const ProcessingConfig& config) {
 inline void runBenchmark(ProcessingConfig& config) {
 	setupOutputFileDirsIfNeeded(config);
 	const auto nRuns = getNRuns(config);
+	// Configure TBB if needed
+	auto tbbThreadControl = tbb::global_control(tbb::global_control::max_allowed_parallelism,
+		config.ProcessingMode == SINGLE_THREAD
+		? 1
+		: tbb::this_task_arena::max_concurrency()
+	);
+	if (config.ProcessingMode == SINGLE_THREAD) {
+		log(INFO, "Using only single thread on SMP");
+	}
 
 	// Flip PROCESSING_MODES_LUT_TABLE
 	auto inverseProcessingModeLutTable = std::unordered_map<ProcessingMode, std::string>();

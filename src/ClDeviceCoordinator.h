@@ -1,5 +1,5 @@
 #pragma once
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
@@ -7,8 +7,6 @@
 #include "ProcessingConfig.h"
 #include "DeviceCoordinator.h"
 
-
-#define CL_HPP_ENABLE_EXCEPTIONS
 
 namespace fs = std::filesystem;
 

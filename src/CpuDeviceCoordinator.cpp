@@ -37,7 +37,7 @@ void CpuDeviceCoordinator::onProcessJob() {
 	log(INFO, "[SMP] Processing job with id " + std::to_string(currentJob->Id));
 	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
 
-	const auto nAccumulators = buffer.size() * sizeof(double) / bytesPerAccumulator;
+	const auto nAccumulators = (buffer.size() * sizeof(double)) / bytesPerAccumulator;
 	auto accumulators = std::vector<StatsAccumulator>(nAccumulators);
 	if (nAccumulators <= 1) {
 		// The job is too small to be processed in parallel

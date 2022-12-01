@@ -131,11 +131,11 @@
     <ClInclude Include="..\src\SingleThreadStatsComputation.h">
       <Filter>Header Files\SMP</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\DistributionClassification.h">
-      <Filter>Header Files\Core</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\FilesystemUtils.h">
       <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\DistributionClassification.h">
+      <Filter>Header Files\Stats</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

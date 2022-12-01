@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <CL/cl.hpp>
+#include <CL/opencl.hpp>
 #include <stdexcept>
 
 constexpr auto CL_PROGRAM = R"CLC(

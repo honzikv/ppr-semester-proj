@@ -16,6 +16,9 @@ void run(ProcessingConfig& processingConfig) {
 		? 1
 		: tbb::this_task_arena::max_concurrency()
 	);
+	if (processingConfig.ProcessingMode == SINGLE_THREAD) {
+		log(INFO, "Using only single thread on SMP");
+	}
 
 	try {
 		auto jobScheduler = JobScheduler(processingConfig);

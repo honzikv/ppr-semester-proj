@@ -53,7 +53,7 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::
 	output << "-------" << "\n";
 
 	if (!statsAccumulator.valid()) {
-		output << "Some values of the distributions have invalid values - the classification may be imprecise!" << std::endl;
+		output << "Some values of the distributions have invalid values (likely due to underflow / overflow) - the classification may be imprecise!" << std::endl;
 	}
 
 	if (statsAccumulator.integerDistribution()) {
