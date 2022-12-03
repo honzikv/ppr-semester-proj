@@ -6,14 +6,39 @@
 #include "StatUtils.h"
 
 
+Avx2CpuDeviceCoordinator::Avx2CpuDeviceCoordinator(const CoordinatorType coordinatorType,
+                                                   const ProcessingMode processingMode,
+                                                   const std::function<void(std::unique_ptr<Job>, size_t)>&
+                                                   jobFinishedCallback,
+                                                   const std::function<void(size_t)>& notifyWatchdogCallback,
+                                                   const std::function<void(CoordinatorErr)>& errCallback,
+                                                   const size_t chunkSizeBytes, const size_t bytesPerAccumulator,
+                                                   const size_t cpuBufferSizeBytes,
+                                                   fs::path& distFilePath, const size_t id): CpuDeviceCoordinator(
+	coordinatorType,
+	processingMode,
+	jobFinishedCallback,
+	notifyWatchdogCallback,
+	errCallback,
+	chunkSizeBytes,
+	bytesPerAccumulator,
+	cpuBufferSizeBytes,
+	distFilePath,
+	id) {
+}
+
 void Avx2CpuDeviceCoordinator::onProcessJob() {
 	log(INFO, "[SMP (AVX2)] Processing job with id " + std::to_string(currentJob->Id));
 	// Load data into the vector
 	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
 
 	// Create vector for results
-	const auto nAccumulators = buffer.size() / bytesPerAccumulator / sizeof(double);
+	const auto doublesPerAccumulator = bytesPerAccumulator / sizeof(double);
+	const auto nAccumulators = buffer.size() / doublesPerAccumulator;
 	auto accumulators = std::vector<Avx2StatsAccumulator>(nAccumulators);
+	auto mutex = std::mutex{};
+	auto accumulatorIds = std::vector<size_t>();
+	size_t maxEnd = 0;
 	if (nAccumulators <= 1) {
 		// The job is too small to be processed in parallel
 		// Therefore do it in a single thread
@@ -32,12 +57,14 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
 		                  [&](const tbb::blocked_range<size_t> r) {
 			                  for (auto accumulatorId = r.begin(); accumulatorId < r.end(); accumulatorId += 1) {
+				                  {
+					                  auto scopedLock = std::scoped_lock(mutex);
+					                  accumulatorIds.push_back(accumulatorId);
+				                  }
 				                  // Since we are using AVX2 in each step we process 4 doubles at once, therefore the indices must
 				                  // be scaled by 1/4th
-				                  const auto jobStart = (accumulatorId * (bytesPerAccumulator /
-					                  sizeof(double))) / 4;
-				                  const auto jobEnd = ((accumulatorId + 1) * (bytesPerAccumulator
-					                  / sizeof(double))) / 4;
+				                  const auto jobStart = (accumulatorId * doublesPerAccumulator) / 4;
+				                  const auto jobEnd = jobStart + (doublesPerAccumulator) / 4;
 				                  for (auto i = jobStart; i < jobEnd; i += 1) {
 					                  accumulators[accumulatorId].pushWithFiltering({
 						                  buffer[i * 4],
@@ -46,10 +73,14 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 						                  buffer[i * 4 + 3],
 					                  });
 				                  }
+				                  {
+					                  auto scopedLock = std::scoped_lock(mutex);
+					                  maxEnd = maxEnd > jobEnd * 4 ? maxEnd : jobEnd * 4;
+				                  }
 			                  }
 		                  });
 	}
-
+	std::sort(accumulatorIds.begin(), accumulatorIds.end());
 	auto result = std::vector<StatsAccumulator>();
 	for (const auto& accumulator : accumulators) {
 		auto items = accumulator.asVectorOfScalars();

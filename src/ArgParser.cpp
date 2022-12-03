@@ -149,7 +149,7 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 
 	// Check whether file path actually exists
 	if (!fs::exists(filePath)) {
-		throw std::runtime_error("File path" + filePath.string() + " does not exist.");
+		throw std::runtime_error("File path " + filePath.string() + " does not exist.");
 	}
 
 	// Check processing mode

@@ -16,7 +16,7 @@ constexpr auto KERNEL_NAME = "computeStats";
 
 constexpr auto DEFAULT_BUILD_FLAG = "-cl-std=CL2.0";
 
-constexpr auto N_CL_OUT_ITEMS = 6;
+constexpr auto N_CL_OUT_ITEMS = 7;
 // Indices in the array
 constexpr auto N_ITEMS_IDX = 0;
 constexpr auto M1_IDX = 1;
@@ -24,6 +24,7 @@ constexpr auto M2_IDX = 2;
 constexpr auto M3_IDX = 3;
 constexpr auto M4_IDX = 4;
 constexpr auto INTEGER_ONLY_IDX = 5;
+constexpr auto MIN_IDX = 6;
 
 /**
  * \brief Custom error for control flow

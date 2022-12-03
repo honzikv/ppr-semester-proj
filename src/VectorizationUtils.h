@@ -15,6 +15,7 @@ using int4 = __m256i;
 #define double4Sub _mm256_sub_pd
 #define double4Div _mm256_div_pd
 #define castInt4ToDouble4 _mm256_castsi256_pd
+#define double4Min _mm256_min_pd
 
 // Since this is not natively supported by AVX2
 // Adapted from https://stackoverflow.com/questions/41144668/how-to-efficiently-perform-double-int64-conversions-with-sse-avx

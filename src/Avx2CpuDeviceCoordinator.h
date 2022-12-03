@@ -17,19 +17,7 @@ public:
 	                         const size_t bytesPerAccumulator,
 	                         const size_t cpuBufferSizeBytes,
 	                         fs::path& distFilePath,
-	                         const size_t id)
-		: CpuDeviceCoordinator(
-			coordinatorType,
-			processingMode,
-			jobFinishedCallback,
-			notifyWatchdogCallback,
-			errCallback,
-			chunkSizeBytes,
-			bytesPerAccumulator,
-			cpuBufferSizeBytes,
-			distFilePath,
-			id) {
-	}
+	                         const size_t id);
 
 protected:
 	void onProcessJob() override;

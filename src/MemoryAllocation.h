@@ -6,8 +6,8 @@ namespace MemoryAllocation {
 	constexpr auto DEFAULT_CPU_RUNTIME_RATIO = .3; // 30%
 	constexpr auto DEFAULT_CL_RUNTIME_RATIO = .5; // 50%
 	constexpr auto DEFAULT_CPU_MEMORY_RATIO = .5; // CPU will use 20% of the buffer memory if OpenCL devices are used
-	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU = 1024 * sizeof(double);
-	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL = 1024 * 1024 * sizeof(double);
+	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU = 4ULL * 256 * 1024 * sizeof(double);
+	constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL = 1ULL * 512 * 1024 * sizeof(double);
 
 	/**
 	 * \brief Contains data for memory configuration for all devices

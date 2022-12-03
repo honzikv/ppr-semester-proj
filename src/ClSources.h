@@ -1,9 +1,5 @@
 #pragma once
 
-#include <string>
-#include <CL/opencl.hpp>
-#include <stdexcept>
-
 constexpr auto CL_PROGRAM = R"CLC(
 #define EXPONENT_MASK 0x7fffffffffffffffULL
 #define MANTISSA_MASK 0x000fffffffffffffULL
@@ -39,13 +35,14 @@ inline bool valueNormalOrZero(double x) {
 
 __kernel void computeStats(__global double* data, __global double* stats, uint64_t numElements) {
     size_t threadIdx = get_global_id(0);
-    uint threadOffset = threadIdx * 6;
+    uint64_t threadOffset = threadIdx * 7;
 
     // Emulate a RunningStats object
     // Load data from stats array
     uint64_t n = stats[threadOffset];
     double m1 = stats[threadOffset + 1], m2 = stats[threadOffset + 2], m3 = stats[threadOffset + 3], m4 = stats[threadOffset + 4];
     bool integerOnly = (bool) stats[threadOffset + 5];
+    double min = stats[threadOffset + 6];
     double intPart = 0.0;
 
     // Process numElements elements
@@ -69,6 +66,7 @@ __kernel void computeStats(__global double* data, __global double* stats, uint64
         m4 += term1 * deltaNSquared * (n * n - 3 * n + 3) + 6 * deltaNSquared * m2 - 4 * deltaN * m3;
         m3 += term1 * deltaN * (n - 2) - 3 * deltaN * m2;
         m2 += term1;
+        min = fmin(min, x);
     }
     
     // Write results to the data
@@ -78,7 +76,6 @@ __kernel void computeStats(__global double* data, __global double* stats, uint64
     stats[threadOffset + 3] = m3;
     stats[threadOffset + 4] = m4;
     stats[threadOffset + 5] = integerOnly;
+    stats[threadOffset + 6] = min;
 }
-
-
 )CLC";

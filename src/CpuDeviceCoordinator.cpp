@@ -25,7 +25,7 @@ CpuDeviceCoordinator::CpuDeviceCoordinator(const CoordinatorType coordinatorType
 		bytesPerAccumulator,
 		distFilePath,
 		id) {
-	maxNumberOfChunksPerJob = cpuBufferSizeBytes / chunkSizeBytes;
+	maxNumberOfChunksPerJob = (cpuBufferSizeBytes / bytesPerAccumulator * bytesPerAccumulator) / chunkSizeBytes;
 	if (processingMode == ProcessingMode::OPENCL_DEVICES) {
 		return;
 	}
@@ -37,7 +37,8 @@ void CpuDeviceCoordinator::onProcessJob() {
 	log(INFO, "[SMP] Processing job with id " + std::to_string(currentJob->Id));
 	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
 
-	const auto nAccumulators = (buffer.size() * sizeof(double)) / bytesPerAccumulator;
+	const auto doublesPerAcumulator = bytesPerAccumulator / sizeof(double);
+	const auto nAccumulators = buffer.size()  / doublesPerAcumulator;
 	auto accumulators = std::vector<StatsAccumulator>(nAccumulators);
 	if (nAccumulators <= 1) {
 		// The job is too small to be processed in parallel
@@ -52,8 +53,8 @@ void CpuDeviceCoordinator::onProcessJob() {
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
 		                  [&](const tbb::blocked_range<size_t> r) {
 			                  for (auto accumulatorId = r.begin(); accumulatorId < r.end(); accumulatorId += 1) {
-				                  const auto jobStart = accumulatorId * (bytesPerAccumulator / sizeof(double));
-				                  const auto jobEnd = (accumulatorId + 1) * (bytesPerAccumulator / sizeof(double));
+				                  const auto jobStart = accumulatorId * doublesPerAcumulator;
+				                  const auto jobEnd = (accumulatorId + 1) * doublesPerAcumulator;
 				                  for (auto i = jobStart; i < jobEnd; i += 1) {
 					                  accumulators[accumulatorId].push(buffer[i]);
 				                  }

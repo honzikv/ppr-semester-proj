@@ -123,9 +123,10 @@ void ClDeviceCoordinator::onProcessJob() {
 	throwIfStatusUnsuccessful(clStatus);
 
 	// Write true values for isInteger only
-	auto accumulatorData = std::vector<double>(nAccumulators * 6, 0.0);
+	auto accumulatorData = std::vector<double>(nAccumulators * N_CL_OUT_ITEMS, 0.0);
 	for (auto i = 0ULL; i < nAccumulators; i += 1) {
 		accumulatorData[i * N_CL_OUT_ITEMS + INTEGER_ONLY_IDX] = static_cast<double>(true);
+		accumulatorData[i * N_CL_OUT_ITEMS + MIN_IDX] = std::numeric_limits<double>::infinity();
 	}
 
 	clStatus = commandQueue.enqueueWriteBuffer(accumulatorsBuffer, CL_TRUE, 0, accumulatorData.size() * sizeof(double),
@@ -133,7 +134,7 @@ void ClDeviceCoordinator::onProcessJob() {
 	throwIfStatusUnsuccessful(clStatus);
 
 	// Create buffer for data
-	auto dataBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, maxHostChunks * chunkSizeBytes, nullptr, &clStatus);
+	const auto dataBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, maxHostChunks * chunkSizeBytes, nullptr, &clStatus);
 	throwIfStatusUnsuccessful(clStatus);
 
 	// Load the kernel
@@ -182,11 +183,12 @@ void ClDeviceCoordinator::onProcessJob() {
 			accumulatorData[offset + M2_IDX],
 			accumulatorData[offset + M3_IDX],
 			accumulatorData[offset + M4_IDX],
-			static_cast<bool>(accumulatorData[offset + INTEGER_ONLY_IDX])
+			static_cast<bool>(accumulatorData[offset + INTEGER_ONLY_IDX]),
+			accumulatorData[offset + MIN_IDX],
 		};
 	}
 
-	commandQueue.finish();
+	//commandQueue.finish();
 	currentJob->Items = results;
 
 }

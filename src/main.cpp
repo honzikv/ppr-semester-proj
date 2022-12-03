@@ -10,6 +10,7 @@
 #include "Benchmark.h"
 
 void run(ProcessingConfig& processingConfig) {
+	log(INFO, "Processing file: \"" + processingConfig.DistFilePath.string() + "\"");
 	// Configure TBB if needed
 	auto tbbThreadControl = tbb::global_control(tbb::global_control::max_allowed_parallelism,
 		processingConfig.ProcessingMode == SINGLE_THREAD
@@ -29,7 +30,7 @@ void run(ProcessingConfig& processingConfig) {
 		const auto result = jobScheduler.run();
 		timer.stop();
 
-		classifyDistribution(StatUtils::mergeLeftToRight(result));
+		classifyDistribution(StatUtils::mergeLeftToRight(result, false));
 
 		// If output file is not empty write the results to it as well
 		if (!processingConfig.OutputPath.empty()) {

@@ -20,14 +20,17 @@ bool StatsAccumulator::integerDistribution() const {
 }
 
 StatsAccumulator::StatsAccumulator(const size_t n, const double m1, const double m2, const double m3, const double m4,
-                                   const bool isIntegerDistribution):
-	n(n), m1(m1), m2(m2), m3(m3), m4(m4), isIntegerDistribution(isIntegerDistribution) {}
+                                   const bool isIntegerDistribution, const double min):
+	n(n), m1(m1), m2(m2), m3(m3), m4(m4),
+	isIntegerDistribution(isIntegerDistribution),
+	min(min) {
+}
 
 void StatsAccumulator::push(const double x) {
 	if (!StatUtils::valueNormalOrZero(x)) {
 		return;
 	}
-		
+
 	// Check if x is an integer
 	isIntegerDistribution = isIntegerDistribution && StatUtils::isValueInteger(x);
 
@@ -42,6 +45,7 @@ void StatsAccumulator::push(const double x) {
 	m4 += term1 * deltaNSquared * (n * n - 3 * n + 3) + 6 * deltaNSquared * m2 - 4 * deltaN * m3;
 	m3 += term1 * deltaN * (n - 2) - 3 * deltaN * m2;
 	m2 += term1;
+	min = std::min(min, x);
 }
 
 size_t StatsAccumulator::getN() const {
@@ -50,6 +54,10 @@ size_t StatsAccumulator::getN() const {
 
 double StatsAccumulator::getMean() const {
 	return m1;
+}
+
+double StatsAccumulator::getMin() const {
+	return min;
 }
 
 double StatsAccumulator::getVariance() const {
@@ -108,8 +116,8 @@ StatsAccumulator StatsAccumulator::operator+(const StatsAccumulator& other) cons
 		(result.n * result.n * result.n) +
 		6.0 * delta2 * (n * n * other.m2 + other.n * other.n * m2) / (result.n * result.n) +
 		4.0 * delta * (n * other.m3 - other.n * m3) / result.n;
-		
-	result.isIntegerDistribution = isIntegerDistribution && other.isIntegerDistribution;
 
+	result.isIntegerDistribution = isIntegerDistribution && other.isIntegerDistribution;
+	result.min = std::min(min, other.min);
 	return result;
 }

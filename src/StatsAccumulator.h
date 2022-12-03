@@ -11,7 +11,7 @@ class StatsAccumulator {
 	friend class Avx2StatsAccumulator;
 
 	/**
-	 * \brief Number of processed items
+	 * \brief Number of processed (valid) items
 	 */
 	size_t n = 0;
 
@@ -20,7 +20,15 @@ class StatsAccumulator {
 	 */
 	double m1 = .0, m2 = .0, m3 = .0, m4 = .0;
 
+	/**
+	 * \brief Flag to signal whether the distribution comprises only integers
+	 */
 	bool isIntegerDistribution = true;
+
+	/**
+	 * \brief Minimum value in the distribution
+	 */
+	double min = std::numeric_limits<double>::infinity();
 
 public:
 	StatsAccumulator();
@@ -34,7 +42,7 @@ public:
 	 * \param m4 the fourth moment
 	 * \param isIntegerDistribution whether the distribution comprises only integer values 
 	 */
-	StatsAccumulator(size_t n, double m1, double m2, double m3, double m4, bool isIntegerDistribution);
+	StatsAccumulator(size_t n, double m1, double m2, double m3, double m4, bool isIntegerDistribution, double min);
 
 	/**
 	 * \brief Pushes new value to the accumulator
@@ -54,6 +62,11 @@ public:
 	 */
 	[[nodiscard]] double getMean() const;
 
+	/**
+	 * \brief Returns minimum of the distribution
+	 * \return Minimum of the distribution
+	 */
+	[[nodiscard]] double getMin() const;
 
 	/**
 	 * \brief Returns variance of the distribution

@@ -34,6 +34,7 @@ inline auto euclideanDistance2d(std::pair<double, double> a, std::pair<double, d
  * \param output output stream
  */
 inline void printStats(const StatsAccumulator& statsAccumulator, std::ostream& output) {
+	output << "Min: " << statsAccumulator.getMin() << std::endl;
 	output << "Mean: " << statsAccumulator.getMean() << "\n";
 	output << "Variance: " << statsAccumulator.getVariance() << "\n";
 	output << "Standard Deviation: " << statsAccumulator.getStandardDeviation() << "\n";

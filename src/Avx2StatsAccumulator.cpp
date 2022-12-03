@@ -18,6 +18,11 @@ void Avx2StatsAccumulator::pushWithFiltering(const double4 x) {
 	// Update isIntegerDistribution = isIntegerDistribution && !valid || isInteger
 	isIntegerDistribution = int4And(isIntegerDistribution, isIntegerDistributionUpdate);
 
+	// Update the minimum
+	// If the value is valid we keep the value of xi, if the value is invalid we set the value of xi to INFINITY
+	const auto minMask = VectorizationUtils::maskDouble4(double4Set(std::numeric_limits<double>::infinity()), validNegation);
+	min = double4Min(min, double4Add(x, minMask));
+
 	const auto n1 = convertInt4ToDouble4(n); // n1 = n, we convert to double to avoid casting later
 	n = int4Add(n, int4And(int4Set(1), validMask)); // n += valid * 1
 
@@ -131,6 +136,7 @@ std::vector<StatsAccumulator> Avx2StatsAccumulator::asVectorOfScalars() const {
 		results[i].m3 = m3.m256d_f64[i];
 		results[i].m4 = m4.m256d_f64[i];
 		results[i].isIntegerDistribution = static_cast<bool>(isIntegerDistribution.m256i_i64[i]);
+		results[i].min = min.m256d_f64[i];
 	}
 
 	return results;
