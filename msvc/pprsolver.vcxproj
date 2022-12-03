@@ -44,6 +44,7 @@
     <ClInclude Include="..\src\DistributionClassification.h" />
     <ClInclude Include="..\src\FileChunkHandler.h" />
     <ClInclude Include="..\src\FilesystemUtils.h" />
+    <ClInclude Include="..\src\StatsMerger.h" />
     <ClInclude Include="..\src\Job.h" />
     <ClInclude Include="..\src\JobScheduler.h" />
     <ClInclude Include="..\src\Logging.h" />

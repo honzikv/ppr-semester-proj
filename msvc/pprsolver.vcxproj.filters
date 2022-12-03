@@ -137,5 +137,8 @@
     <ClInclude Include="..\src\DistributionClassification.h">
       <Filter>Header Files\Stats</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\StatsMerger.h">
+      <Filter>Header Files\Stats</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
