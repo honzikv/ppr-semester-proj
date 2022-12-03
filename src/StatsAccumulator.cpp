@@ -1,5 +1,6 @@
 #include "StatsAccumulator.h"
 #include "StatUtils.h"
+#include "Logging.h"
 
 StatsAccumulator::StatsAccumulator() = default;
 
@@ -15,6 +16,10 @@ double StatsAccumulator::getKurtosis() const {
 	return static_cast<double>(n) * m4 / (m2 * m2) - 3.0;
 }
 
+bool StatsAccumulator::numericallyErroredWhileMerging() const {
+	return numericalErrorWhileMerging;
+}
+
 bool StatsAccumulator::integerDistribution() const {
 	return isIntegerDistribution;
 }
@@ -23,7 +28,7 @@ StatsAccumulator::StatsAccumulator(const size_t n, const double m1, const double
                                    const bool isIntegerDistribution, const double min):
 	n(n), m1(m1), m2(m2), m3(m3), m4(m4),
 	isIntegerDistribution(isIntegerDistribution),
-	min(min) {
+	minVal(min) {
 }
 
 void StatsAccumulator::push(const double x) {
@@ -45,7 +50,7 @@ void StatsAccumulator::push(const double x) {
 	m4 += term1 * deltaNSquared * (n * n - 3 * n + 3) + 6 * deltaNSquared * m2 - 4 * deltaN * m3;
 	m3 += term1 * deltaN * (n - 2) - 3 * deltaN * m2;
 	m2 += term1;
-	min = std::min(min, x);
+	minVal = std::min(minVal, x);
 }
 
 size_t StatsAccumulator::getN() const {
@@ -57,7 +62,7 @@ double StatsAccumulator::getMean() const {
 }
 
 double StatsAccumulator::getMin() const {
-	return min;
+	return minVal;
 }
 
 double StatsAccumulator::getVariance() const {
@@ -83,20 +88,20 @@ void StatsAccumulator::debugPrint() const {
 	std::cout << std::endl;
 }
 
-StatsAccumulator& StatsAccumulator::operator+=(const StatsAccumulator& rhs) {
+StatsAccumulator& StatsAccumulator::operator+=(StatsAccumulator& rhs) {
 	const auto combined = *this + rhs;
 	*this = combined;
 	return *this;
 }
 
-StatsAccumulator StatsAccumulator::operator+(const StatsAccumulator& other) const {
+StatsAccumulator StatsAccumulator::operator+(StatsAccumulator& other) {
 	if (other.n == 0 || !other.valid()) {
-		// std::cout << "discarded right side" << std::endl;
+		numericalErrorWhileMerging = true;
 		return *this;
 	}
 
 	if (n == 0 || !this->valid()) {
-		// std::cout << "discarded left side" << std::endl;
+		other.numericalErrorWhileMerging = true;
 		return other;
 	}
 
@@ -118,6 +123,17 @@ StatsAccumulator StatsAccumulator::operator+(const StatsAccumulator& other) cons
 		4.0 * delta * (n * other.m3 - other.n * m3) / result.n;
 
 	result.isIntegerDistribution = isIntegerDistribution && other.isIntegerDistribution;
-	result.min = std::min(min, other.min);
+	result.minVal = std::min(minVal, other.minVal);
+
+	if (!result.valid()) {
+		if (valid()) {
+			numericalErrorWhileMerging = true;
+			return *this;
+		}
+
+		other.numericalErrorWhileMerging = true;
+		return other;
+	}
+
 	return result;
 }

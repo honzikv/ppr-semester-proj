@@ -30,7 +30,7 @@ void run(ProcessingConfig& processingConfig) {
 		const auto result = jobScheduler.run();
 		timer.stop();
 
-		classifyDistribution(StatUtils::mergeLeftToRight(result, false));
+		classifyDistribution(StatUtils::mergeLeftToRight(result));
 
 		// If output file is not empty write the results to it as well
 		if (!processingConfig.OutputPath.empty()) {

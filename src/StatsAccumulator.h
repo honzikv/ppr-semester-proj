@@ -3,12 +3,14 @@
 
 // Forward declaration for friend class
 class Avx2StatsAccumulator;
+// class StatsMerger;
 
 /**
  * \brief Object for accumulating distribution statistics
  */
 class StatsAccumulator {
 	friend class Avx2StatsAccumulator;
+	// friend class StatsMerger;
 
 	/**
 	 * \brief Number of processed (valid) items
@@ -28,7 +30,12 @@ class StatsAccumulator {
 	/**
 	 * \brief Minimum value in the distribution
 	 */
-	double min = std::numeric_limits<double>::infinity();
+	double minVal = std::numeric_limits<double>::infinity();
+
+	/**
+	 * \brief When two accumulators are merged, this signals that the merge was not valid
+	 */
+	bool numericalErrorWhileMerging = false;
 
 public:
 	StatsAccumulator();
@@ -92,19 +99,21 @@ public:
 	 */
 	[[nodiscard]] double getKurtosis() const;
 
+	[[nodiscard]] bool numericallyErroredWhileMerging() const;
+
 	/**
 	 * \brief Adds another accumulator to this one
 	 * \param other Other accumulator to be added
 	 * \return Result of the addition
 	 */
-	StatsAccumulator operator+(const StatsAccumulator& other) const;
+	StatsAccumulator operator+(StatsAccumulator& other);
 
 	/**
 	 * \brief Adds another accumulator to this one
 	 * \param rhs right hand side
 	 * \return result of the addition
 	 */
-	StatsAccumulator& operator+=(const StatsAccumulator& rhs);
+	StatsAccumulator& operator+=(StatsAccumulator& rhs);
 
 	/**
 	 * \brief Returns whether the distribution comprises only integer values

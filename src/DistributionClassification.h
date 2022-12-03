@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <iostream>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include "StatsAccumulator.h"
@@ -9,12 +10,14 @@
 using Point2D = std::pair<double, double>;
 
 // Definition of points in (skewness, kurtosis) 2D space
-static constexpr Point2D GAUSSIAN_DISTRIBUTION = std::make_pair(.0, .0);
-static constexpr Point2D EXPONENTIAL_DISTRIBUTION = std::make_pair(2.0, 6.0);
-static constexpr Point2D UNIFORM_DISTRIBUTION = std::make_pair(.0, -5.0 / 6.0);
+constexpr Point2D GAUSSIAN_DISTRIBUTION = std::make_pair(.0, .0);
+constexpr Point2D EXPONENTIAL_DISTRIBUTION = std::make_pair(2.0, 6.0);
+constexpr Point2D UNIFORM_DISTRIBUTION = std::make_pair(.0, -5.0 / 6.0);
+constexpr auto EXPONENTIAL_IDX = 1;
+constexpr auto UNIFORM_IDX = 2;
+constexpr auto POISSON_IDX = 3;
 
-static const auto DISTRIBUTIONS = std::vector{GAUSSIAN_DISTRIBUTION, EXPONENTIAL_DISTRIBUTION, UNIFORM_DISTRIBUTION};
-static const auto DISTRIBUTION_STR_LUT = std::vector{"Gaussian", "Exponential", "Uniform"};
+const auto DISTRIBUTION_STR_LUT = std::vector<std::string>{"Gaussian", "Exponential", "Uniform", "Poisson"};
 
 /**
  * \brief Compute euclidean distance between two 2D points
@@ -33,13 +36,15 @@ inline auto euclideanDistance2d(std::pair<double, double> a, std::pair<double, d
  * \param statsAccumulator stats accumulator to print stats for
  * \param output output stream
  */
-inline void printStats(const StatsAccumulator& statsAccumulator, std::ostream& output) {
-	output << "Min: " << statsAccumulator.getMin() << std::endl;
+inline void printStats(const StatsAccumulator& statsAccumulator, const double distance, std::ostream& output) {
+	output << "Min: " << statsAccumulator.getMin() << "\n";
 	output << "Mean: " << statsAccumulator.getMean() << "\n";
 	output << "Variance: " << statsAccumulator.getVariance() << "\n";
 	output << "Standard Deviation: " << statsAccumulator.getStandardDeviation() << "\n";
 	output << "Skewness: " << statsAccumulator.getSkewness() << "\n";
-	output << "Kurtosis: " << statsAccumulator.getKurtosis() << std::endl;
+	output << "Kurtosis: " << statsAccumulator.getKurtosis() << "\n";
+	output << "Integer only distribution: " << (statsAccumulator.integerDistribution() ? "Yes" : "No") << "\n";
+	output << "Distance from the classified distribution: " << distance << "\n";
 }
 
 /**
@@ -49,28 +54,48 @@ inline void printStats(const StatsAccumulator& statsAccumulator, std::ostream& o
  */
 inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::ostream& output = std::cout) {
 	const auto estimatedPt = std::make_pair(statsAccumulator.getSkewness(), statsAccumulator.getKurtosis());
+	auto distributionPoints = std::vector{
+		GAUSSIAN_DISTRIBUTION, EXPONENTIAL_DISTRIBUTION, UNIFORM_DISTRIBUTION, {0, 0}
+	};
 
 	output << "\nResults" << "\n";
 	output << "-------" << "\n";
 
-	if (!statsAccumulator.valid()) {
-		output << "Some values of the distributions have invalid values (likely due to underflow / overflow) - the classification may be imprecise!" << std::endl;
+	if (!statsAccumulator.numericallyErroredWhileMerging()) {
+		output <<
+			"- A numerical error (floating point overflow / underflow) occurred while merging the distributions - the classification may be imprecise!"
+			<< "\n" << "\n";
 	}
 
-	if (statsAccumulator.integerDistribution()) {
-		// If running stats has only integers we know that the distribution is Poisson
-		output << "Classified distribution as: \"Poisson\"" << "\n" << "\n";
-		output << "Distribution comprises only integers (no decimal numbers were detected)" << "\n";
-		output << "Therefore classifying as \"Poisson\"" << "\n";
-		printStats(statsAccumulator, output);
-		return;
-	}
+	// Compute poisson distribution skewness and kurtosis
+	distributionPoints[POISSON_IDX] = std::abs(statsAccumulator.getMean()) < 1e-5
+		                                  ? std::make_pair(.0, .0)
+		                                  : std::make_pair(1. / std::sqrt(statsAccumulator.getMean()),
+		                                                   1. / statsAccumulator.getMean());
 
-	// Compute distance from each distribution
-	// 0 - gaussian / poisson, 1 - exp, 2- uniform
-	auto distances = std::vector<double>();
-	for (const auto& distribution : DISTRIBUTIONS) {
-		distances.push_back(euclideanDistance2d(distribution, estimatedPt));
+	const auto integersOnly = statsAccumulator.integerDistribution();
+	// Compute distances
+	auto distances = std::vector<double>(4, {std::numeric_limits<double>::infinity()});
+	for (auto i = 0ULL; i < distributionPoints.size(); i += 1) {
+		if (integersOnly && i == POISSON_IDX ||
+			!integersOnly && i != POISSON_IDX) {
+			distances[i] = euclideanDistance2d(distributionPoints[i], estimatedPt);
+		}
+
+		if (integersOnly && !(i == POISSON_IDX || i == UNIFORM_IDX)) {
+			output << "- Discarding " + DISTRIBUTION_STR_LUT.at(i) +
+				" distribution from the classification as the distribution contains only integers" << "\n" << "\n";
+			continue;
+		}
+
+		if (i == EXPONENTIAL_IDX && statsAccumulator.getMin() < 0) {
+			output <<
+				"- Discarding exponential distribution from the classification as the minimum value is less than zero"
+				<< "\n" << "\n";
+			continue;
+		}
+
+		output << "- Discarding " + DISTRIBUTION_STR_LUT.at(i) + " distribution from the classification as the distribution contains real values" << "\n" << "\n";
 	}
 
 	// Get index of the smallest distance
@@ -78,9 +103,12 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::
 		std::distance(std::begin(distances), std::min_element(distances.begin(), distances.end()));
 
 	// Lookup the distribution name
-	const auto distributionName = DISTRIBUTION_STR_LUT.at(static_cast<size_t>(closestDistributionIdx));
+	const auto& distributionName = DISTRIBUTION_STR_LUT.at(static_cast<size_t>(closestDistributionIdx));
+
+	const auto distance = distances[closestDistributionIdx];
 
 	// And finally print to the stdout
-	output << "Classified distribution as: \"" << distributionName << "\"" << "\n" << "\n";
-	printStats(statsAccumulator, output);
+	output << "The distribution was classified as: \"" << distributionName << "\"" << "\n" << "\n";
+	printStats(statsAccumulator, distance, output);
+	output << std::endl;
 }
