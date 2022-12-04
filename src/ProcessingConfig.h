@@ -1,15 +1,18 @@
 #pragma once
+#define NOMINMAX
+#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
+#define CL_HPP_TARGET_OPENCL_VERSION 200
+#include <CL/opencl.hpp>
 #include <filesystem>
 #include <unordered_map>
 #include <vector>
-#include <CL/opencl.hpp>
+
 
 namespace fs = std::filesystem;
 constexpr auto DEFAULT_MEMORY_LIMIT = 1024ULL * 1024 * 1024;
 
 // This is very naive, but we expect that the system actually gives us 4 GB
 constexpr auto MAX_MEMORY_LIMIT = 4ULL * 1024 * 1024 * 1024;
-
 
 
 enum ProcessingMode {

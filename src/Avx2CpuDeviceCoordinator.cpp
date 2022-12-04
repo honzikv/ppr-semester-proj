@@ -1,5 +1,5 @@
+#define NOMINMAX
 #include <tbb/tbb.h>
-
 #include "Avx2StatsAccumulator.h"
 #include "Avx2CpuDeviceCoordinator.h"
 #include "Logging.h"

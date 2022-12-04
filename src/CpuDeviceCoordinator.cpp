@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include <tbb/tbb.h>
 
 #include "CpuDeviceCoordinator.h"

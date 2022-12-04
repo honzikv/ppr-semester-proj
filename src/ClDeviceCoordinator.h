@@ -1,12 +1,10 @@
 #pragma once
-#include <CL/opencl.hpp>
+
 #include <filesystem>
 #include <stdexcept>
 #include <string>
 
-#include "ProcessingConfig.h"
 #include "DeviceCoordinator.h"
-
 
 namespace fs = std::filesystem;
 

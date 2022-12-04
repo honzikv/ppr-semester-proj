@@ -1,10 +1,11 @@
 #pragma once
 #include <functional>
+
 #include "ProcessingConfig.h"
 #include "Job.h"
 #include "ConcurrencyUtils.h"
 #include "DataLoader.h"
-#include <CL/opencl.hpp>
+
 
 enum CoordinatorType {
 	TBB = 0,

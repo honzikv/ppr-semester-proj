@@ -25,7 +25,6 @@
     <ClCompile Include="..\src\ClDeviceCoordinator.cpp" />
     <ClCompile Include="..\src\CpuDeviceCoordinator.cpp" />
     <ClCompile Include="..\src\DataLoader.cpp" />
-    <ClCompile Include="..\src\DeviceCoordinator.cpp" />
     <ClCompile Include="..\src\JobScheduler.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\StatsAccumulator.cpp" />
@@ -44,7 +43,6 @@
     <ClInclude Include="..\src\DistributionClassification.h" />
     <ClInclude Include="..\src\FileChunkHandler.h" />
     <ClInclude Include="..\src\FilesystemUtils.h" />
-    <ClInclude Include="..\src\StatsMerger.h" />
     <ClInclude Include="..\src\Job.h" />
     <ClInclude Include="..\src\JobScheduler.h" />
     <ClInclude Include="..\src\Logging.h" />

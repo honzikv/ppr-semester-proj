@@ -1,7 +1,7 @@
-#include "ClDeviceCoordinator.h"
 #include "ClSources.h"
 #include "StatUtils.h"
 #include "Logging.h"
+#include "ClDeviceCoordinator.h"
 
 auto ClDeviceCoordinator::compile(const std::string& source, const std::string& programName,
                                   const cl::Context& deviceContext) const {

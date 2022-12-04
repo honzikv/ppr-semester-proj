@@ -60,9 +60,6 @@
     <ClCompile Include="..\src\JobScheduler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\DeviceCoordinator.cpp">
-      <Filter>Source Files\Coordinator</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\DeviceCoordinator.h">
@@ -135,9 +132,6 @@
       <Filter>Header Files\IO</Filter>
     </ClInclude>
     <ClInclude Include="..\src\DistributionClassification.h">
-      <Filter>Header Files\Stats</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\StatsMerger.h">
       <Filter>Header Files\Stats</Filter>
     </ClInclude>
   </ItemGroup>

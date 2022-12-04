@@ -1,6 +1,9 @@
 #pragma once
+
 #include <fstream>
 #include <filesystem>
+
+#define NOMINMAX
 #include <CL/opencl.hpp>
 
 #include "Job.h"
