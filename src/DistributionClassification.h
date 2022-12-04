@@ -43,7 +43,7 @@ inline void printStats(const StatsAccumulator& statsAccumulator, const double di
 	output << "Standard Deviation: " << statsAccumulator.getStandardDeviation() << "\n";
 	output << "Skewness: " << statsAccumulator.getSkewness() << "\n";
 	output << "Kurtosis: " << statsAccumulator.getKurtosis() << "\n";
-	output << "Integer only distribution: " << (statsAccumulator.integerDistribution() ? "Yes" : "No") << "\n";
+	output << "Integer-only distribution: " << (statsAccumulator.integerDistribution() ? "Yes" : "No") << "\n";
 	output << "Distance from the classified distribution: " << distance << "\n";
 }
 
@@ -61,7 +61,7 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::
 	output << "\nResults" << "\n";
 	output << "-------" << "\n";
 
-	if (!statsAccumulator.numericallyErroredWhileMerging()) {
+	if (statsAccumulator.numericallyErroredWhileMerging()) {
 		output <<
 			"- A numerical error (floating point overflow / underflow) occurred during computation, the result may be imprecise!"
 			<< "\n" << "\n";
