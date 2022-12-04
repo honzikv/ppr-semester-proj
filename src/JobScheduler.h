@@ -9,6 +9,9 @@
 constexpr auto DEFAULT_CHUNK_SIZE = 4096;
 constexpr auto SMALL_SIZE_LIMIT = 1024 * 1024; // 1 MB
 
+constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU = 1ULL * 512 * 1024 * sizeof(double);
+constexpr auto DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL = 1ULL * 512 * 1024 * sizeof(double);
+
 /**
  * \brief This class acts as a load balancer and job manager. It schedules job among available coordinators and accumulates results
  */

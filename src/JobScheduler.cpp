@@ -9,7 +9,13 @@ JobScheduler::JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeB
 	fileChunkHandler = std::make_unique<FileChunkHandler>(processingConfig.DistFilePath, chunkSizeBytes);
 
 	// Create memory configuration
-	auto memoryConfig = MemoryAllocation::buildMemoryConfig(processingConfig, processingConfig.MemoryLimit);
+	const auto bytesPerCpuAccumulator = processingConfig.UseAvx2Instructions
+		                                    ? DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU
+		                                    : DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU * 4;
+	auto memoryConfig = MemoryAllocation::buildMemoryConfig(processingConfig,
+	                                                        bytesPerCpuAccumulator,
+	                                                        DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL,
+	                                                        processingConfig.MemoryLimit);
 	auto coordinatorId = 0;
 	// Add CL devices
 	for (const auto& device : processingConfig.ClDevices) {

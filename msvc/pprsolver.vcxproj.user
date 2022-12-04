@@ -4,7 +4,7 @@
     <LocalDebuggerEnvironment>PATH=%PATH%;$(TBB_ROOT)\bin
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>../gaussLarge -m smp "Nvidia Geforce RTX 3060 Ti"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>../gauss2g -m opencl_devices "Nvidia Geforce RTX 3060 Ti"</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup>
     <ShowAllFiles>false</ShowAllFiles>

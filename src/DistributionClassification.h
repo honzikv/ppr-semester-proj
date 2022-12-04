@@ -63,7 +63,7 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::
 
 	if (!statsAccumulator.numericallyErroredWhileMerging()) {
 		output <<
-			"- A numerical error (floating point overflow / underflow) occurred while merging the distributions - the classification may be imprecise!"
+			"- A numerical error (floating point overflow / underflow) occurred during computation, the result may be imprecise!"
 			<< "\n" << "\n";
 	}
 
@@ -80,6 +80,7 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::
 		if (integersOnly && i == POISSON_IDX ||
 			!integersOnly && i != POISSON_IDX) {
 			distances[i] = euclideanDistance2d(distributionPoints[i], estimatedPt);
+			continue;
 		}
 
 		if (integersOnly && !(i == POISSON_IDX || i == UNIFORM_IDX)) {
