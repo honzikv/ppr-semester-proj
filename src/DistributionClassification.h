@@ -77,7 +77,7 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::
 	// Compute distances
 	auto distances = std::vector<double>(4, {std::numeric_limits<double>::infinity()});
 	for (auto i = 0ULL; i < distributionPoints.size(); i += 1) {
-		if (integersOnly && i == POISSON_IDX ||
+		if (integersOnly && i == POISSON_IDX || integersOnly && i == UNIFORM_IDX ||
 			!integersOnly && i != POISSON_IDX) {
 			distances[i] = euclideanDistance2d(distributionPoints[i], estimatedPt);
 			continue;
@@ -85,18 +85,18 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::
 
 		if (integersOnly && !(i == POISSON_IDX || i == UNIFORM_IDX)) {
 			output << "- Discarding " + DISTRIBUTION_STR_LUT.at(i) +
-				" distribution from the classification as the distribution contains only integers" << "\n" << "\n";
+				" since only integers were detected in the data" << "\n" << "\n";
 			continue;
 		}
 
 		if (i == EXPONENTIAL_IDX && statsAccumulator.getMin() < 0) {
 			output <<
-				"- Discarding exponential distribution from the classification as the minimum value is less than zero"
+				"- Discarding exponential distribution from the classification as the minimum value in the data is less than zero"
 				<< "\n" << "\n";
 			continue;
 		}
 
-		output << "- Discarding " + DISTRIBUTION_STR_LUT.at(i) + " distribution from the classification as the distribution contains real values" << "\n" << "\n";
+		output << "- Discarding " + DISTRIBUTION_STR_LUT.at(i) + " distribution from the classification since the data contains non-integer values" << "\n" << "\n";
 	}
 
 	// Get index of the smallest distance
