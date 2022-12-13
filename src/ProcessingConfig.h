@@ -2,6 +2,8 @@
 #define NOMINMAX
 #define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 #define CL_HPP_TARGET_OPENCL_VERSION 200
+#define CL_TARGET_OPENCL_VERSION 200
+
 #include <CL/opencl.hpp>
 #include <filesystem>
 #include <unordered_map>

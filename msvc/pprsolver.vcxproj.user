@@ -4,7 +4,7 @@
     <LocalDebuggerEnvironment>PATH=%PATH%;$(TBB_ROOT)\bin
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>..\noisyFucker -m all "Nvidia Geforce RTX 3060 Ti" --disable_avx2</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>..\compiled\benchmarkfile "Nvidia Geforce RTX 3060 Ti" --benchmark </LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup>
     <ShowAllFiles>false</ShowAllFiles>
