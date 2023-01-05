@@ -1,6 +1,6 @@
 #include "Avx2StatsAccumulator.h"
 
-void Avx2StatsAccumulator::pushWithFiltering(const double4 x) {
+void Avx2StatsAccumulator::pushWithFiltering(const __m256d x) {
 	// AVX2 uses 256-bit registers which can hold 4 doubles
 	// so we need to process 4 doubles at a time
 
@@ -20,7 +20,8 @@ void Avx2StatsAccumulator::pushWithFiltering(const double4 x) {
 
 	// Update the minimum
 	// If the value is valid we keep the value of xi, if the value is invalid we set the value of xi to INFINITY
-	const auto minMask = VectorizationUtils::maskDouble4(_mm256_set1_pd(std::numeric_limits<double>::infinity()), validNegation);
+	const auto minMask = VectorizationUtils::maskDouble4(
+		_mm256_set1_pd(std::numeric_limits<double>::infinity()), validNegation);
 	minVal = _mm256_min_pd(minVal, _mm256_add_pd(x, minMask));
 
 	const auto n1 = convertInt4ToDouble4(n); // n1 = n, we convert to double to avoid casting later
@@ -40,7 +41,6 @@ void Avx2StatsAccumulator::pushWithFiltering(const double4 x) {
 	// m4a2 = (((n * n) - (3 * n)) + 3)
 	// m4a = m4a1 * m4a2
 	const auto m4a1 = _mm256_mul_pd(term1, deltaNSquared);
-	// const auto m4a2 = _mm256_add_pd(_mm256_sub_pd(_mm256_mul_pd(nDouble, nDouble), _mm256_mul_pd(_mm256_set1_pd(3), nDouble)), _mm256_set1_pd(3));
 	const auto m4a2 = _mm256_add_pd(
 		_mm256_set1_pd(3), _mm256_sub_pd(_mm256_mul_pd(nDouble, nDouble), _mm256_mul_pd(_mm256_set1_pd(3), nDouble)));
 	const auto m4a = _mm256_mul_pd(m4a1, m4a2);
@@ -67,7 +67,7 @@ void Avx2StatsAccumulator::pushWithFiltering(const double4 x) {
 	m2 = _mm256_add_pd(m2, VectorizationUtils::maskDouble4(term1, validMask));
 }
 
-void Avx2StatsAccumulator::push(const double4 x) {
+void Avx2StatsAccumulator::push(const __m256d x) {
 	isIntegerDistribution = _mm256_and_si256(isIntegerDistribution, VectorizationUtils::valuesInteger(x));
 
 	const auto n1 = convertInt4ToDouble4(n); // n1 = n
@@ -190,7 +190,6 @@ Avx2StatsAccumulator Avx2StatsAccumulator::operator+(const Avx2StatsAccumulator&
 
 	// result.m3 = m3 + other.m3 + delta3 * n * other.n * (n - other.n) / (result.n * result.n)
 	// + 3.0 * delta * (n * other.m2 - other.n * m2) / result.n
-
 	const auto resultNDouble = convertInt4ToDouble4(result.n);
 
 	// m3`a = m3 + other.m3

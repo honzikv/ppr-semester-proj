@@ -9,23 +9,23 @@
  * \brief Implementation of StatsAccumulator with AVX2 manual vectorization
  */
 class Avx2StatsAccumulator {
-	double4 m1 = _mm256_set1_pd(0), m2 = _mm256_set1_pd(0), m3 = _mm256_set1_pd(0), m4 = _mm256_set1_pd(0);
-	double4 minVal = _mm256_set1_pd(std::numeric_limits<double>::infinity());
-	int4 n = _mm256_set1_epi64x(0);
-	int4 isIntegerDistribution = _mm256_set1_epi64x(UINT64_MAX);
+	__m256d m1 = _mm256_set1_pd(0), m2 = _mm256_set1_pd(0), m3 = _mm256_set1_pd(0), m4 = _mm256_set1_pd(0);
+	__m256d minVal = _mm256_set1_pd(std::numeric_limits<double>::infinity());
+	__m256i n = _mm256_set1_epi64x(0);
+	__m256i isIntegerDistribution = _mm256_set1_epi64x(UINT64_MAX);
 
 public:
 	/**
 	 * \brief Pushes vector x to the accumulator, this vector can be dirty - i.e. contain invalid or NaN values
 	 * \param x vector of doubles
 	 */
-	void pushWithFiltering(const double4 x);
+	void pushWithFiltering(const __m256d x);
 
 	/**
 	 * \brief Pushes vector x to the accumulator, this vector must be contain only valid values that are FP_NORMAL or FP_ZERO
 	 * \param x vector of doubles
 	 */
-	void push(const double4 x);
+	void push(const __m256d x);
 
 	// Both + and += only work if the accumulators are not empty
 	Avx2StatsAccumulator operator+(const Avx2StatsAccumulator& other) const;
