@@ -16,6 +16,7 @@ auto lowercase(const std::basic_string<T>& s) {
 
 
 inline auto queryClDevices(const std::vector<std::string>& devices) {
+	log(DEBUG, "Querying OpenCL devices...");
 	auto deviceNamesFilter = std::unordered_set<std::string>();
 	for (const auto& deviceName : devices) {
 		deviceNamesFilter.insert(lowercase(deviceName));
@@ -74,7 +75,7 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 			std::cout << deviceName << "\n";
 		}
 
-		std::cout << "They will not be utilized" << std::endl;
+		std::cout << "They will be skipped ..." << std::endl;
 	}
 
 	return result;

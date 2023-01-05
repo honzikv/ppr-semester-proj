@@ -9,10 +9,10 @@
  * \brief Implementation of StatsAccumulator with AVX2 manual vectorization
  */
 class Avx2StatsAccumulator {
-	double4 m1 = double4Set(0), m2 = double4Set(0), m3 = double4Set(0), m4 = double4Set(0);
-	double4 minVal = double4Set(std::numeric_limits<double>::infinity());
-	int4 n = int4Set(0);
-	int4 isIntegerDistribution = int4Set(UINT64_MAX);
+	double4 m1 = _mm256_set1_pd(0), m2 = _mm256_set1_pd(0), m3 = _mm256_set1_pd(0), m4 = _mm256_set1_pd(0);
+	double4 minVal = _mm256_set1_pd(std::numeric_limits<double>::infinity());
+	int4 n = _mm256_set1_epi64x(0);
+	int4 isIntegerDistribution = _mm256_set1_epi64x(UINT64_MAX);
 
 public:
 	/**

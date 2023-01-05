@@ -5,7 +5,7 @@
 
 auto ClDeviceCoordinator::compile(const std::string& source, const std::string& programName,
                                   const cl::Context& deviceContext) const {
-	const auto program = cl::Program(deviceContext, source);
+	auto program = cl::Program(deviceContext, source);
 	if (const auto result = program.build(DEFAULT_BUILD_FLAG); result != CL_BUILD_SUCCESS) {
 		throw ClCompileErr(
 			"Error during OpenCL Program compilation ( " + programName + " )\n. Error: " + std::to_string(result));
@@ -100,9 +100,7 @@ void ClDeviceCoordinator::estimateWorkgroupSize() {
 void ClDeviceCoordinator::onProcessJob() {
 	log(INFO, "[OpenCL] Processing job with id " + std::to_string(currentJob->Id) + " on device \"" + deviceName +
 	    "\"");
-
-	// Ideally we would copy as much data as possible to the GPU / CL device but 
-
+	
 	// Get total number of accumulators
 	auto nAccumulators = currentJob->getNChunks() / chunksPerAccumulator;
 
@@ -114,7 +112,7 @@ void ClDeviceCoordinator::onProcessJob() {
 		totalBytes = currentJob->getSize(chunkSizeBytes);
 	}
 
-
+	log(DEBUG, "[OpenCL] Job split into " + std::to_string(nAccumulators) + " accumulators");
 	// Create buffer for results
 	auto clStatus = cl_int{};
 	const auto accumulatorsBuffer = cl::Buffer(context, CL_MEM_READ_WRITE,
@@ -187,8 +185,9 @@ void ClDeviceCoordinator::onProcessJob() {
 			accumulatorData[offset + MIN_IDX],
 		};
 	}
-
-	//commandQueue.finish();
+	
 	currentJob->Items = results;
-
+	log(DEBUG,
+		"[OPENCL] Finished computing job. with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
+			currentJob->getNChunks()) + " chunks. Chunk size is " + std::to_string(chunkSizeBytes) + " bytes");
 }

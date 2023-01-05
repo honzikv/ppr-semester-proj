@@ -44,6 +44,7 @@ public:
 		if (watchdogThread.joinable()) {
 			watchdogThread.join();
 		}
+		log(DEBUG, "[WATCHDOG] Watchdog thread joined successfully");
 	}
 
 	/**
@@ -64,7 +65,7 @@ public:
 private:
 	void watchdogMain() {
 		startSemaphore.acquire(); // Try to acquire start semaphore
-		log(INFO, "[WATCHDOG] Watchdog is ready and running ...");
+		log(DEBUG, "[WATCHDOG] Watchdog is ready and running ...");
 		while (keepRunning) {
 			{
 				auto uniqueLock = std::unique_lock(mutex);

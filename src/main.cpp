@@ -16,7 +16,7 @@ void run(ProcessingConfig& processingConfig) {
 		: tbb::this_task_arena::max_concurrency()
 	);
 	if (processingConfig.ProcessingMode == SINGLE_THREAD) {
-		log(INFO, "Using only single thread on SMP");
+		log(DEBUG, "Using only single thread on SMP");
 	}
 
 	try {

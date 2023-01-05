@@ -94,6 +94,7 @@ inline auto getNRuns(const ProcessingConfig& config) {
  * \param config processing configuration
  */
 inline void runBenchmark(ProcessingConfig& config) {
+	log(DEBUG, "Starting benchmark");
 	setupOutputFileDirsIfNeeded(config);
 	const auto nRuns = getNRuns(config);
 	// Configure TBB if needed

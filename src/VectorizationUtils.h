@@ -3,23 +3,10 @@
 #include <iostream>
 #include <array>
 
-// To make the code somewhat readable we type alias frequently used intrinsics and types
-using double4 = __m256d;
-using int4 = __m256i;
-
-#define double4Set  _mm256_set1_pd
-#define int4Set  _mm256_set1_epi64x
-#define castDouble4ToInt4 _mm256_castpd_si256
-#define double4Add _mm256_add_pd
-#define double4Mul _mm256_mul_pd
-#define double4Sub _mm256_sub_pd
-#define double4Div _mm256_div_pd
-#define castInt4ToDouble4 _mm256_castsi256_pd
-#define double4Min _mm256_min_pd
 
 // Since this is not natively supported by AVX2
 // Adapted from https://stackoverflow.com/questions/41144668/how-to-efficiently-perform-double-int64-conversions-with-sse-avx
-inline auto convertInt4ToDouble4(const int4 x) {
+inline auto convertInt4ToDouble4(const __m256i x) {
 	const auto magicILo = _mm256_set1_epi64x(0x4330000000000000); /* 2^52               encoded as floating-point  */
 	const auto magicIHi32 = _mm256_set1_epi64x(0x4530000080000000); /* 2^84 + 2^63        encoded as floating-point  */
 	const auto magicIAll = _mm256_set1_epi64x(0x4530000080100000); /* 2^84 + 2^63 + 2^52 encoded as floating-point  */
@@ -38,17 +25,9 @@ inline auto convertInt4ToDouble4(const int4 x) {
 	return result;
 }
 
-#define int4Add _mm256_add_epi64
 
-// "Boolean operations"
-#define int4And _mm256_and_si256
-#define int4CompareGreaterThan _mm256_cmpgt_epi64
-#define int4CompareEquals _mm256_cmpeq_epi64
-#define int4Or _mm256_or_si256
-#define int4Xor _mm256_xor_si256
-
-const auto EXPONENT_MASK = int4Set(0x7fffffffffffffffULL);
-const auto MANTISSA_MASK = int4Set(0x000fffffffffffffULL);
+const auto EXPONENT_MASK = _mm256_set1_epi64x(0x7fffffffffffffffULL);
+const auto MANTISSA_MASK = _mm256_set1_epi64x(0x000fffffffffffffULL);
 
 namespace VectorizationUtils {
 
@@ -60,30 +39,30 @@ namespace VectorizationUtils {
 	 *
 	 * \return "Boolean"-like vector - either containing 111..111 or 000..000 where 111..111 is true and 000..000 is false
 	 */
-	inline auto valuesValid(const double4& x) {
-		const auto bits = castDouble4ToInt4(x); // convert x to integer vector
-		auto exponent = int4And(bits, EXPONENT_MASK); // extract exponent
+	inline auto valuesValid(const __m256d& x) {
+		const auto bits = _mm256_castpd_si256(x); // convert x to integer vector
+		auto exponent = _mm256_and_si256(bits, EXPONENT_MASK); // extract exponent
 		exponent = _mm256_srli_epi64(exponent, 52); // shift by 52 bits to get mantissa
 
 		// if exponent == 0
-		const auto expEqualsZero = int4CompareEquals(exponent, _mm256_setzero_si256());
+		const auto expEqualsZero = _mm256_cmpeq_epi64(exponent, _mm256_setzero_si256());
 
 		// AND bits & MANTISSA_MASK > 0
-		auto bitsAndMantissa = int4And(bits, MANTISSA_MASK);
-		bitsAndMantissa = int4CompareGreaterThan(bitsAndMantissa, _mm256_setzero_si256());
+		auto bitsAndMantissa = _mm256_and_si256(bits, MANTISSA_MASK);
+		bitsAndMantissa = _mm256_cmpgt_epi64(bitsAndMantissa, _mm256_setzero_si256());
 
 		// If exponent == 0 && bits & MANTISSA_MASK set to true
-		const auto invalid1 = int4And(expEqualsZero, bitsAndMantissa);
+		const auto invalid1 = _mm256_and_si256(expEqualsZero, bitsAndMantissa);
 
 		// Similarly if exponent == 0x7ff it is invalid as well
-		const auto invalid2 = int4CompareEquals(exponent, int4Set(0x7ff));
+		const auto invalid2 = _mm256_cmpeq_epi64(exponent, _mm256_set1_epi64x(0x7ff));
 
 		// Combine both with OR operation
 		// This will return for each element in the vector if they are invalid
-		const auto invalid = int4Or(invalid1, invalid2);
+		const auto invalid = _mm256_or_si256(invalid1, invalid2);
 
 		// Negate - i.e. XOR with 0xFFFFFFFFFFFFFFFF == int64_t(-1) == UINT64_MAX
-		return int4Xor(invalid, int4Set(UINT64_MAX));
+		return _mm256_xor_si256(invalid, _mm256_set1_epi64x(UINT64_MAX));
 	}
 
 	inline auto valuesInteger(const __m256d& x) {
@@ -95,7 +74,7 @@ namespace VectorizationUtils {
 		const auto result = _mm256_cmp_pd(fraction, _mm256_setzero_pd(), _CMP_EQ_OQ);
 
 		// Convert to "bool" array
-		return castDouble4ToInt4(result);
+		return _mm256_castpd_si256(result);
 	}
 
 	/**
@@ -104,8 +83,8 @@ namespace VectorizationUtils {
 	 * \param mask mask containing either 1s or 0s depending on the value
 	 * \return masked variant of the vector, 0 where the mask is false, original values where the mask is true
 	 */
-	inline auto maskDouble4(const double4 value, const int4 mask) {
-		return castInt4ToDouble4(int4And(castDouble4ToInt4(value), mask));
+	inline auto maskDouble4(const __m256d value, const __m256i mask) {
+		return _mm256_castsi256_pd(_mm256_and_si256(_mm256_castpd_si256(value), mask));
 	}
 
 	/**
@@ -172,14 +151,14 @@ namespace VectorizationUtils {
 	inline void testValidMasking() {
 		// Test for several values
 
-		const double4 inputValues = {INFINITY, NAN, 1.0, 0.0};
-		const double4 myValues = {5, 5, 4, 5};
+		const __m256d inputValues = {INFINITY, NAN, 1.0, 0.0};
+		const __m256d myValues = {5, 5, 4, 5};
 
 		const auto validMask = valuesValid(inputValues);
 		const auto maskedValues = maskDouble4(inputValues, validMask);
 
 		// Add to myValues
-		const auto result = double4Add(maskedValues, myValues);
+		const auto result = _mm256_add_pd(maskedValues, myValues);
 
 		// Print the values - they should all be 5.0
 		for (int i = 0; i < 4; i++) {

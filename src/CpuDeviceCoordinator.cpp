@@ -37,10 +37,10 @@ CpuDeviceCoordinator::CpuDeviceCoordinator(const CoordinatorType coordinatorType
 void CpuDeviceCoordinator::onProcessJob() {
 	log(INFO, "[SMP] Processing job with id " + std::to_string(currentJob->Id));
 	const auto buffer = dataLoader.loadJobDataIntoVector(*currentJob);
-
-	const auto doublesPerAcumulator = bytesPerAccumulator / sizeof(double);
-	const auto nAccumulators = buffer.size()  / doublesPerAcumulator;
+	const auto doublesPerAccumulator = bytesPerAccumulator / sizeof(double);
+	const auto nAccumulators = buffer.size() / doublesPerAccumulator;
 	auto accumulators = std::vector<StatsAccumulator>(nAccumulators);
+	log(DEBUG, "[SMP] Job split into " + std::to_string(nAccumulators) + " accumulators");
 	if (nAccumulators <= 1) {
 		// The job is too small to be processed in parallel
 		// Therefore do it in a single thread
@@ -54,16 +54,18 @@ void CpuDeviceCoordinator::onProcessJob() {
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
 		                  [&](const tbb::blocked_range<size_t> r) {
 			                  for (auto accumulatorId = r.begin(); accumulatorId < r.end(); accumulatorId += 1) {
-				                  const auto jobStart = accumulatorId * doublesPerAcumulator;
-				                  const auto jobEnd = (accumulatorId + 1) * doublesPerAcumulator;
+				                  const auto jobStart = accumulatorId * doublesPerAccumulator;
+				                  const auto jobEnd = (accumulatorId + 1) * doublesPerAccumulator;
 				                  for (auto i = jobStart; i < jobEnd; i += 1) {
 					                  accumulators[accumulatorId].push(buffer[i]);
 				                  }
 			                  }
 		                  });
 	}
-	
+
 	notifyWatchdogCallback(currentJob->getSize(chunkSizeBytes));
 	currentJob->Items = accumulators;
-
+	log(DEBUG,
+	    "[SMP] Finished computing job. with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
+		    currentJob->getNChunks()) + " chunks. Chunk size is " + std::to_string(chunkSizeBytes) + " bytes");
 }

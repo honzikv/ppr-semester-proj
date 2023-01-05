@@ -138,7 +138,7 @@ std::pair<size_t, std::shared_ptr<DeviceCoordinator>> JobScheduler::getNextAvail
 		return {coordinatorId, std::dynamic_pointer_cast<DeviceCoordinator>(cpuDeviceCoordinator)};
 	}
 
-	// This cannot happen during normal execution
+	// No coordinator available
 	return {0, nullptr};
 
 }
@@ -228,6 +228,7 @@ void JobScheduler::checkForErrors() const {
 }
 
 std::vector<StatsAccumulator> JobScheduler::run() {
+	log(DEBUG, "[JOBSCHEDULER] Starting Job Scheduler");
 	// Start the watchdog - by this time all device coordinators are waiting for jobs
 	watchdog->start();
 	while (true) {
@@ -253,6 +254,7 @@ std::vector<StatsAccumulator> JobScheduler::run() {
 
 		assignJob();
 	}
+	log(DEBUG, "Job finished, terminating device coordinators and watchdog.");
 	auto scopedLock = std::scoped_lock(coordinatorMutex);
 	// Terminate watchdog
 	watchdog->terminate();

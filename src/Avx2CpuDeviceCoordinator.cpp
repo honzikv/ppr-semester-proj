@@ -36,9 +36,7 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 	const auto doublesPerAccumulator = bytesPerAccumulator / sizeof(double);
 	const auto nAccumulators = buffer.size() / doublesPerAccumulator;
 	auto accumulators = std::vector<Avx2StatsAccumulator>(nAccumulators);
-	auto mutex = std::mutex{};
-	auto accumulatorIds = std::vector<size_t>();
-	size_t maxEnd = 0;
+	log(DEBUG, "[SMP (AVX2)] Job split into " + std::to_string(nAccumulators) + " accumulators");
 	if (nAccumulators <= 1) {
 		// The job is too small to be processed in parallel
 		// Therefore do it in a single thread
@@ -57,30 +55,21 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
 		                  [&](const tbb::blocked_range<size_t> r) {
 			                  for (auto accumulatorId = r.begin(); accumulatorId < r.end(); accumulatorId += 1) {
-				                  {
-					                  auto scopedLock = std::scoped_lock(mutex);
-					                  accumulatorIds.push_back(accumulatorId);
-				                  }
 				                  // Since we are using AVX2 in each step we process 4 doubles at once, therefore the indices must
 				                  // be scaled by 1/4th
 				                  const auto jobStart = (accumulatorId * doublesPerAccumulator) / 4;
 				                  const auto jobEnd = jobStart + (doublesPerAccumulator) / 4;
-				                  for (auto i = jobStart; i < jobEnd; i += 1) {
-					                  accumulators[accumulatorId].pushWithFiltering({
-						                  buffer[i * 4],
-						                  buffer[i * 4 + 1],
-						                  buffer[i * 4 + 2],
-						                  buffer[i * 4 + 3],
-					                  });
-				                  }
-				                  {
-					                  auto scopedLock = std::scoped_lock(mutex);
-					                  maxEnd = maxEnd > jobEnd * 4 ? maxEnd : jobEnd * 4;
-				                  }
+								  for (auto i = jobStart; i < jobEnd; i += 1) {
+									  accumulators[accumulatorId].pushWithFiltering({
+										  buffer[i * 4],
+										  buffer[i * 4 + 1],
+										  buffer[i * 4 + 2],
+										  buffer[i * 4 + 3],
+										  });
+								  }
 			                  }
 		                  });
 	}
-	std::sort(accumulatorIds.begin(), accumulatorIds.end());
 	auto result = std::vector<StatsAccumulator>();
 	for (const auto& accumulator : accumulators) {
 		auto items = accumulator.asVectorOfScalars();
@@ -90,4 +79,7 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 	// Notify the watchdog
 	notifyWatchdogCallback(currentJob->getSize(chunkSizeBytes));
 	currentJob->Items = result;
+	log(DEBUG,
+		"[SMP (AVX2)] Finished computing job. with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
+			currentJob->getNChunks()) + " chunks. Chunk size is " + std::to_string(chunkSizeBytes) + " bytes");
 }
