@@ -50,6 +50,7 @@ void CpuDeviceCoordinator::onProcessJob() {
 			accumulator.push(buffer[i]);
 		}
 		accumulators.push_back(accumulator);
+		notifyWatchdogCallback(buffer.size() * sizeof(double));
 	}
 	else {
 		log(DEBUG, "[SMP] Job split into " + std::to_string(nAccumulators) + " accumulators");
@@ -61,11 +62,11 @@ void CpuDeviceCoordinator::onProcessJob() {
 				                  for (auto i = jobStart; i < jobEnd; i += 1) {
 					                  accumulators[accumulatorId].push(buffer[i]);
 				                  }
+								  notifyWatchdogCallback((jobEnd - jobStart) * sizeof(double));
 			                  }
 		                  });
 	}
-
-	notifyWatchdogCallback(currentJob->getSize(chunkSizeBytes));
+	
 	currentJob->Items = accumulators;
 	log(DEBUG,
 	    "[SMP] Finished computing job with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(

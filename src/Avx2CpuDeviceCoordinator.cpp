@@ -36,7 +36,7 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 	const auto doublesPerAccumulator = bytesPerAccumulator / sizeof(double);
 	const auto nAccumulators = buffer.size() / doublesPerAccumulator;
 	auto accumulators = std::vector<Avx2StatsAccumulator>(nAccumulators);
-	
+
 	if (nAccumulators <= 1) {
 		// The job is too small to be processed in parallel
 		// Therefore do it in a single thread
@@ -50,6 +50,7 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 				buffer[i * 4 + 3],
 			});
 		}
+		notifyWatchdogCallback(buffer.size() * sizeof(double));
 		accumulators.push_back(accumulator);
 	}
 	else {
@@ -61,14 +62,17 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 				                  // be scaled by 1/4th
 				                  const auto jobStart = (accumulatorId * doublesPerAccumulator) / 4;
 				                  const auto jobEnd = jobStart + (doublesPerAccumulator) / 4;
-								  for (auto i = jobStart; i < jobEnd; i += 1) {
-									  accumulators[accumulatorId].pushWithFiltering({
-										  buffer[i * 4],
-										  buffer[i * 4 + 1],
-										  buffer[i * 4 + 2],
-										  buffer[i * 4 + 3],
-										  });
-								  }
+				                  for (auto i = jobStart; i < jobEnd; i += 1) {
+					                  accumulators[accumulatorId].pushWithFiltering({
+						                  buffer[i * 4],
+						                  buffer[i * 4 + 1],
+						                  buffer[i * 4 + 2],
+						                  buffer[i * 4 + 3],
+					                  });
+				                  }
+
+				                  // Notify the watchdog
+								  notifyWatchdogCallback((jobEnd - jobStart) * sizeof(double));
 			                  }
 		                  });
 	}
@@ -77,11 +81,10 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 		auto items = accumulator.asVectorOfScalars();
 		result.insert(result.end(), items.begin(), items.end());
 	}
-
-	// Notify the watchdog
-	notifyWatchdogCallback(currentJob->getSize(chunkSizeBytes));
+	
 	currentJob->Items = result;
 	log(DEBUG,
-		"[SMP (AVX2)] Finished computing job with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
-			currentJob->getNChunks()) + " chunks. Chunk size is " + std::to_string(chunkSizeBytes) + " bytes");
+	    "[SMP (AVX2)] Finished computing job with id " + std::to_string(currentJob->Id) + ". Computed " +
+	    std::to_string(
+		    currentJob->getNChunks()) + " chunks. Chunk size is " + std::to_string(chunkSizeBytes) + " bytes");
 }
