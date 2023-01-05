@@ -80,6 +80,6 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 	notifyWatchdogCallback(currentJob->getSize(chunkSizeBytes));
 	currentJob->Items = result;
 	log(DEBUG,
-		"[SMP (AVX2)] Finished computing job. with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
+		"[SMP (AVX2)] Finished computing job with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
 			currentJob->getNChunks()) + " chunks. Chunk size is " + std::to_string(chunkSizeBytes) + " bytes");
 }

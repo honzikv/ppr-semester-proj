@@ -188,6 +188,6 @@ void ClDeviceCoordinator::onProcessJob() {
 	
 	currentJob->Items = results;
 	log(DEBUG,
-		"[OPENCL] Finished computing job. with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
+		"[OPENCL] Finished computing job with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
 			currentJob->getNChunks()) + " chunks. Chunk size is " + std::to_string(chunkSizeBytes) + " bytes");
 }

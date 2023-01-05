@@ -64,7 +64,7 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 			}
 
 			// If it is not log that it is skipped and continue
-			log(INFO, "Skipping OpenCL device \"" + deviceName + "\"");
+			log(DEBUG, "Skipping OpenCL device \"" + deviceName + "\"");
 		}
 	}
 
@@ -78,6 +78,7 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 		std::cout << "They will be skipped ..." << std::endl;
 	}
 
+	log(DEBUG, "Found " + std::to_string(result.size()) + " OpenCL devices");
 	return result;
 }
 
