@@ -36,10 +36,11 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 	const auto doublesPerAccumulator = bytesPerAccumulator / sizeof(double);
 	const auto nAccumulators = buffer.size() / doublesPerAccumulator;
 	auto accumulators = std::vector<Avx2StatsAccumulator>(nAccumulators);
-	log(DEBUG, "[SMP (AVX2)] Job split into " + std::to_string(nAccumulators) + " accumulators");
+	
 	if (nAccumulators <= 1) {
 		// The job is too small to be processed in parallel
 		// Therefore do it in a single thread
+		log(DEBUG, "[SMP (AVX2)] Job too small to be processed in parallel, processing in a single accumulator");
 		auto accumulator = Avx2StatsAccumulator();
 		for (auto i = 0ULL; i < buffer.size() / 4; i += 1) {
 			accumulator.pushWithFiltering({
@@ -52,6 +53,7 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 		accumulators.push_back(accumulator);
 	}
 	else {
+		log(DEBUG, "[SMP (AVX2)] Job split into " + std::to_string(nAccumulators) + " accumulators");
 		tbb::parallel_for(tbb::blocked_range<size_t>(0, nAccumulators),
 		                  [&](const tbb::blocked_range<size_t> r) {
 			                  for (auto accumulatorId = r.begin(); accumulatorId < r.end(); accumulatorId += 1) {

@@ -44,7 +44,6 @@ public:
 		if (watchdogThread.joinable()) {
 			watchdogThread.join();
 		}
-		log(DEBUG, "[WATCHDOG] Watchdog thread joined successfully");
 	}
 
 	/**

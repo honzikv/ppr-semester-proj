@@ -80,8 +80,11 @@ void ClDeviceCoordinator::estimateWorkgroupSize() {
 	const auto deviceName = device.getInfo<CL_DEVICE_NAME>();
 	if (vendorName.find("NVIDIA") != std::string::npos && (deviceName.find("GTX") != std::string::npos ||
 		deviceName.find("RTX") != std::string::npos)) {
+		
 		// Any modern
 		const auto nvidiaWorkgroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() / 8;
+		log(DEBUG, "[OPENCL] Detected NVIDIA RTX/GTX GPU, using larger workgroup size: " + std::to_string(
+			nvidiaWorkgroupSize));
 
 		if (nvidiaWorkgroupSize < clRecommendedWorkgroupSize) {
 			maxWorkGroupSize = nvidiaWorkgroupSize;
@@ -93,12 +96,14 @@ void ClDeviceCoordinator::estimateWorkgroupSize() {
 		return;
 	}
 
+	log(DEBUG, "[OPENCL] Non-Nvidia GPU detected, using recommended workgroup size " + std::to_string(
+		clRecommendedWorkgroupSize));
 	maxWorkGroupSize = clRecommendedWorkgroupSize;
 }
 
 
 void ClDeviceCoordinator::onProcessJob() {
-	log(INFO, "[OpenCL] Processing job with id " + std::to_string(currentJob->Id) + " on device \"" + deviceName +
+	log(INFO, "[OPENCL] Processing job with id " + std::to_string(currentJob->Id) + " on device \"" + deviceName +
 	    "\"");
 	
 	// Get total number of accumulators
@@ -112,7 +117,7 @@ void ClDeviceCoordinator::onProcessJob() {
 		totalBytes = currentJob->getSize(chunkSizeBytes);
 	}
 
-	log(DEBUG, "[OpenCL] Job split into " + std::to_string(nAccumulators) + " accumulators");
+	log(DEBUG, "[OPENCL] Job split into " + std::to_string(nAccumulators) + " accumulators");
 	// Create buffer for results
 	auto clStatus = cl_int{};
 	const auto accumulatorsBuffer = cl::Buffer(context, CL_MEM_READ_WRITE,

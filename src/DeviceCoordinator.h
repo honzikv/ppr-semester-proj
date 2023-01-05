@@ -5,7 +5,7 @@
 #include "Job.h"
 #include "ConcurrencyUtils.h"
 #include "DataLoader.h"
-
+#include "Logging.h"
 
 enum CoordinatorType {
 	TBB = 0,
@@ -168,7 +168,6 @@ public:
 
 	void startCoordinatorThread() {
 		coordinatorThread = std::thread(&DeviceCoordinator::threadMain, this);
-		// coordinatorThread.detach();
 	}
 
 	/**
@@ -210,6 +209,7 @@ private:
 	 * \brief Main function of the coordinator thread
 	 */
 	void threadMain() {
+		log(DEBUG, "[DEVICECOORDINATOR] Coordinator " + std::to_string(id) + "'s thread started...");
 		while (keepRunning) {
 			semaphore->acquire();
 			if (!currentJob) {
@@ -223,7 +223,6 @@ private:
 				errCallback({currentJob->Id, err.what(), id});
 			}
 		}
-
 	}
 
 	/**
