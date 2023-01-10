@@ -40,6 +40,7 @@ void run(ProcessingConfig& processingConfig) {
 	}
 	catch (std::runtime_error& err) {
 		log(CRITICAL, err.what());
+		exit(1);  // NOLINT(concurrency-mt-unsafe)
 	}
 }
 

@@ -138,7 +138,7 @@ public:
 	/**
 	 * \brief Checks for errors and throws an instance of std::runtime_error if any exception (that was fatal) occurred 
 	 */
-	void checkForErrors() const;
+	void checkForErrors();
 
 	/**
 	 * \brief Runs the job scheduler.

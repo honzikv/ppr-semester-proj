@@ -51,7 +51,6 @@ void ClDeviceCoordinator::setup() {
 	deviceName = device.getInfo<CL_DEVICE_NAME>();
 	estimateWorkgroupSize();
 
-	maxWorkGroupSize = 128;
 	const auto maxDeviceBufferSize = static_cast<size_t>(static_cast<double>(device.getInfo<
 			CL_DEVICE_MAX_MEM_ALLOC_SIZE>())
 		* BUFFER_MAX_SIZE_SCALE);
@@ -68,6 +67,18 @@ void ClDeviceCoordinator::setup() {
 		                ? static_cast<size_t>(std::floor(
 			                static_cast<double>(maxDeviceBufferSize) / static_cast<double>(chunkSizeBytes)))
 		                : maxHostChunks;
+
+	// Set the device type
+	if (device.getInfo<CL_DEVICE_TYPE>() == CL_DEVICE_TYPE_CPU) {
+		this->deviceType = "CPU";
+	}
+}
+
+void ClDeviceCoordinator::throwIfStatusUnsuccessful(const cl_int clStatus) const {
+	if (clStatus != CL_SUCCESS) {
+		log(CRITICAL, "OpenCL error occurred. Error: " + std::to_string(clStatus));
+		throw std::runtime_error("OpenCL error occurred. Error: " + std::to_string(clStatus));
+	}
 }
 
 void ClDeviceCoordinator::estimateWorkgroupSize() {
@@ -80,11 +91,9 @@ void ClDeviceCoordinator::estimateWorkgroupSize() {
 	const auto deviceName = device.getInfo<CL_DEVICE_NAME>();
 	if (vendorName.find("NVIDIA") != std::string::npos && (deviceName.find("GTX") != std::string::npos ||
 		deviceName.find("RTX") != std::string::npos)) {
-		
-		// Any modern
 		const auto nvidiaWorkgroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() / 8;
 		log(DEBUG, "[OPENCL] Detected NVIDIA RTX/GTX GPU, using larger workgroup size: " + std::to_string(
-			nvidiaWorkgroupSize));
+			    nvidiaWorkgroupSize));
 
 		if (nvidiaWorkgroupSize < clRecommendedWorkgroupSize) {
 			maxWorkGroupSize = nvidiaWorkgroupSize;
@@ -97,15 +106,15 @@ void ClDeviceCoordinator::estimateWorkgroupSize() {
 	}
 
 	log(DEBUG, "[OPENCL] Non-Nvidia GPU detected, using recommended workgroup size " + std::to_string(
-		clRecommendedWorkgroupSize));
+		    clRecommendedWorkgroupSize));
 	maxWorkGroupSize = clRecommendedWorkgroupSize;
 }
 
 
 void ClDeviceCoordinator::onProcessJob() {
 	log(INFO, "[OPENCL] Processing job with id " + std::to_string(currentJob->Id) + " on device \"" + deviceName +
-	    "\"");
-	
+	    "\"" + " (" + deviceType + ")");
+
 	// Get total number of accumulators
 	auto nAccumulators = currentJob->getNChunks() / chunksPerAccumulator;
 
@@ -190,9 +199,9 @@ void ClDeviceCoordinator::onProcessJob() {
 			accumulatorData[offset + MIN_IDX],
 		};
 	}
-	
+
 	currentJob->Items = results;
 	log(DEBUG,
-		"[OPENCL] Finished computing job with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
-			currentJob->getNChunks()) + " chunks. Chunk size is " + std::to_string(chunkSizeBytes) + " bytes");
+	    "[OPENCL] Finished computing job with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
+		    currentJob->getNChunks()) + " chunks. Chunk size is " + std::to_string(chunkSizeBytes) + " bytes");
 }

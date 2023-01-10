@@ -19,7 +19,8 @@ JobScheduler::JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeB
 	auto coordinatorId = 0;
 	// Add CL devices
 	for (const auto& device : processingConfig.ClDevices) {
-		clDeviceCoordinators.push_back(std::make_shared<ClDeviceCoordinator>(
+		try {
+			clDeviceCoordinators.push_back(std::make_shared<ClDeviceCoordinator>(
 				CoordinatorType::OPEN_CL,
 				processingConfig.ProcessingMode,
 				// Use dark magic to pass member function as a callback
@@ -29,17 +30,23 @@ JobScheduler::JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeB
 				[this](auto&& ph1) {
 					notifyWatchdogCallback(std::forward<decltype(ph1)>(ph1));
 				},
-				[this](auto&& ph1) {
+					[this](auto&& ph1) {
 					notifyErrOccurred(std::forward<decltype(ph1)>(ph1));
 				},
-				chunkSizeBytes,
-				memoryConfig.BytesPerClAccumulator,
-				memoryConfig.MaxClHostBufferSizeBytes,
-				processingConfig.DistFilePath,
-				coordinatorId,
-				device
-			)
-		);
+					chunkSizeBytes,
+					memoryConfig.BytesPerClAccumulator,
+					memoryConfig.MaxClHostBufferSizeBytes,
+					processingConfig.DistFilePath,
+					coordinatorId,
+					device
+					)
+			);
+		}
+		catch (ClCompileErr& err) {
+			const auto deviceName = device.getInfo<CL_DEVICE_NAME>();
+			log(CRITICAL, "Failed to compile OpenCL program for device. The program cannot continue. Device: " + deviceName + ". Error: " + err.what());
+			exit(1);
+		}
 		coordinatorId += 1;
 	}
 
@@ -196,6 +203,7 @@ void JobScheduler::terminateDeviceCoordinators() const {
 }
 
 void JobScheduler::assignJob() {
+	checkForErrors();
 	auto scopedLock = std::scoped_lock(coordinatorMutex);
 
 	// Get the coordinator
@@ -208,7 +216,8 @@ void JobScheduler::assignJob() {
 	currentJobId += 1;
 }
 
-void JobScheduler::checkForErrors() const {
+void JobScheduler::checkForErrors() {
+	auto scopedLock = std::scoped_lock(coordinatorMutex);
 	if (!lastErr) {
 		return;
 	}

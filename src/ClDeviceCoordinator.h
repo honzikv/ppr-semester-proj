@@ -63,6 +63,7 @@ private:
 	size_t maxHostChunks;
 	size_t chunksPerAccumulator{};
 	std::string deviceName;
+	std::string deviceType = "GPU";
 
 	/**
 	 * \brief Compiles given source into program
@@ -78,11 +79,7 @@ private:
 	 */
 	void setup();
 
-	void throwIfStatusUnsuccessful(const cl_int clStatus) const {
-		if (clStatus != CL_SUCCESS) {
-			throw std::runtime_error("Error during OpenCL buffer creation. Error: " + std::to_string(clStatus));
-		}
-	}
+	void throwIfStatusUnsuccessful(const cl_int clStatus) const;
 
 	/**
 	 * \brief Estimates workgroup size

@@ -52,7 +52,6 @@ namespace StatUtils {
 			filtered = items;
 		}
 
-		// NOLINT(clang-diagnostic-unused-function)
 		auto itemsToProcess = filtered.size();
 		while (true) {
 			const auto nPairs = itemsToProcess / 2 + itemsToProcess % 2;

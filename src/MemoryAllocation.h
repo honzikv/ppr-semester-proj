@@ -4,8 +4,8 @@ namespace MemoryAllocation {
 
 	constexpr auto DEFAULT_APP_MEMORY_LIMIT = 1024 * 1024 * 1024; // 1GB
 	constexpr auto DEFAULT_CPU_RUNTIME_RATIO = .3; // 30%
-	constexpr auto DEFAULT_CL_RUNTIME_RATIO = .60; // 60%
-	constexpr auto DEFAULT_CPU_MEMORY_RATIO = .5; // CPU will use 20% of the buffer memory if OpenCL devices are used
+	constexpr auto DEFAULT_CPU_MEMORY_RATIO = .5; // CPU will use 50% of the buffer memory if OpenCL devices are used
+	constexpr auto CL_RUNTIME_RATIOS = std::array<double, 4>{.0, .66, .75, .85}; // Indexed by the number of devices
 
 	/**
 	 * \brief Contains data for memory configuration for all devices
@@ -54,6 +54,20 @@ namespace MemoryAllocation {
 	}
 
 	/**
+	 * \brief Returns optimal OpenCL memory configuration for specific number of devices.
+	 * \param nClDevices number of OpenCL devices that will be used for the computation
+	 * \return scaling factor for the memory
+	 */
+	inline double getClRuntimeRatio(const size_t nClDevices) {
+		if (nClDevices > CL_RUNTIME_RATIOS.size()) {
+			// 4 and more devices are not reasonable to use with 1 GB of RAM
+			return CL_RUNTIME_RATIOS.back();
+		}
+
+		return CL_RUNTIME_RATIOS[nClDevices];
+	}
+
+	/**
 	 * \brief Builds memory config for the application
 	 * \param processingConfig processing config
 	 * \param appMemoryLimit total memory limit for the application - e.g. 1 GB
@@ -68,10 +82,11 @@ namespace MemoryAllocation {
 
 	) {
 		const auto processingMode = processingConfig.ProcessingMode;
+		const auto clRuntimeRatio = getClRuntimeRatio(processingConfig.ClDevices.size());
 
 		const auto appRuntimeRatio = (processingMode == ProcessingMode::OPENCL_DEVICES || processingMode ==
 			                             ProcessingMode::ALL)
-			                             ? DEFAULT_CL_RUNTIME_RATIO
+			                             ? clRuntimeRatio
 			                             : DEFAULT_CPU_RUNTIME_RATIO;
 
 		// Max amount of memory for all buffers (both CPU and CL)

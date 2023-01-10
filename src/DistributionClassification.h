@@ -61,7 +61,7 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::
 	output << "\nResults" << "\n";
 	output << "-------" << "\n";
 
-	if (statsAccumulator.numericallyErroredWhileMerging()) {
+	if (statsAccumulator.numericallyErroredWhileMerging() || !statsAccumulator.valid()) {
 		output <<
 			"- A numerical error (floating point overflow / underflow) occurred during computation, the result may be imprecise!"
 			<< "\n" << "\n";
