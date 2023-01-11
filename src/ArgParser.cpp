@@ -18,8 +18,10 @@ auto lowercase(const std::basic_string<T>& s) {
 inline auto queryClDevices(const std::vector<std::string>& devices) {
 	log(DEBUG, "Querying OpenCL devices...");
 	auto deviceNamesFilter = std::unordered_set<std::string>();
+	auto missingDevices = std::unordered_set < std::string>(); // All missing devices
 	for (const auto& deviceName : devices) {
 		deviceNamesFilter.insert(lowercase(deviceName));
+		missingDevices.insert(lowercase(deviceName));
 	}
 
 	auto result = std::vector<cl::Device>();
@@ -50,6 +52,7 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 			}
 
 			if (deviceNamesFilter.empty()) {
+				log(INFO, "Found compatible OpenCL device \"" + deviceName + "\" - it will be used for the computation");
 				result.push_back(device);
 				continue;
 			}
@@ -57,8 +60,9 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 			// Lowercase the name and check if it is in the filter
 			const auto deviceNameLower = lowercase(deviceName);
 			if (deviceNamesFilter.find(deviceNameLower) != deviceNamesFilter.end()) {
+				log(INFO, "Found requested OpenCL device \"" + deviceName + "\" - it will be used for the computation");
 				result.push_back(device);
-				// Remove the record from the filter
+				missingDevices.erase(deviceNameLower);
 				continue;
 			}
 
@@ -67,19 +71,18 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 		}
 	}
 
-	// Check if all devices were found, if not log this
-	if (!deviceNamesFilter.empty()) {
-		log(WARNING, "Could not find following OpenCL devices: ");
-		for (const auto& deviceName : deviceNamesFilter) {
-			std::cout << deviceName << "\n";
+	if (!result.empty()) {
+		// Print devices that were not found
+		for (const auto& device : devices) {
+			auto deviceLower = lowercase(device);
+			if (missingDevices.find(deviceLower) != missingDevices.end()) {
+				log(WARNING, "OpenCL device \"" + device + "\" was not found - it will not be utilized");
+			}
 		}
 
-		std::cout << "They will be skipped ..." << std::endl;
-	}
-
-	if (!result.empty()) {
 		log(DEBUG, std::to_string(result.size()) + " OpenCL devices will be used for the computation");
 	}
+	
 	return result;
 }
 
