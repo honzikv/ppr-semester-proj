@@ -1,11 +1,13 @@
 #pragma once
 #include <algorithm>
 #include <iostream>
+#include <string>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <iomanip>
+#include <sstream>
 #include "StatsAccumulator.h"
-
 
 using Point2D = std::pair<double, double>;
 
@@ -31,20 +33,32 @@ inline auto euclideanDistance2d(std::pair<double, double> a, std::pair<double, d
 	return std::hypot(x1 - x2, y1 - y2);
 }
 
+inline auto formatStatsNumber(const double num) {
+	// If value is NaN return "Overflow during computation"
+	if (std::isnan(num) || std::isinf(num)) {
+		return std::string{"Value Overflown during computation"};
+	}
+
+	auto stringStream = std::ostringstream{};
+	stringStream << std::scientific << std::setprecision(3) << num;
+	return stringStream.str();
+}
+
 /**
  * \brief Prints statistics of StatsAccumulator to the given output stream
  * \param statsAccumulator stats accumulator to print stats for
+ * \param distance the distance between the distribution and the distribution that was used to generate the data
  * \param output output stream
  */
 inline void printStats(const StatsAccumulator& statsAccumulator, const double distance, std::ostream& output) {
-	output << "Min: " << statsAccumulator.getMin() << "\n";
-	output << "Mean: " << statsAccumulator.getMean() << "\n";
-	output << "Variance: " << statsAccumulator.getVariance() << "\n";
-	output << "Standard Deviation: " << statsAccumulator.getStandardDeviation() << "\n";
-	output << "Skewness: " << statsAccumulator.getSkewness() << "\n";
-	output << "Kurtosis: " << statsAccumulator.getKurtosis() << "\n";
+	output << "Min: " << formatStatsNumber(statsAccumulator.getMin()) << "\n";
+	output << "Mean: " << formatStatsNumber(statsAccumulator.getMean()) << "\n";
+	output << "Variance: " << formatStatsNumber(statsAccumulator.getVariance()) << "\n";
+	output << "Standard Deviation: " << formatStatsNumber(statsAccumulator.getStandardDeviation()) << "\n";
+	output << "Skewness: " << formatStatsNumber(statsAccumulator.getSkewness()) << "\n";
+	output << "Kurtosis: " << formatStatsNumber(statsAccumulator.getKurtosis()) << "\n";
 	output << "Integer-only distribution: " << (statsAccumulator.integerDistribution() ? "Yes" : "No") << "\n";
-	output << "Distance from the classified distribution: " << distance << "\n";
+	output << "Distance from the classified distribution: " << formatStatsNumber(distance) << "\n";
 }
 
 /**
@@ -96,7 +110,8 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::
 			continue;
 		}
 
-		output << "- Discarding " + DISTRIBUTION_STR_LUT.at(i) + " distribution from the classification since the data contains non-integer values" << "\n" << "\n";
+		output << "- Discarding " + DISTRIBUTION_STR_LUT.at(i) +
+			" distribution from the classification since the data contains non-integer values" << "\n" << "\n";
 	}
 
 	// Get index of the smallest distance

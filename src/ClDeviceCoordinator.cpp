@@ -112,21 +112,20 @@ void ClDeviceCoordinator::estimateWorkgroupSize() {
 
 
 void ClDeviceCoordinator::onProcessJob() {
-	log(INFO, "[OPENCL] Processing job with id " + std::to_string(currentJob->Id) + " on device \"" + deviceName +
-	    "\"" + " (" + deviceType + ")");
+	log(INFO, "[OPENCL - " + deviceName + " (" + deviceType + ")" + "] Processing job with id " + std::to_string(currentJob->Id));
 
 	// Get total number of accumulators
 	auto nAccumulators = currentJob->getNChunks() / chunksPerAccumulator;
 
 	// Get total number of workgroup runs
 	auto totalBytes = nAccumulators * bytesPerAccumulator;
-	if (nAccumulators == 0 && currentJob->getSize(chunkSizeBytes) < chunksPerAccumulator) {
+	if (nAccumulators == 0 && currentJob->getSize(chunkSizeBytes) < chunksPerAccumulator * chunkSizeBytes) {
 		// Our file is smaller than chunksPerAccumulator - therefore we only run one work item in one workgroup
 		nAccumulators = 1;
 		totalBytes = currentJob->getSize(chunkSizeBytes);
 	}
 
-	log(DEBUG, "[OPENCL] Job split into " + std::to_string(nAccumulators) + " accumulators");
+	log(DEBUG, "[OPENCL - " + deviceName + " (" + deviceType + ")" + "] Job split into " + std::to_string(nAccumulators) + " accumulators");
 	// Create buffer for results
 	auto clStatus = cl_int{};
 	const auto accumulatorsBuffer = cl::Buffer(context, CL_MEM_READ_WRITE,
@@ -202,6 +201,6 @@ void ClDeviceCoordinator::onProcessJob() {
 
 	currentJob->Items = results;
 	log(DEBUG,
-	    "[OPENCL] Finished computing job with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
+		"[OPENCL - " + deviceName + " (" + deviceType + ")" + "] " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
 		    currentJob->getNChunks()) + " chunks. Chunk size is " + std::to_string(chunkSizeBytes) + " bytes");
 }

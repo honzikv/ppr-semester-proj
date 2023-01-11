@@ -1,11 +1,14 @@
 #pragma once
 
+/**
+ * \brief Memory allocation related functionality
+ */
 namespace MemoryAllocation {
 
 	constexpr auto DEFAULT_APP_MEMORY_LIMIT = 1024 * 1024 * 1024; // 1GB
 	constexpr auto DEFAULT_CPU_RUNTIME_RATIO = .3; // 30%
 	constexpr auto DEFAULT_CPU_MEMORY_RATIO = .5; // CPU will use 50% of the buffer memory if OpenCL devices are used
-	constexpr auto CL_RUNTIME_RATIOS = std::array<double, 4>{.0, .66, .75, .85}; // Indexed by the number of devices
+	constexpr auto CL_RUNTIME_RATIOS = std::array<double, 4>{.0, .66, .75, .88}; // Indexed by the number of OpenCL devices
 
 	/**
 	 * \brief Contains data for memory configuration for all devices

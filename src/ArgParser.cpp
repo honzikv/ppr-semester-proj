@@ -22,6 +22,13 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 		deviceNamesFilter.insert(lowercase(deviceName));
 	}
 
+	if (deviceNamesFilter.size() > 0) {
+		log(DEBUG, "Filter is enabled, only following devices will be used:");
+		for (const auto& deviceName : deviceNamesFilter) {
+			log(DEBUG, "\t-" + deviceName);
+		}
+	}
+
 	auto result = std::vector<cl::Device>();
 	auto platforms = std::vector<cl::Platform>();
 	auto platformDevices = std::vector<cl::Device>();
@@ -43,7 +50,7 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 			const auto deviceName = std::string(device.getInfo<CL_DEVICE_NAME>());
 
 			// Skip if we cant find double precision extension
-			if (!deviceExtensions.find(DOUBLE_PRECISION_DEFAULT) || !deviceExtensions.find(
+			if (!deviceExtensions.find(DOUBLE_PRECISION_DEFAULT) && !deviceExtensions.find(
 				DOUBLE_PRECISION_AMD)) {
 				log(INFO, "Skipping OpenCL device \"" + deviceName + "\" because it doesn't support double precision");
 				continue;

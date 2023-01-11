@@ -160,6 +160,9 @@ public:
 		return std::string{COORDINATOR_TYPE_LUT.at(coordinatorType)} + " Coordinator with id " + std::to_string(id);
 	}
 
+	/**
+	 * \brief Join the coordinator thread - this must be called to ensure the program is terminated correctly
+	 */
 	void join() {
 		if (coordinatorThread.joinable()) {
 			coordinatorThread.join();
