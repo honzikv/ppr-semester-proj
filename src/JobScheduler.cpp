@@ -259,6 +259,7 @@ std::vector<StatsAccumulator> JobScheduler::run() {
 		// Select best device available (prioritize GPU over CPU)
 		if (!anyCoordinatorAvailable()) {
 			jobFinishedSemaphore.acquire();
+			continue;
 		}
 
 		assignJob();
