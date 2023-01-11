@@ -18,7 +18,7 @@ auto lowercase(const std::basic_string<T>& s) {
 inline auto queryClDevices(const std::vector<std::string>& devices) {
 	log(DEBUG, "Querying OpenCL devices...");
 	auto deviceNamesFilter = std::unordered_set<std::string>();
-	auto missingDevices = std::unordered_set < std::string>(); // All missing devices
+	auto missingDevices = std::unordered_set<std::string>(); // All missing devices
 	for (const auto& deviceName : devices) {
 		deviceNamesFilter.insert(lowercase(deviceName));
 		missingDevices.insert(lowercase(deviceName));
@@ -52,7 +52,8 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 			}
 
 			if (deviceNamesFilter.empty()) {
-				log(INFO, "Found compatible OpenCL device \"" + deviceName + "\" - it will be used for the computation");
+				log(INFO, "Found compatible OpenCL device \"" + deviceName +
+				    "\" - it will be used for the computation");
 				result.push_back(device);
 				continue;
 			}
@@ -82,16 +83,17 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 
 		log(DEBUG, std::to_string(result.size()) + " OpenCL devices will be used for the computation");
 	}
-	
+
 	return result;
 }
 
 ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const {
 	// For argument parsing we use cxxopts
-	auto options = cxxopts::Options("PPR Distribution Estimator", "Possible modes: [single_thread, smp, opencl_devices, all]");
+	auto options = cxxopts::Options("PPR Distribution Estimator",
+	                                "Possible modes: [single_thread, smp, opencl_devices, all]");
 	options.add_options()
 		("f,file", "Path to the file with distribution (either absolute or relative)",
-		 cxxopts::value<std::filesystem::path>())
+		 cxxopts::value<std::string>())
 		("m,mode", "Processing mode", cxxopts::value<std::string>())
 		("d,devices", "List of devices to use", cxxopts::value<std::vector<std::string>>())
 		("l,list_cl_devices", "List all available OpenCL devices")
@@ -147,7 +149,7 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 
 	fs::path filePath;
 	try {
-		filePath = args["file"].as<std::filesystem::path>();
+		filePath = {args["file"].as<std::string>()};
 	}
 	catch (const std::exception&) {
 		throw std::runtime_error("Could not parse file path");
@@ -200,8 +202,8 @@ ProcessingConfig ArgumentParser::validateArgs(const cxxopts::ParseResult& args) 
 		                     : static_cast<bool>(__ISA_AVAILABLE_AVX2);
 
 	const auto watchdogTimeout = args.count("watchdog_timeout") > 0
-		? args["watchdog_timeout"].as<size_t>() * 1000
-		: DEFAULT_WATCHDOG_TIMEOUT;
+		                             ? args["watchdog_timeout"].as<size_t>() * 1000
+		                             : DEFAULT_WATCHDOG_TIMEOUT;
 
 	if (watchdogTimeout > 60000) {
 		log(WARNING, "Detected watchdog timeout over 60s: " + std::to_string(watchdogTimeout / 1000) + "s");
