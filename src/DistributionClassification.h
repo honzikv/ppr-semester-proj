@@ -33,15 +33,13 @@ inline auto euclideanDistance2d(std::pair<double, double> a, std::pair<double, d
 	return std::hypot(x1 - x2, y1 - y2);
 }
 
-inline auto formatStatsNumber(const double num) {
-	// If value is NaN return "Overflow during computation"
+inline void prettyPrintStatsNumber(const double num, const std::string& name, std::ostream& output) {
 	if (std::isnan(num) || std::isinf(num)) {
-		return std::string{"Value Overflown during computation"};
+		output << name << ": " << "Value overflown during computation" << std::endl;
+		return;
 	}
 
-	auto stringStream = std::ostringstream{};
-	stringStream << std::scientific << std::setprecision(3) << num;
-	return stringStream.str();
+	output << name << ": " << num << "\n";
 }
 
 /**
@@ -51,14 +49,14 @@ inline auto formatStatsNumber(const double num) {
  * \param output output stream
  */
 inline void printStats(const StatsAccumulator& statsAccumulator, const double distance, std::ostream& output) {
-	output << "Min: " << formatStatsNumber(statsAccumulator.getMin()) << "\n";
-	output << "Mean: " << formatStatsNumber(statsAccumulator.getMean()) << "\n";
-	output << "Variance: " << formatStatsNumber(statsAccumulator.getVariance()) << "\n";
-	output << "Standard Deviation: " << formatStatsNumber(statsAccumulator.getStandardDeviation()) << "\n";
-	output << "Skewness: " << formatStatsNumber(statsAccumulator.getSkewness()) << "\n";
-	output << "Kurtosis: " << formatStatsNumber(statsAccumulator.getKurtosis()) << "\n";
+	prettyPrintStatsNumber(statsAccumulator.getMin(), "Min", output);
+	prettyPrintStatsNumber(statsAccumulator.getMean(), "Mean", output);
+	prettyPrintStatsNumber(statsAccumulator.getVariance(), "Variance", output);
+	prettyPrintStatsNumber(statsAccumulator.getStandardDeviation(), "Standard Deviation", output);
+	prettyPrintStatsNumber(statsAccumulator.getSkewness(), "Skewness", output);
+	prettyPrintStatsNumber(statsAccumulator.getKurtosis(), "Kurtosis", output);
 	output << "Integer-only distribution: " << (statsAccumulator.integerDistribution() ? "Yes" : "No") << "\n";
-	output << "Distance from the classified distribution: " << formatStatsNumber(distance) << "\n";
+	prettyPrintStatsNumber(distance, "Distance from the classified distribution", output);
 }
 
 /**
