@@ -22,13 +22,6 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 		deviceNamesFilter.insert(lowercase(deviceName));
 	}
 
-	if (deviceNamesFilter.size() > 0) {
-		log(DEBUG, "Filter is enabled, only following devices will be used:");
-		for (const auto& deviceName : deviceNamesFilter) {
-			log(DEBUG, "\t-" + deviceName);
-		}
-	}
-
 	auto result = std::vector<cl::Device>();
 	auto platforms = std::vector<cl::Platform>();
 	auto platformDevices = std::vector<cl::Device>();
@@ -66,7 +59,6 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 			if (deviceNamesFilter.find(deviceNameLower) != deviceNamesFilter.end()) {
 				result.push_back(device);
 				// Remove the record from the filter
-				deviceNamesFilter.erase(deviceNameLower);
 				continue;
 			}
 
