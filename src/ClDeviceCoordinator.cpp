@@ -151,31 +151,37 @@ void ClDeviceCoordinator::onProcessJob() {
 	// Load the kernel
 	auto kernel = cl::Kernel(program, KERNEL_NAME);
 
-	// Run the computations
+	// Run the computation
 	auto bytesRemaining = totalBytes;
-	const auto [startIdx, endIdx] = currentJob->ChunkIdxRange;
-	auto currentIdx = startIdx;
-	while (currentIdx < endIdx && bytesRemaining > 0) {
-		// Now keep loading data into the buffer
+	const auto [startIdx, _] = currentJob->ChunkIdxRange;
+	const auto totalBytesPerAccumulator = chunksPerAccumulator * chunkSizeBytes;
+	while (bytesRemaining > 0) {
+		// Load either max size of the buffer if there is too much data to load or the remaining data
 		const auto chunksToLoad = bytesRemaining > maxHostChunks * chunkSizeBytes
-			                          ? maxHostChunks
-			                          : bytesRemaining / chunkSizeBytes;
-		dataLoader.loadChunksIntoDeviceBuffer(currentIdx, currentIdx + chunksToLoad, dataBuffer, commandQueue);
+			? maxHostChunks // buffer size is maxHostChunks * chunkSizeBytes
+			: bytesRemaining / chunkSizeBytes; // or something smaller
 
+		// Offset the read by the number of bytes processed in each accumulator
+		const auto bytesProcessedPerAccumulator = totalBytesPerAccumulator - bytesRemaining / nAccumulators;
+
+		// Load chunks "into the device" - or rather schedule to do so via OpenCL
+		dataLoader.loadChunksIntoDevice(nAccumulators, chunksToLoad, startIdx, bytesProcessedPerAccumulator, bytesPerAccumulator,
+			dataBuffer, commandQueue);
+
+		// Amount of items is the number of bytes to load divided by the number of accumulators and the size of double (i.e. 8 bytes)
 		const auto itemsToProcess = (chunksToLoad * chunkSizeBytes) / nAccumulators / sizeof(double);
 
+		// Pass args to the kernel
 		kernel.setArg(0, dataBuffer);
 		kernel.setArg(1, accumulatorsBuffer);
 		kernel.setArg(2, itemsToProcess);
 
-		// Run the kernel
+		// Schedule to execute the kernel
 		clStatus = commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(nAccumulators),
-		                                             cl::NDRange(nAccumulators));
+			cl::NDRange(nAccumulators));
 		throwIfStatusUnsuccessful(clStatus);
 
-		currentIdx = currentIdx + chunksToLoad;
 		bytesRemaining -= chunksToLoad * chunkSizeBytes;
-
 		notifyWatchdogCallback(chunksToLoad * chunkSizeBytes);
 	}
 

@@ -128,10 +128,12 @@ StatsAccumulator StatsAccumulator::operator+(StatsAccumulator& other) {
 	if (!result.valid()) {
 		if (valid()) {
 			numericalErrorWhileMerging = true;
+			minVal = result.minVal;
 			return *this;
 		}
 
 		other.numericalErrorWhileMerging = true;
+		other.minVal = result.minVal;
 		return other;
 	}
 

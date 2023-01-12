@@ -58,4 +58,8 @@ public:
 	void loadChunksIntoDeviceBuffer(size_t startIdx, size_t endIdx, const cl::Buffer& buffer,
 	                                const cl::CommandQueue& commandQueue);
 
+	void loadChunksIntoDevice(size_t nAccumulators, size_t nChunks, size_t startIdx, size_t accumulatorOffset,
+		size_t bytesOffset,
+		const cl::Buffer& buffer, const cl::CommandQueue& commandQueue);
+
 };

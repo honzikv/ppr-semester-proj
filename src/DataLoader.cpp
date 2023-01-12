@@ -55,3 +55,35 @@ void DataLoader::loadChunksIntoDeviceBuffer(const size_t startIdx, const size_t 
 	}
 
 }
+
+void DataLoader::loadChunksIntoDevice(size_t nAccumulators, size_t nChunks, size_t startIdx,
+                                      size_t bytesOffset, size_t accumulatorOffset, const cl::Buffer& buffer,
+                                      const cl::CommandQueue& commandQueue) {
+
+	const auto bytesToRead = nChunks * ChunkSizeBytes;
+
+	// Create host buffer
+	auto hostBuffer = std::vector<double>(bytesToRead / sizeof(double));
+
+	const auto bytesPerAccumulator = bytesToRead / nAccumulators;
+
+	// Iterate over each accumulator and load data for processing
+	for (auto accumulatorId = 0ULL; accumulatorId < nAccumulators; accumulatorId += 1) {
+
+		// Compute address for the current accumulator - i.e. start position in the file + accumulatorId * accumulator offset + 
+		const auto address = startIdx * ChunkSizeBytes + accumulatorId * accumulatorOffset + bytesOffset;
+
+		// Move to the address
+		file.seekg(static_cast<int64_t>(address), std::ios::beg);
+
+		// Read bytes to the buffer
+		file.read(reinterpret_cast<char*>(hostBuffer.data() + accumulatorId * bytesPerAccumulator / sizeof(double)),
+			static_cast<int64_t>(bytesPerAccumulator));
+
+	}
+
+	if (const auto returnValue = commandQueue.enqueueWriteBuffer(buffer, CL_TRUE, 0, nChunks * ChunkSizeBytes, hostBuffer.data());
+		returnValue != CL_SUCCESS) {
+		throw std::runtime_error("Could not allocate memory on the device, the program cannot continue!");
+	}
+}
