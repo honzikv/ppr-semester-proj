@@ -17,10 +17,14 @@ auto lowercase(const std::basic_string<T>& s) {
 /**
  * \brief Queries all OpenCL devices and returns them in a vector
  * \param devices list of devices to query
+ * \param useLog if true, logs the devices which will be used
  * \return list of found OpenCL devices
  */
-inline auto queryClDevices(const std::vector<std::string>& devices) {
-	log(DEBUG, "Querying OpenCL devices...");
+inline auto queryClDevices(const std::vector<std::string>& devices, bool useLog = true) {
+	if (useLog) {
+		log(DEBUG, "Querying OpenCL devices...");
+	}
+
 	auto deviceNamesFilter = std::unordered_set<std::string>();
 	auto missingDevices = std::unordered_set<std::string>(); // All missing devices
 	for (const auto& deviceName : devices) {
@@ -51,13 +55,18 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 			// Skip if we cant find double precision extension
 			if (!deviceExtensions.find(DOUBLE_PRECISION_DEFAULT) && !deviceExtensions.find(
 				DOUBLE_PRECISION_AMD)) {
-				log(INFO, "Skipping OpenCL device \"" + deviceName + "\" because it doesn't support double precision");
+				if (useLog) {
+					log(INFO, "Skipping OpenCL device \"" + deviceName +
+					    "\" because it doesn't support double precision");
+				}
 				continue;
 			}
 
 			if (deviceNamesFilter.empty()) {
-				log(INFO, "Found compatible OpenCL device \"" + deviceName +
-				    "\" - it will be used for the computation");
+				if (useLog) {
+					log(INFO, "Found compatible OpenCL device \"" + deviceName +
+					    "\" - it will be used for the computation");
+				}
 				result.push_back(device);
 				continue;
 			}
@@ -65,14 +74,19 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 			// Lowercase the name and check if it is in the filter
 			const auto deviceNameLower = lowercase(deviceName);
 			if (deviceNamesFilter.find(deviceNameLower) != deviceNamesFilter.end()) {
-				log(INFO, "Found requested OpenCL device \"" + deviceName + "\" - it will be used for the computation");
+				if (useLog) {
+					log(INFO, "Found requested OpenCL device \"" + deviceName +
+					    "\" - it will be used for the computation");
+				}
 				result.push_back(device);
 				missingDevices.erase(deviceNameLower);
 				continue;
 			}
 
 			// If it is not log that it is skipped and continue
-			log(DEBUG, "Skipping OpenCL device \"" + deviceName + "\"");
+			if (useLog) {
+				log(DEBUG, "Skipping OpenCL device \"" + deviceName + "\"");
+			}
 		}
 	}
 
@@ -85,7 +99,9 @@ inline auto queryClDevices(const std::vector<std::string>& devices) {
 			}
 		}
 
-		log(DEBUG, std::to_string(result.size()) + " OpenCL devices will be used for the computation");
+		if (useLog) {
+			log(DEBUG, std::to_string(result.size()) + " OpenCL devices will be used for the computation");
+		}
 	}
 
 	return result;
@@ -129,7 +145,7 @@ ProcessingConfig ArgumentParser::processArgs(const int argc, char** argv) const 
 
 	if (result.count("list_cl_devices")) {
 		std::cout << "Available OpenCL devices: " << "\n";
-		const auto clDevices = queryClDevices({});
+		const auto clDevices = queryClDevices({}, false);
 		for (const auto& clDevice : clDevices) {
 			std::cout << "  -\t" << "\"" << clDevice.getInfo<CL_DEVICE_NAME>() << "\"" << std::endl;
 
