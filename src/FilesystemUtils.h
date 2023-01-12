@@ -11,7 +11,7 @@ namespace FilesystemUtils {
 	 */
 	void makeDirs(const fs::path& filePath) {
 		const auto dirPath = filePath.parent_path();
-		if (fs::is_regular_file(dirPath)) {
+		if (fs::is_regular_file(dirPath) || dirPath == "") {
 			return; // Nothing to do
 		}
 
