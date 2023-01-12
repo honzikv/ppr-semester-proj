@@ -151,10 +151,7 @@ std::pair<size_t, std::shared_ptr<DeviceCoordinator>> JobScheduler::getNextAvail
 }
 
 void JobScheduler::addProcessedJob(const std::unique_ptr<Job> job) {
-	for (const auto& accumulator : job->Items) {
-		accumulators.push_back(accumulator);
-	}
-
+	processedJobs.push_back(*job);
 	log(INFO, "[JOBSCHEDULER] Job " + std::to_string(job->Id) + " was successfully processed");
 }
 
@@ -271,6 +268,18 @@ std::vector<StatsAccumulator> JobScheduler::run() {
 
 	// Terminate all coordinators
 	terminateDeviceCoordinators();
+
+	auto accumulators = std::vector<StatsAccumulator>();
+
+	// Sort the processed jobs by their id
+	std::sort(processedJobs.begin(), processedJobs.end(), [](const auto& lhs, const auto& rhs) {
+		return lhs.Id < rhs.Id;
+		});
+
+	// Collect the stats from the jobs
+	for (const auto& job : processedJobs) {
+		accumulators.insert(accumulators.end(), job.Items.begin(), job.Items.end());
+	}
 
 	return accumulators;
 }

@@ -58,9 +58,9 @@ class JobScheduler {
 	size_t currentJobId = 0;
 
 	/**
-	 * \brief Accumulated results from the coordinators
+	 * \brief Accumulated job results from Device coordinators
 	 */
-	std::vector<StatsAccumulator> accumulators;
+	std::vector<Job> processedJobs;
 
 	/**
 	 * \brief Last execution error, coordinators set this up via notifyErrOccurred callback
