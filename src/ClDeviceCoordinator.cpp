@@ -110,10 +110,8 @@ void ClDeviceCoordinator::estimateWorkgroupSize() {
 	maxWorkGroupSize = clRecommendedWorkgroupSize;
 }
 
-
-void ClDeviceCoordinator::onProcessJob() {
-	log(INFO, "[OPENCL - " + deviceName + " (" + deviceType + ")" + "] Processing job with id " + std::to_string(currentJob->Id));
-
+// ReSharper disable once CppMemberFunctionMayBeConst
+auto ClDeviceCoordinator::performJobSetup(cl_int& clStatus) {
 	// Get total number of accumulators
 	auto nAccumulators = currentJob->getNChunks() / chunksPerAccumulator;
 
@@ -125,9 +123,10 @@ void ClDeviceCoordinator::onProcessJob() {
 		totalBytes = currentJob->getSize(chunkSizeBytes);
 	}
 
-	log(DEBUG, "[OPENCL - " + deviceName + " (" + deviceType + ")" + "] Job split into " + std::to_string(nAccumulators) + " accumulators");
+	log(DEBUG,
+	    "[OPENCL - " + deviceName + " (" + deviceType + ")" + "] Job split into " + std::to_string(nAccumulators) +
+	    " accumulators");
 	// Create buffer for results
-	auto clStatus = cl_int{};
 	const auto accumulatorsBuffer = cl::Buffer(context, CL_MEM_READ_WRITE,
 	                                           nAccumulators * N_CL_OUT_ITEMS * sizeof(double), nullptr,
 	                                           &clStatus);
@@ -148,6 +147,23 @@ void ClDeviceCoordinator::onProcessJob() {
 	const auto dataBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, maxHostChunks * chunkSizeBytes, nullptr, &clStatus);
 	throwIfStatusUnsuccessful(clStatus);
 
+	return std::make_tuple(nAccumulators, totalBytes, accumulatorsBuffer, dataBuffer, accumulatorData);
+}
+
+
+void ClDeviceCoordinator::onProcessJob() {
+	log(INFO, "[OPENCL - " + deviceName + " (" + deviceType + ")" + "] Processing job with id " +
+	    std::to_string(currentJob->Id));
+
+	auto clStatus = cl_int{};
+	auto [
+		nAccumulators,
+		totalBytes,
+		accumulatorsBuffer,
+		dataBuffer,
+		accumulatorData
+	] = performJobSetup(clStatus);
+
 	// Load the kernel
 	auto kernel = cl::Kernel(program, KERNEL_NAME);
 
@@ -158,15 +174,16 @@ void ClDeviceCoordinator::onProcessJob() {
 	while (bytesRemaining > 0) {
 		// Load either max size of the buffer if there is too much data to load or the remaining data
 		const auto chunksToLoad = bytesRemaining > maxHostChunks * chunkSizeBytes
-			? maxHostChunks // buffer size is maxHostChunks * chunkSizeBytes
-			: bytesRemaining / chunkSizeBytes; // or something smaller
+			                          ? maxHostChunks // buffer size is maxHostChunks * chunkSizeBytes
+			                          : bytesRemaining / chunkSizeBytes; // or something smaller
 
 		// Offset the read by the number of bytes processed in each accumulator
 		const auto bytesProcessedPerAccumulator = totalBytesPerAccumulator - bytesRemaining / nAccumulators;
 
 		// Load chunks "into the device" - or rather schedule to do so via OpenCL
-		dataLoader.loadChunksIntoDevice(nAccumulators, chunksToLoad, startIdx, bytesProcessedPerAccumulator, bytesPerAccumulator,
-			dataBuffer, commandQueue);
+		dataLoader.loadChunksIntoDevice(nAccumulators, chunksToLoad, startIdx, bytesProcessedPerAccumulator,
+		                                bytesPerAccumulator,
+		                                dataBuffer, commandQueue);
 
 		// Amount of items is the number of bytes to load divided by the number of accumulators and the size of double (i.e. 8 bytes)
 		const auto itemsToProcess = (chunksToLoad * chunkSizeBytes) / nAccumulators / sizeof(double);
@@ -178,7 +195,7 @@ void ClDeviceCoordinator::onProcessJob() {
 
 		// Schedule to execute the kernel
 		clStatus = commandQueue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(nAccumulators),
-			cl::NDRange(nAccumulators));
+		                                             cl::NDRange(nAccumulators));
 		throwIfStatusUnsuccessful(clStatus);
 
 		bytesRemaining -= chunksToLoad * chunkSizeBytes;
@@ -207,6 +224,7 @@ void ClDeviceCoordinator::onProcessJob() {
 
 	currentJob->Items = results;
 	log(DEBUG,
-		"[OPENCL - " + deviceName + " (" + deviceType + ")" + "] Finished computing job with id " + std::to_string(currentJob->Id) + ". Computed " + std::to_string(
+	    "[OPENCL - " + deviceName + " (" + deviceType + ")" + "] Finished computing job with id " +
+	    std::to_string(currentJob->Id) + ". Computed " + std::to_string(
 		    currentJob->getNChunks()) + " chunks. Chunk size is " + std::to_string(chunkSizeBytes) + " bytes");
 }

@@ -86,6 +86,13 @@ private:
 	 */
 	void estimateWorkgroupSize();
 
+	/**
+	 * \brief Sets up job for processing
+	 * \param clStatus status of the OpenCL operation
+	 * \return tuple of values for setup
+	 */
+	auto performJobSetup(cl_int& clStatus);
+
 protected:
 	/**
 	 * \brief Function override to perform computation on OpenCL device
