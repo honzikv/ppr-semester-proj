@@ -89,11 +89,6 @@ inline auto classifyStatsAccumulator(const StatsAccumulator& statsAccumulator) {
 
 	auto classificationNotes = std::vector<std::string>{};
 
-	if (statsAccumulator.numericallyErroredWhileMerging()) {
-		classificationNotes.emplace_back(
-			"Numerical errors occurred while merging parts of the computed data. The results may be imprecise.");
-	}
-
 	if (!statsAccumulator.valid()) {
 		classificationNotes.emplace_back("Computed statistics are not valid - some values are NaNs or infinity.");
 	}

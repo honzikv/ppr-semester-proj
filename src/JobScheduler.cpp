@@ -264,7 +264,7 @@ std::vector<StatsAccumulator> JobScheduler::run() {
 
 		assignJob();
 	}
-	log(DEBUG, "[JOBSCHEDULER] Job finished, terminating device coordinators and watchdog.");
+	log(DEBUG, "[JOBSCHEDULER] All Jobs finished, terminating device coordinators and watchdog.");
 	auto scopedLock = std::scoped_lock(coordinatorMutex);
 	// Terminate watchdog
 	watchdog->terminate();

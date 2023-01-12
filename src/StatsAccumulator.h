@@ -18,7 +18,7 @@ class StatsAccumulator {
 	size_t n = 0;
 
 	/**
-	 * Moments in the distribution
+	 * Moments of the distribution
 	 */
 	double m1 = .0, m2 = .0, m3 = .0, m4 = .0;
 
