@@ -78,8 +78,7 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 	}
 	auto result = std::vector<StatsAccumulator>();
 	for (const auto& accumulator : accumulators) {
-		auto items = accumulator.asVectorOfScalars();
-		result.insert(result.end(), items.begin(), items.end());
+		result.push_back(accumulator.asScalar());
 	}
 	
 	currentJob->Items = result;

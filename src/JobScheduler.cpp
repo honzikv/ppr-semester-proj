@@ -9,11 +9,8 @@ JobScheduler::JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeB
 	fileChunkHandler = std::make_unique<FileChunkHandler>(processingConfig.DistFilePath, chunkSizeBytes);
 
 	// Create memory configuration
-	const auto bytesPerCpuAccumulator = processingConfig.UseAvx2Instructions
-		                                    ? DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU
-		                                    : DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU * 4;
 	auto memoryConfig = MemoryAllocation::buildMemoryConfig(processingConfig,
-	                                                        bytesPerCpuAccumulator,
+	                                                        DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CPU,
 	                                                        DEFAULT_BYTES_PROCESSED_BY_ACCUMULATOR_CL,
 	                                                        processingConfig.MemoryLimit);
 	auto coordinatorId = 0;
@@ -21,30 +18,32 @@ JobScheduler::JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeB
 	for (const auto& device : processingConfig.ClDevices) {
 		try {
 			clDeviceCoordinators.push_back(std::make_shared<ClDeviceCoordinator>(
-				CoordinatorType::OPEN_CL,
-				processingConfig.ProcessingMode,
-				// Use dark magic to pass member function as a callback
-				[this](auto&& ph1, auto&& ph2) {
-					jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
-				},
-				[this](auto&& ph1) {
-					notifyWatchdogCallback(std::forward<decltype(ph1)>(ph1));
-				},
+					CoordinatorType::OPEN_CL,
+					processingConfig.ProcessingMode,
+					// Use dark magic to pass member function as a callback
+					[this](auto&& ph1, auto&& ph2) {
+						jobFinishedCallback(std::forward<decltype(ph1)>(ph1), std::forward<decltype(ph2)>(ph2));
+					},
 					[this](auto&& ph1) {
-					notifyErrOccurred(std::forward<decltype(ph1)>(ph1));
-				},
+						notifyWatchdogCallback(std::forward<decltype(ph1)>(ph1));
+					},
+					[this](auto&& ph1) {
+						notifyErrOccurred(std::forward<decltype(ph1)>(ph1));
+					},
 					chunkSizeBytes,
 					memoryConfig.BytesPerClAccumulator,
 					memoryConfig.MaxClHostBufferSizeBytes,
 					processingConfig.DistFilePath,
 					coordinatorId,
 					device
-					)
+				)
 			);
 		}
 		catch (ClCompileErr& err) {
 			const auto deviceName = device.getInfo<CL_DEVICE_NAME>();
-			log(CRITICAL, "Failed to compile OpenCL program for device. The program cannot continue. Device: " + deviceName + ". Error: " + err.what());
+			log(CRITICAL,
+			    "Failed to compile OpenCL program for device. The program cannot continue. Device: " + deviceName +
+			    ". Error: " + err.what());
 			exit(1);
 		}
 		coordinatorId += 1;
