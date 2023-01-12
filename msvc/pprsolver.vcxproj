@@ -48,7 +48,6 @@
     <ClInclude Include="..\src\Logging.h" />
     <ClInclude Include="..\src\MemoryAllocation.h" />
     <ClInclude Include="..\src\ProcessingConfig.h" />
-    <ClInclude Include="..\src\SingleThreadStatsComputation.h" />
     <ClInclude Include="..\src\StatsAccumulator.h" />
     <ClInclude Include="..\src\StatUtils.h" />
     <ClInclude Include="..\src\Timer.h" />

@@ -9,13 +9,12 @@
 #include "Timer.h"
 #include "StatUtils.h"
 
-constexpr auto MAX_RUNS = 1024; // More would be somewhat pointless
-constexpr auto DEFAULT_RUNS = 10;
+constexpr auto MAX_RUNS = 1024;
+constexpr auto DEFAULT_RUNS = 10; // 10 seems to be a good default
 
 /**
  * \brief Performs one benchmark run of the classification for given processing config
  * \param processingConfig processing configuration
- * \param outputStream vector of output streams to write the results to
  * \return computation time
  */
 inline auto performBenchmarkRun(ProcessingConfig& processingConfig) {
@@ -54,6 +53,10 @@ inline void logStat(const std::string& statName,
 	}
 }
 
+/**
+ * \brief Sets up file directory structure if necessary
+ * \param config config
+ */
 inline void setupOutputFileDirsIfNeeded(const ProcessingConfig& config) {
 	if (config.OutputPath.empty()) {
 		log(INFO, "Output path not specified, the results will only be logged into stdout");
@@ -72,6 +75,11 @@ inline void setupOutputFileDirsIfNeeded(const ProcessingConfig& config) {
 	}
 }
 
+/**
+ * \brief Gets correct number of runs so that user cannot e.g. pass negative number
+ * \param config config
+ * \return number of runs
+ */
 inline auto getNRuns(const ProcessingConfig& config) {
 	auto nRuns = config.NBenchmarkRuns;
 	if (nRuns > MAX_RUNS) {
@@ -133,8 +141,8 @@ inline void runBenchmark(ProcessingConfig& config) {
 	const auto averageRunTime =
 		std::accumulate(runDurations.begin(), runDurations.end(), std::chrono::milliseconds(0)) /
 		runDurations.size();
-	const auto maxRunTime = *std::max_element(runDurations.begin(), runDurations.end());
-	const auto minRunTime = *std::min_element(runDurations.begin(), runDurations.end());
+	const auto& maxRunTime = *std::max_element(runDurations.begin(), runDurations.end());
+	const auto& minRunTime = *std::min_element(runDurations.begin(), runDurations.end());
 
 	const auto logToFile = !config.OutputPath.empty();
 	std::ofstream file;
@@ -156,8 +164,8 @@ inline void runBenchmark(ProcessingConfig& config) {
 	for (auto i = 1ULL; i <= runDurations.size(); i += 1) {
 		logStat(std::to_string(i) + ".", runDurations[i - 1], file, logToFile);
 	}
-
 	std::cout << "\n";
+
 	// Log the average, best, and worst run time
 	logStat("Average", averageRunTime, file, logToFile);
 	logStat("Best", minRunTime, file, logToFile);

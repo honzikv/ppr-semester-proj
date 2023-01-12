@@ -30,16 +30,6 @@ public:
 	 */
 	explicit DataLoader(const fs::path& filePath, const size_t chunkSizeBytes);
 
-private:
-	/**
-	 * \brief Computes metadata for given job
-	 * \param startIdx start index (inclusive)
-	 * \param endIdx end index (exclusive)
-	 * \return triplet of number of chunks, number of bytes to read, and starting address
-	 */
-	[[nodiscard]] std::tuple<size_t, size_t, size_t> computeChunkMetadata(const size_t startIdx, const size_t endIdx) const;
-
-public:
 	/**
 	 * \brief Loads all job data into buffer and returns it
 	 * \param job job
@@ -47,19 +37,24 @@ public:
 	 */
 	std::vector<double> loadJobDataIntoVector(const Job& job);
 
-
 	/**
-	 * \brief Loads chunks into OpenCL device's buffer
-	 * \param startIdx start index of the chunk in file
-	 * \param endIdx end index of the chunk in file
-	 * \param buffer buffer to write the data to
-	 * \param commandQueue command queue to execute enqueueWriteBuffer on
+	 * \brief Loads chunks into device buffer
+	 * \param nAccumulators number of accumulators to load for
+	 * \param nChunks number of chunks to load
+	 * \param startIdx starting chunk index in the file
+	 * \param bytesProcessedPerAccumulator offset for each accumulator in bytes
+	 * \param totalBytesPerAccumulator total bytes per accumulator
+	 * \param buffer device buffer
+	 * \param commandQueue command queue for the device
 	 */
-	void loadChunksIntoDeviceBuffer(size_t startIdx, size_t endIdx, const cl::Buffer& buffer,
-	                                const cl::CommandQueue& commandQueue);
-
-	void loadChunksIntoDevice(size_t nAccumulators, size_t nChunks, size_t startIdx, size_t accumulatorOffset,
-		size_t bytesOffset,
-		const cl::Buffer& buffer, const cl::CommandQueue& commandQueue);
+	void loadChunksIntoDeviceBuffer(
+		size_t nAccumulators,
+		size_t nChunks,
+		size_t startIdx,
+		size_t bytesProcessedPerAccumulator,
+		size_t totalBytesPerAccumulator,
+		const cl::Buffer& buffer,
+		const cl::CommandQueue& commandQueue
+	);
 
 };

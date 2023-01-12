@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 #include <iomanip>
+#include <numeric>
 #include <sstream>
 #include "StatsAccumulator.h"
 
@@ -20,6 +21,22 @@ constexpr auto UNIFORM_IDX = 2;
 constexpr auto POISSON_IDX = 3;
 
 const auto DISTRIBUTION_STR_LUT = std::vector<std::string>{"Gaussian", "Exponential", "Uniform", "Poisson"};
+
+/**
+ * \brief Simple structure to hold results of classification
+ */
+struct ClassificationResult {
+	size_t DistributionIdx;
+	double Distance;
+	bool Valid;
+
+	ClassificationResult(const size_t distributionIdx, const double distance, const bool valid)
+		: DistributionIdx(distributionIdx),
+		  Distance(distance),
+		  Valid(valid) {
+	}
+};
+
 
 /**
  * \brief Compute euclidean distance between two 2D points
@@ -60,23 +77,25 @@ inline void printStats(const StatsAccumulator& statsAccumulator, const double di
 }
 
 /**
- * \brief Classifies given distribution from passed StatsAccumulator object and writes results to given outputstream
+ * \brief Performs classification on specified StatsAccumulator
  * \param statsAccumulator stats accumulator to classify
- * \param output output stream to write to 
+ * \return pair of ClassificationResult and notes during classification
  */
-inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::ostream& output = std::cout) {
+inline auto classifyStatsAccumulator(const StatsAccumulator& statsAccumulator) {
 	const auto estimatedPt = std::make_pair(statsAccumulator.getSkewness(), statsAccumulator.getKurtosis());
 	auto distributionPoints = std::vector{
 		GAUSSIAN_DISTRIBUTION, EXPONENTIAL_DISTRIBUTION, UNIFORM_DISTRIBUTION, {0, 0}
 	};
 
-	output << "\nResults" << "\n";
-	output << "-------" << "\n";
+	auto classificationNotes = std::vector<std::string>{};
 
-	if (statsAccumulator.numericallyErroredWhileMerging() || !statsAccumulator.valid()) {
-		output <<
-			"- A numerical error (floating point overflow / underflow) occurred during computation, the result may be imprecise!"
-			<< "\n" << "\n";
+	if (statsAccumulator.numericallyErroredWhileMerging()) {
+		classificationNotes.emplace_back(
+			"Numerical errors occurred while merging parts of the computed data. The results may be imprecise.");
+	}
+
+	if (!statsAccumulator.valid()) {
+		classificationNotes.emplace_back("Computed statistics are not valid - some values are NaNs or infinity.");
 	}
 
 	// Compute poisson distribution skewness and kurtosis
@@ -96,33 +115,54 @@ inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::
 		}
 
 		if (integersOnly && !(i == POISSON_IDX || i == UNIFORM_IDX)) {
-			output << "- Discarding " + DISTRIBUTION_STR_LUT.at(i) +
-				" since only integers were detected in the data" << "\n" << "\n";
+			classificationNotes.emplace_back("Discarding " + DISTRIBUTION_STR_LUT.at(i) +
+				" since only integers were detected in the data.");
 			continue;
 		}
 
 		if (i == EXPONENTIAL_IDX && statsAccumulator.getMin() < 0) {
-			output <<
-				"- Discarding exponential distribution from the classification as the minimum value in the data is less than zero"
-				<< "\n" << "\n";
+			classificationNotes.emplace_back(
+				"Discarding exponential distribution from the classification as the minimum value in the data is less than zero.");
 			continue;
 		}
 
-		output << "- Discarding " + DISTRIBUTION_STR_LUT.at(i) +
-			" distribution from the classification since the data contains non-integer values" << "\n" << "\n";
+		classificationNotes.emplace_back("Discarding " + DISTRIBUTION_STR_LUT.at(i) +
+			" distribution from the classification since the data contains non-integer values.");
 	}
 
 	// Get index of the smallest distance
-	const auto closestDistributionIdx =
-		std::distance(std::begin(distances), std::min_element(distances.begin(), distances.end()));
-
-	// Lookup the distribution name
-	const auto& distributionName = DISTRIBUTION_STR_LUT.at(static_cast<size_t>(closestDistributionIdx));
+	const auto closestDistributionIdx = static_cast<size_t>(
+		std::distance(std::begin(distances), std::min_element(distances.begin(), distances.end()))
+	);
 
 	const auto distance = distances[closestDistributionIdx];
 
+	return std::make_pair(ClassificationResult{
+		                      closestDistributionIdx,
+		                      distance,
+		                      statsAccumulator.valid()
+	                      }, classificationNotes);
+}
+
+/**
+ * \brief Classifies given distribution from passed StatsAccumulator object and writes results to given outputstream
+ * \param statsAccumulator stats accumulator to classify
+ * \param output output stream to write to
+ */
+inline void classifyDistribution(const StatsAccumulator& statsAccumulator, std::ostream& output = std::cout) {
+	output << "\nResults" << "\n";
+	output << "-------" << "\n";
+
+	const auto [classificationResult, classificationNotes] = classifyStatsAccumulator(statsAccumulator);
+	for (const auto& note : classificationNotes) {
+		output << "- " << note << "\n" << "\n";
+	}
+
+	// Lookup the distribution name
+	const auto& distributionName = DISTRIBUTION_STR_LUT.at(classificationResult.DistributionIdx);
+
 	// And finally print to the stdout
 	output << "The distribution was classified as: \"" << distributionName << "\"" << "\n" << "\n";
-	printStats(statsAccumulator, distance, output);
+	printStats(statsAccumulator, classificationResult.Distance, output);
 	output << std::endl;
 }

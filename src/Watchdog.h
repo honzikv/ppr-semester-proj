@@ -8,14 +8,39 @@
 constexpr auto DEFAULT_SLEEP_MS = std::chrono::milliseconds{5000}; // 5s
 
 class Watchdog {
+	/**
+	 * \brief Watchdog thread instance for join operation when the thread is to be destroyed
+	 */
 	std::thread watchdogThread;
+
+	/**
+	 * \brief Watchdog counter - this is periodically checked to ensure jobs are being processed successfully
+	 */
 	std::atomic<size_t> counter;
 
+	/**
+	 * \brief Semaphore for start synchronization
+	 */
 	ConcurrencyUtils::Semaphore startSemaphore = ConcurrencyUtils::Semaphore(0);
 
+	/**
+	 * \brief Flag to keep the thread running
+	 */
 	std::atomic<bool> keepRunning = true;
+
+	/**
+	 * \brief Sleep time in milliseconds
+	 */
 	std::chrono::milliseconds sleepMs{};
+
+	/**
+	 * \brief Mutex for synchronization
+	 */
 	std::mutex mutex;
+
+	/**
+	 * \brief Condition variable for sleep
+	 */
 	std::condition_variable sleepCondition;
 
 public:
@@ -37,6 +62,9 @@ public:
 		counter += xBytes;
 	}
 
+	/**
+	 * \brief Joins the Watchdog thread (if joinable)
+	 */
 	void join() {
 		keepRunning = false;
 		sleepCondition.notify_one();

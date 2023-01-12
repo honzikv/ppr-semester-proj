@@ -88,9 +88,9 @@ void ClDeviceCoordinator::estimateWorkgroupSize() {
 
 	// The same could be done for AMD Radeon GPUs
 	const auto vendorName = device.getInfo<CL_DEVICE_VENDOR>();
-	const auto deviceName = device.getInfo<CL_DEVICE_NAME>();
-	if (vendorName.find("NVIDIA") != std::string::npos && (deviceName.find("GTX") != std::string::npos ||
-		deviceName.find("RTX") != std::string::npos)) {
+	const auto clDeviceName = device.getInfo<CL_DEVICE_NAME>();
+	if (vendorName.find("NVIDIA") != std::string::npos && (clDeviceName.find("GTX") != std::string::npos ||
+		clDeviceName.find("RTX") != std::string::npos)) {
 		const auto nvidiaWorkgroupSize = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() / 8;
 		log(DEBUG, "[OPENCL] Detected NVIDIA RTX/GTX GPU, using larger workgroup size: " + std::to_string(
 			    nvidiaWorkgroupSize));
@@ -117,10 +117,10 @@ auto ClDeviceCoordinator::performJobSetup(cl_int& clStatus) {
 
 	// Get total number of workgroup runs
 	auto totalBytes = nAccumulators * bytesPerAccumulator;
-	if (nAccumulators == 0 && currentJob->getSize(chunkSizeBytes) < chunksPerAccumulator * chunkSizeBytes) {
+	if (nAccumulators == 0 && currentJob->getSizeBytes(chunkSizeBytes) < chunksPerAccumulator * chunkSizeBytes) {
 		// Our file is smaller than chunksPerAccumulator - therefore we only run one work item in one workgroup
 		nAccumulators = 1;
-		totalBytes = currentJob->getSize(chunkSizeBytes);
+		totalBytes = currentJob->getSizeBytes(chunkSizeBytes);
 	}
 
 	log(DEBUG,
@@ -169,19 +169,16 @@ void ClDeviceCoordinator::onProcessJob() {
 
 	// Run the computation
 	auto bytesRemaining = totalBytes;
+	auto bytesProcessedPerAccumulator = 0ULL;
 	const auto [startIdx, _] = currentJob->ChunkIdxRange;
-	const auto totalBytesPerAccumulator = chunksPerAccumulator * chunkSizeBytes;
 	while (bytesRemaining > 0) {
 		// Load either max size of the buffer if there is too much data to load or the remaining data
 		const auto chunksToLoad = bytesRemaining > maxHostChunks * chunkSizeBytes
 			                          ? maxHostChunks // buffer size is maxHostChunks * chunkSizeBytes
 			                          : bytesRemaining / chunkSizeBytes; // or something smaller
 
-		// Offset the read by the number of bytes processed in each accumulator
-		const auto bytesProcessedPerAccumulator = totalBytesPerAccumulator - bytesRemaining / nAccumulators;
-
 		// Load chunks "into the device" - or rather schedule to do so via OpenCL
-		dataLoader.loadChunksIntoDevice(nAccumulators, chunksToLoad, startIdx, bytesProcessedPerAccumulator,
+		dataLoader.loadChunksIntoDeviceBuffer(nAccumulators, chunksToLoad, startIdx, bytesProcessedPerAccumulator,
 		                                bytesPerAccumulator,
 		                                dataBuffer, commandQueue);
 
@@ -198,7 +195,9 @@ void ClDeviceCoordinator::onProcessJob() {
 		                                             cl::NDRange(nAccumulators));
 		throwIfStatusUnsuccessful(clStatus);
 
-		bytesRemaining -= chunksToLoad * chunkSizeBytes;
+		const auto bytesProcessed = chunksToLoad * chunkSizeBytes;
+		bytesRemaining -= bytesProcessed;
+		bytesProcessedPerAccumulator += bytesProcessed / nAccumulators;
 		notifyWatchdogCallback(chunksToLoad * chunkSizeBytes);
 	}
 

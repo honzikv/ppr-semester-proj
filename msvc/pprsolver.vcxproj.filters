@@ -125,9 +125,6 @@
     <ClInclude Include="..\src\ConcurrencyUtils.h">
       <Filter>Header Files\SMP</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\SingleThreadStatsComputation.h">
-      <Filter>Header Files\SMP</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\FilesystemUtils.h">
       <Filter>Header Files\IO</Filter>
     </ClInclude>

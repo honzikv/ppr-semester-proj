@@ -4,7 +4,7 @@
     <LocalDebuggerEnvironment>PATH=%PATH%;$(TBB_ROOT)\bin
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>..\compiled\benchmarkfile "Nvidia Geforce RTX 3060 Ti" --benchmark </LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>../gauss2g "Nvidia Geforce RTX 3060 Ti"</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup>
     <ShowAllFiles>false</ShowAllFiles>

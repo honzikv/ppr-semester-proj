@@ -12,6 +12,11 @@ public:
 	// File is split into evenly sized chunks which are read by given device
 	const size_t ChunkSizeBytes;
 
+	/**
+	 * \brief Default constructor for the object
+	 * \param distFilePath path to the file that is being processed
+	 * \param chunkSizeBytes chunk size in bytes
+	 */
 	FileChunkHandler(fs::path distFilePath, const size_t chunkSizeBytes) :
 		ChunkSizeBytes(chunkSizeBytes),
 		distFilePath(std::move(distFilePath)),
@@ -23,7 +28,7 @@ public:
 	}
 
 	[[nodiscard]] bool allChunksProcessed() const {
-		return currentChunkIdx == chunkCount;
+		return nextChunkIdx == chunkCount;
 	}
 
 	/**
@@ -32,21 +37,44 @@ public:
 	 * \return pair of start and end (exclusive) chunk index
 	 */
 	auto getNextNChunks(const size_t n) {
-		const auto actualChunksAdded = currentChunkIdx + n > chunkCount ? chunkCount - currentChunkIdx : n;
-		auto result = std::pair<size_t, size_t>(currentChunkIdx, currentChunkIdx + actualChunksAdded);
-		currentChunkIdx += actualChunksAdded;
+		const auto actualChunksAdded = nextChunkIdx + n > chunkCount ? chunkCount - nextChunkIdx : n;
+		auto result = std::pair<size_t, size_t>(nextChunkIdx, nextChunkIdx + actualChunksAdded);
+		nextChunkIdx += actualChunksAdded;
 		return result;
 	}
 
+	/**
+	 * \brief Returns size of chunk in bytes
+	 * \return size of chunk in bytes
+	 */
 	auto getChunkSizeBytes() const {
 		return chunkSizeBytes;
 	}
 
 private:
+	/**
+	 * \brief Filesystem path to the file
+	 */
 	fs::path distFilePath;
+
+	/**
+	 * \brief Size of the file
+	 */
 	size_t fileSize;
-	size_t chunkCount; // Total number of chunks
-	size_t chunkSizeBytes; // Size of chunk in bytes
-	size_t currentChunkIdx = 0; // Number of current chunks
+
+	/**
+	 * \brief Total number of chunks
+	 */
+	size_t chunkCount;
+
+	/**
+	 * \brief Chunk size in bytes
+	 */
+	size_t chunkSizeBytes;
+
+	/**
+	 * \brief Index of the next chunk
+	 */
+	size_t nextChunkIdx = 0;
 
 };

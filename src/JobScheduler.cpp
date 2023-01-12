@@ -1,4 +1,5 @@
 #include "JobScheduler.h"
+#include "MemoryAllocation.h"
 
 JobScheduler::JobScheduler(ProcessingConfig& processingConfig, size_t chunkSizeBytes) {
 	watchdog = std::make_unique<Watchdog>(std::chrono::milliseconds{processingConfig.WatchdogTimeoutMs});

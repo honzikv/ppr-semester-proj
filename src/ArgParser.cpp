@@ -14,7 +14,11 @@ auto lowercase(const std::basic_string<T>& s) {
 	return s2;
 }
 
-
+/**
+ * \brief Queries all OpenCL devices and returns them in a vector
+ * \param devices list of devices to query
+ * \return list of found OpenCL devices
+ */
 inline auto queryClDevices(const std::vector<std::string>& devices) {
 	log(DEBUG, "Querying OpenCL devices...");
 	auto deviceNamesFilter = std::unordered_set<std::string>();

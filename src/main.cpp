@@ -1,7 +1,6 @@
 ﻿#include "DistributionClassification.h"
 #include "JobScheduler.h"
 #include "Logging.h"
-#include "SingleThreadStatsComputation.h"
 #include "StatUtils.h"
 #include "Timer.h"
 #include "ArgumentParser.h"
@@ -25,7 +24,7 @@ void run(ProcessingConfig& processingConfig) {
 
 		auto timer = Timer();
 		timer.start();
-		const auto result = jobScheduler.run();
+		auto result = jobScheduler.run();
 		timer.stop();
 
 		classifyDistribution(StatUtils::mergeLeftToRight(result));

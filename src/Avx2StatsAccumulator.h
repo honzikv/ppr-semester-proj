@@ -9,9 +9,25 @@
  * \brief Implementation of StatsAccumulator with AVX2 manual vectorization
  */
 class Avx2StatsAccumulator {
+
+	/**
+	 * \brief M1, M2, M3, and M4
+	 */ 
 	__m256d m1 = _mm256_set1_pd(0), m2 = _mm256_set1_pd(0), m3 = _mm256_set1_pd(0), m4 = _mm256_set1_pd(0);
+
+	/**
+	 * \brief Minimum
+	 */
 	__m256d minVal = _mm256_set1_pd(std::numeric_limits<double>::infinity());
+
+	/**
+	 * \brief Number of items processed by this accumulator
+	 */
 	__m256i n = _mm256_set1_epi64x(0);
+
+	/**
+	 * \brief Flag that signals whether the distribution comprises integers or not
+	 */
 	__m256i isIntegerDistribution = _mm256_set1_epi64x(UINT64_MAX);
 
 public:
