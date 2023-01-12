@@ -52,7 +52,7 @@ public:
 		size_t clHostBufferSizeBytes,
 		fs::path& distFilePath,
 		size_t id,
-		const cl::Device& device);
+		cl::Device device);
 
 private:
 	cl::Device device; // The actual device

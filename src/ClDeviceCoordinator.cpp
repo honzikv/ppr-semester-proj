@@ -24,7 +24,7 @@ ClDeviceCoordinator::ClDeviceCoordinator(const CoordinatorType coordinatorType,
                                          const size_t clHostBufferSizeBytes,
                                          fs::path& distFilePath,
                                          const size_t id,
-                                         const cl::Device& device):
+                                         cl::Device device):
 	DeviceCoordinator(
 		coordinatorType,
 		processingMode,
@@ -33,7 +33,7 @@ ClDeviceCoordinator::ClDeviceCoordinator(const CoordinatorType coordinatorType,
 		errCallback,
 		chunkSizeBytes,
 		bytesPerAccumulator, distFilePath, id),
-	device(device),
+	device(std::move(device)),
 	maxHostChunks(
 		clHostBufferSizeBytes / chunkSizeBytes) {
 	// Setup the device
