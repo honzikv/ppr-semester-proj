@@ -62,7 +62,7 @@ namespace MemoryAllocation {
 	 * \return scaling factor for the memory
 	 */
 	inline double getClRuntimeRatio(const size_t nClDevices) {
-		if (nClDevices > CL_RUNTIME_RATIOS.size()) {
+		if (nClDevices >= CL_RUNTIME_RATIOS.size()) {
 			// 4 and more devices are not reasonable to use with 1 GB of RAM
 			return CL_RUNTIME_RATIOS.back();
 		}
