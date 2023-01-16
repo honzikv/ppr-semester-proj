@@ -53,8 +53,8 @@ void ClDeviceCoordinator::setup() {
 	// OpenCL boilerplate
 	context = cl::Context(device);
 	commandQueue = cl::CommandQueue(context, device);
-	program = compile(CL_PROGRAM, "program", context);
 	deviceName = device.getInfo<CL_DEVICE_NAME>();
+	program = compile(CL_PROGRAM, "program", context);
 	estimateWorkgroupSize();
 
 	const auto maxDeviceBufferSize = static_cast<size_t>(static_cast<double>(device.getInfo<
