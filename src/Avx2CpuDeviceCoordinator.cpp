@@ -63,7 +63,10 @@ void Avx2CpuDeviceCoordinator::onProcessJob() {
 				                  const auto jobStart = (accumulatorId * doublesPerAccumulator) / 4;
 				                  const auto jobEnd = jobStart + (doublesPerAccumulator) / 4;
 				                  for (auto i = jobStart; i < jobEnd; i += 1) {
-					                  accumulators[accumulatorId].pushWithFiltering({
+									  accumulators[accumulatorId].pushWithFiltering(
+										  // Equivalent to:
+										  // _mm256_load_pd(&buffer[i * 4]));
+										  {
 						                  buffer[i * 4],
 						                  buffer[i * 4 + 1],
 						                  buffer[i * 4 + 2],

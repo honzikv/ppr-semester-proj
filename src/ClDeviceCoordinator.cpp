@@ -6,7 +6,13 @@
 auto ClDeviceCoordinator::compile(const std::string& source, const std::string& programName,
                                   const cl::Context& deviceContext) const {
 	auto program = cl::Program(deviceContext, source);
-	if (const auto result = program.build(DEFAULT_BUILD_FLAG); result != CL_BUILD_SUCCESS) {
+	const auto result = program.build(DEFAULT_BUILD_FLAG);
+	 auto buildLog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
+	if (buildLog.empty() || buildLog == "\n") {
+		buildLog = "Compilation successful";
+	}
+	log(DEBUG, "[OPENCLBUILD - " + deviceName + " " + deviceType + "] " + buildLog);
+	if (result != CL_BUILD_SUCCESS) {
 		throw ClCompileErr(
 			"Error during OpenCL Program compilation ( " + programName + " )\n. Error: " + std::to_string(result));
 	}
